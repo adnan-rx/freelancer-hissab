@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
+
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "FreelancerHisab - Financial OS for Pakistani Freelancers",
@@ -13,8 +16,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark h-full">
-      <body className="font-sans h-full bg-slate-950 text-slate-50 antialiased">
+    <html lang="en" className="h-full">
+      <body className={`${outfit.variable} font-sans h-full bg-background text-foreground antialiased`}>
         <QueryProvider>
           {children}
         </QueryProvider>

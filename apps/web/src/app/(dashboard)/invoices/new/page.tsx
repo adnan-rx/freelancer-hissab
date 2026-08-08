@@ -114,35 +114,34 @@ export default function NewInvoicePage() {
       {/* Top Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="icon" className="text-slate-400 hover:text-slate-100">
+          <Button asChild variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
             <Link href="/invoices"><ArrowLeft className="h-5 w-5" /></Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-100">Create New Invoice</h1>
-            <p className="text-sm text-slate-400 mt-0.5">Generate professional client invoice with automatic PKR exchange calculation.</p>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Create New Invoice</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Generate professional client invoice with automatic PKR exchange calculation.</p>
           </div>
         </div>
 
         <Button 
           onClick={handleSubmit} 
           disabled={createInvoiceMutation.isPending}
-          className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold shadow-lg shadow-emerald-500/20"
         >
           <Save className="mr-2 h-4 w-4" /> Save & Send Invoice
         </Button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Card className="bg-slate-900/60 border-slate-800">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-bold text-slate-100 flex items-center gap-2">
-              <FileText className="h-5 w-5 text-emerald-400" /> Invoice Header & Client Information
+            <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" /> Invoice Header & Client Information
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Select Client</label>
+                <label className="text-sm font-medium text-foreground">Select Client</label>
                 <select 
                   value={clientId}
                   onChange={(e) => {
@@ -153,7 +152,7 @@ export default function NewInvoicePage() {
                       setClientEmail(selected.email || '');
                     }
                   }}
-                  className="w-full h-10 px-3 rounded-md bg-slate-900 border border-slate-800 text-slate-100 text-sm focus:border-emerald-500 focus:outline-none"
+                  className="w-full h-10 px-3 rounded-md bg-background border border-input text-foreground text-sm focus:border-primary focus:outline-none"
                 >
                   <option value="">Select or Enter Below...</option>
                   {clients.map((c: any) => (
@@ -163,56 +162,56 @@ export default function NewInvoicePage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Client Name</label>
+                <label className="text-sm font-medium text-foreground">Client Name</label>
                 <Input 
                   value={clientName} 
                   onChange={(e) => setClientName(e.target.value)} 
                   placeholder="TechFlow Inc."
                   required 
-                  className="bg-slate-900 border-slate-800 text-slate-100"
+                  className="bg-background border-input text-foreground"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Client Email</label>
+                <label className="text-sm font-medium text-foreground">Client Email</label>
                 <Input 
                   type="email"
                   value={clientEmail} 
                   onChange={(e) => setClientEmail(e.target.value)} 
                   placeholder="billing@techflow.com"
-                  className="bg-slate-900 border-slate-800 text-slate-100"
+                  className="bg-background border-input text-foreground"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2 border-t border-slate-800/80">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-border">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Invoice Number</label>
+                <label className="text-sm font-medium text-foreground">Invoice Number</label>
                 <Input 
                   value={invoiceNumber} 
                   onChange={(e) => setInvoiceNumber(e.target.value)} 
                   required 
-                  className="bg-slate-900 border-slate-800 text-slate-100 font-mono"
+                  className="bg-background border-input text-foreground font-mono"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Due Date</label>
+                <label className="text-sm font-medium text-foreground">Due Date</label>
                 <Input 
                   type="date" 
                   value={dueDate} 
                   onChange={(e) => setDueDate(e.target.value)} 
                   required 
-                  className="bg-slate-900 border-slate-800 text-slate-100 font-mono"
+                  className="bg-background border-input text-foreground font-mono"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Billing Currency</label>
+                <label className="text-sm font-medium text-foreground">Billing Currency</label>
                 <select 
                   value={currency} 
                   onChange={(e) => setCurrency(e.target.value)} 
-                  className="w-full h-10 px-3 rounded-md bg-slate-900 border border-slate-800 text-slate-100 text-sm focus:border-emerald-500 focus:outline-none"
+                  className="w-full h-10 px-3 rounded-md bg-background border border-input text-foreground text-sm focus:border-primary focus:outline-none"
                 >
                   <option value="USD">USD ($)</option>
                   <option value="EUR">EUR (€)</option>
@@ -223,8 +222,8 @@ export default function NewInvoicePage() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-slate-300">Exchange Rate (PKR / {currency})</label>
-                  <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+                  <label className="text-sm font-medium text-foreground">Exchange Rate (PKR / {currency})</label>
+                  <span className="text-[11px] text-primary font-medium flex items-center gap-1">
                     {isRateLoading ? "Fetching live rate..." : "Live Market Rate"}
                   </span>
                 </div>
@@ -234,7 +233,7 @@ export default function NewInvoicePage() {
                   value={exchangeRate || ""} 
                   placeholder="e.g. 280.50"
                   onChange={(e) => setExchangeRate(e.target.value === "" ? 0 : parseFloat(e.target.value))} 
-                  className="bg-slate-900 border-slate-800 text-slate-100 font-mono text-emerald-400 font-bold"
+                  className="bg-background border-input text-primary font-mono font-bold"
                 />
               </div>
             </div>
@@ -242,13 +241,13 @@ export default function NewInvoicePage() {
         </Card>
 
         {/* Line Items Card */}
-        <Card className="bg-slate-900/60 border-slate-800">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-lg font-bold text-slate-100">Invoice Items & Services</CardTitle>
-              <CardDescription className="text-slate-400">Add billable services, milestones, or hourly rates.</CardDescription>
+              <CardTitle className="text-lg font-bold text-foreground">Invoice Items & Services</CardTitle>
+              <CardDescription>Add billable services, milestones, or hourly rates.</CardDescription>
             </div>
-            <Button type="button" onClick={addItem} variant="outline" size="sm" className="border-slate-800 bg-slate-900 text-emerald-400 hover:bg-slate-800">
+            <Button type="button" onClick={addItem} variant="outline" size="sm" className="text-primary hover:text-primary">
               <Plus className="mr-1.5 h-4 w-4" /> Add Item Row
             </Button>
           </CardHeader>
@@ -257,13 +256,13 @@ export default function NewInvoicePage() {
               {items.map((item, index) => {
                 const itemAmount = Number(item.quantity || 0) * Number(item.rate || 0);
                 return (
-                  <div key={index} className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                  <div key={index} className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-muted/50 p-3 rounded-xl border border-border">
                     <Input 
                       placeholder="Item Description (e.g. Frontend React App Development)" 
                       value={item.description}
                       onChange={(e) => updateItem(index, 'description', e.target.value)}
                       required
-                      className="flex-1 bg-slate-900 border-slate-800 text-slate-100"
+                      className="flex-1 bg-background border-input text-foreground"
                     />
                     <div className="flex items-center gap-3 w-full md:w-auto">
                       <Input 
@@ -272,7 +271,7 @@ export default function NewInvoicePage() {
                         placeholder="Qty" 
                         value={item.quantity}
                         onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                        className="w-20 bg-slate-900 border-slate-800 text-slate-100 text-center"
+                        className="w-20 bg-background border-input text-foreground text-center"
                       />
                       <Input 
                         type="number" 
@@ -281,9 +280,9 @@ export default function NewInvoicePage() {
                         placeholder="Rate" 
                         value={item.rate}
                         onChange={(e) => updateItem(index, 'rate', parseFloat(e.target.value) || 0)}
-                        className="w-28 bg-slate-900 border-slate-800 text-slate-100 text-right font-mono"
+                        className="w-28 bg-background border-input text-foreground text-right font-mono"
                       />
-                      <div className="w-28 text-right font-mono font-bold text-emerald-400">
+                      <div className="w-28 text-right font-mono font-bold text-primary">
                         {currency === "USD" ? formatUSD(itemAmount) : `${currency} ${itemAmount.toFixed(2)}`}
                       </div>
                       <Button 
@@ -292,7 +291,7 @@ export default function NewInvoicePage() {
                         variant="ghost" 
                         size="icon" 
                         disabled={items.length === 1}
-                        className="text-slate-500 hover:text-rose-400"
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -303,53 +302,53 @@ export default function NewInvoicePage() {
             </div>
 
             {/* Calculations Box */}
-            <div className="flex flex-col md:flex-row justify-between items-start pt-6 border-t border-slate-800 gap-6">
+            <div className="flex flex-col md:flex-row justify-between items-start pt-6 border-t border-border gap-6">
               <div className="flex-1 space-y-2 max-w-md">
-                <label className="text-sm font-medium text-slate-300">Invoice Payment Notes & Wire Instructions</label>
+                <label className="text-sm font-medium text-foreground">Invoice Payment Notes & Wire Instructions</label>
                 <textarea 
                   value={notes} 
                   onChange={(e) => setNotes(e.target.value)}
                   rows={4}
-                  className="w-full rounded-md border border-slate-800 bg-slate-900 p-3 text-xs text-slate-300 focus:border-emerald-500 focus:outline-none"
+                  className="w-full rounded-md border border-input bg-background p-3 text-xs text-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
-              <div className="w-full md:w-80 bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                <div className="flex justify-between text-xs text-slate-400">
+              <div className="w-full md:w-80 bg-muted/30 p-4 rounded-xl border border-border space-y-3">
+                <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Subtotal:</span>
-                  <span className="font-mono text-slate-200">{currency === "USD" ? formatUSD(subtotal) : `${currency} ${subtotal.toFixed(2)}`}</span>
+                  <span className="font-mono text-foreground">{currency === "USD" ? formatUSD(subtotal) : `${currency} ${subtotal.toFixed(2)}`}</span>
                 </div>
 
                 <div className="flex items-center justify-between gap-2 text-xs">
-                  <span className="text-slate-400">Tax Rate (%):</span>
+                  <span className="text-muted-foreground">Tax Rate (%):</span>
                   <Input 
                     type="number" 
                     value={taxRate} 
                     onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)} 
-                    className="w-20 h-7 text-xs bg-slate-900 border-slate-800 text-right font-mono"
+                    className="w-20 h-7 text-xs bg-background border-input text-right font-mono"
                   />
                 </div>
 
                 <div className="flex items-center justify-between gap-2 text-xs">
-                  <span className="text-slate-400">Discount Amount ({currency}):</span>
+                  <span className="text-muted-foreground">Discount Amount ({currency}):</span>
                   <Input 
                     type="number" 
                     value={discountAmount} 
                     onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)} 
-                    className="w-20 h-7 text-xs bg-slate-900 border-slate-800 text-right font-mono"
+                    className="w-20 h-7 text-xs bg-background border-input text-right font-mono"
                   />
                 </div>
 
-                <div className="pt-2 border-t border-slate-800 flex justify-between font-bold text-slate-100">
+                <div className="pt-2 border-t border-border flex justify-between font-bold text-foreground">
                   <span>Total Billed:</span>
-                  <span className="font-mono text-emerald-400">{currency === "USD" ? formatUSD(total) : `${currency} ${total.toFixed(2)}`}</span>
+                  <span className="font-mono text-primary">{currency === "USD" ? formatUSD(total) : `${currency} ${total.toFixed(2)}`}</span>
                 </div>
 
-                <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex justify-between items-center text-xs">
-                  <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20 flex justify-between items-center text-xs">
+                  <span className="text-primary font-semibold flex items-center gap-1">
                     <Calculator className="h-3.5 w-3.5" /> Total PKR Conversion:
                   </span>
-                  <span className="font-bold text-emerald-400 font-mono text-sm">{formatPKR(totalPKR)}</span>
+                  <span className="font-bold text-primary font-mono text-sm">{formatPKR(totalPKR)}</span>
                 </div>
               </div>
             </div>
@@ -357,13 +356,13 @@ export default function NewInvoicePage() {
         </Card>
 
         <div className="flex justify-end gap-4">
-          <Button asChild type="button" variant="outline" className="border-slate-800 bg-slate-900 text-slate-300">
+          <Button asChild type="button" variant="outline">
             <Link href="/invoices">Cancel</Link>
           </Button>
           <Button 
             type="submit" 
             disabled={createInvoiceMutation.isPending}
-            className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold px-8 h-11 shadow-lg shadow-emerald-500/20"
+            className="px-8 h-11"
           >
             {createInvoiceMutation.isPending ? "Creating Invoice..." : "Save & Generate Invoice"}
           </Button>

@@ -109,96 +109,96 @@ export default function SettingsPage() {
     <div className="space-y-8 max-w-5xl">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-100">Settings & Preferences</h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings & Preferences</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Manage your freelancer profile, bank remittance details, invoicing settings, and security.
           </p>
         </div>
 
         {savedSuccess && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-medium animate-in fade-in">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border border-primary/30 text-primary text-sm font-medium animate-in fade-in">
             <CheckCircle2 className="h-4 w-4" /> Settings updated & saved to database!
           </div>
         )}
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="bg-slate-900 border border-slate-800 p-1 rounded-xl">
-          <TabsTrigger value="profile" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 font-medium">
+        <TabsList className="bg-muted border border-border p-1 rounded-xl">
+          <TabsTrigger value="profile" className="data-[state=active]:bg-background data-[state=active]:text-foreground font-medium">
             <User className="mr-2 h-4 w-4" /> Profile & Business
           </TabsTrigger>
-          <TabsTrigger value="bank" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 font-medium">
+          <TabsTrigger value="bank" className="data-[state=active]:bg-background data-[state=active]:text-foreground font-medium">
             <Landmark className="mr-2 h-4 w-4" /> Bank & SBP Tax
           </TabsTrigger>
-          <TabsTrigger value="invoicing" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 font-medium">
+          <TabsTrigger value="invoicing" className="data-[state=active]:bg-background data-[state=active]:text-foreground font-medium">
             <FileText className="mr-2 h-4 w-4" /> Invoicing Prefs
           </TabsTrigger>
-          <TabsTrigger value="security" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 font-medium">
+          <TabsTrigger value="security" className="data-[state=active]:bg-background data-[state=active]:text-foreground font-medium">
             <Shield className="mr-2 h-4 w-4" /> Security
           </TabsTrigger>
         </TabsList>
 
         {/* Tab 1: Profile */}
         <TabsContent value="profile">
-          <Card className="bg-slate-900/60 border-slate-800">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-slate-100">Freelancer Profile Information</CardTitle>
-              <CardDescription className="text-slate-400">Update your personal and business identity.</CardDescription>
+              <CardTitle className="text-lg font-bold text-foreground">Freelancer Profile Information</CardTitle>
+              <CardDescription>Update your personal and business identity.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Full Name</label>
+                  <label className="text-sm font-medium text-foreground">Full Name</label>
                   <Input 
                     value={name} 
                     onChange={(e) => setName(e.target.value)} 
                     required 
-                    className="bg-slate-900 border-slate-800 text-slate-100"
+                    className="bg-background border-input text-foreground"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Business / Brand Name</label>
+                  <label className="text-sm font-medium text-foreground">Business / Brand Name</label>
                   <Input 
                     value={businessName} 
                     onChange={(e) => setBusinessName(e.target.value)} 
-                    className="bg-slate-900 border-slate-800 text-slate-100"
+                    className="bg-background border-input text-foreground"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300">Email Address</label>
+                    <label className="text-sm font-medium text-foreground">Email Address</label>
                     <Input 
                       value={email} 
                       disabled 
-                      className="bg-slate-950 border-slate-800 text-slate-400 cursor-not-allowed"
+                      className="bg-muted border-input text-muted-foreground cursor-not-allowed"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300">Phone Number</label>
+                    <label className="text-sm font-medium text-foreground">Phone Number</label>
                     <Input 
                       value={phone} 
                       onChange={(e) => setPhone(e.target.value)} 
-                      className="bg-slate-900 border-slate-800 text-slate-100"
+                      className="bg-background border-input text-foreground"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300">Default Base Currency</label>
-                    <Input value="PKR (Pakistani Rupee)" disabled className="bg-slate-950 border-slate-800 text-slate-400" />
+                    <label className="text-sm font-medium text-foreground">Default Base Currency</label>
+                    <Input value="PKR (Pakistani Rupee)" disabled className="bg-muted border-input text-muted-foreground cursor-not-allowed" />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300">Timezone</label>
-                    <Input value="Asia/Karachi (GMT+5)" disabled className="bg-slate-950 border-slate-800 text-slate-400" />
+                    <label className="text-sm font-medium text-foreground">Timezone</label>
+                    <Input value="Asia/Karachi (GMT+5)" disabled className="bg-muted border-input text-muted-foreground cursor-not-allowed" />
                   </div>
                 </div>
 
-                <Button type="submit" disabled={updateProfileMutation.isPending} className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold">
+                <Button type="submit" disabled={updateProfileMutation.isPending}>
                   {updateProfileMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Profile Changes
                 </Button>
               </form>
@@ -208,64 +208,64 @@ export default function SettingsPage() {
 
         {/* Tab 2: Bank & Tax */}
         <TabsContent value="bank">
-          <Card className="bg-slate-900/60 border-slate-800">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-slate-100">SBP Inward Remittance Bank Account</CardTitle>
-              <CardDescription className="text-slate-400">Account details for foreign remittances and SBP PRC generation.</CardDescription>
+              <CardTitle className="text-lg font-bold text-foreground">SBP Inward Remittance Bank Account</CardTitle>
+              <CardDescription>Account details for foreign remittances and SBP PRC generation.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Primary Bank Name</label>
+                  <label className="text-sm font-medium text-foreground">Primary Bank Name</label>
                   <Input 
                     value={bankName} 
                     onChange={(e) => setBankName(e.target.value)} 
-                    className="bg-slate-900 border-slate-800 text-slate-100"
+                    className="bg-background border-input text-foreground"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Account Title</label>
+                  <label className="text-sm font-medium text-foreground">Account Title</label>
                   <Input 
                     value={accountTitle} 
                     onChange={(e) => setAccountTitle(e.target.value)} 
-                    className="bg-slate-900 border-slate-800 text-slate-100"
+                    className="bg-background border-input text-foreground"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">IBAN (International Bank Account Number)</label>
+                  <label className="text-sm font-medium text-foreground">IBAN (International Bank Account Number)</label>
                   <Input 
                     value={iban} 
                     onChange={(e) => setIban(e.target.value)} 
-                    className="bg-slate-900 border-slate-800 text-slate-100 font-mono"
+                    className="bg-background border-input text-foreground font-mono"
                   />
                 </div>
 
-                <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/60 space-y-4">
-                  <h4 className="text-sm font-bold text-slate-200">FBR & SBP Tax Compliance</h4>
+                <div className="p-4 rounded-xl border border-border bg-muted/50 space-y-4">
+                  <h4 className="text-sm font-bold text-foreground">FBR & SBP Tax Compliance</h4>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-200">Active Tax Filer Status</p>
-                      <p className="text-xs text-slate-400">Active Filer on FBR ATL List</p>
+                      <p className="text-sm font-medium text-foreground">Active Tax Filer Status</p>
+                      <p className="text-xs text-muted-foreground">Active Filer on FBR ATL List</p>
                     </div>
-                    <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10">
+                    <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10">
                       Active Filer (0.25% Tax)
                     </Badge>
                   </div>
 
                   <div className="space-y-2 pt-2">
-                    <label className="text-xs font-medium text-slate-300">PSEB Registration Number</label>
+                    <label className="text-xs font-medium text-foreground">PSEB Registration Number</label>
                     <Input 
                       value={psebId} 
                       onChange={(e) => setPsebId(e.target.value)} 
-                      className="bg-slate-900 border-slate-800 text-slate-100 text-xs font-mono"
+                      className="bg-background border-input text-foreground text-xs font-mono"
                     />
                   </div>
                 </div>
 
-                <Button type="submit" disabled={updateProfileMutation.isPending} className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold">
+                <Button type="submit" disabled={updateProfileMutation.isPending}>
                   {updateProfileMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Bank Details
                 </Button>
               </form>
@@ -275,44 +275,44 @@ export default function SettingsPage() {
 
         {/* Tab 3: Invoicing */}
         <TabsContent value="invoicing">
-          <Card className="bg-slate-900/60 border-slate-800">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-slate-100">Invoice Customization & Terms</CardTitle>
-              <CardDescription className="text-slate-400">Configure default invoice numbering and notes for your clients.</CardDescription>
+              <CardTitle className="text-lg font-bold text-foreground">Invoice Customization & Terms</CardTitle>
+              <CardDescription>Configure default invoice numbering and notes for your clients.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300">Invoice Number Prefix</label>
+                    <label className="text-sm font-medium text-foreground">Invoice Number Prefix</label>
                     <Input 
                       value={invoicePrefix} 
                       onChange={(e) => setInvoicePrefix(e.target.value)} 
-                      className="bg-slate-900 border-slate-800 text-slate-100 font-mono"
+                      className="bg-background border-input text-foreground font-mono"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300">Default Payment Terms</label>
+                    <label className="text-sm font-medium text-foreground">Default Payment Terms</label>
                     <Input 
                       value={paymentTerms} 
                       onChange={(e) => setPaymentTerms(e.target.value)} 
-                      className="bg-slate-900 border-slate-800 text-slate-100"
+                      className="bg-background border-input text-foreground"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Default Invoice Footer / Wire Instructions</label>
+                  <label className="text-sm font-medium text-foreground">Default Invoice Footer / Wire Instructions</label>
                   <textarea 
                     value={invoiceNotes} 
                     onChange={(e) => setInvoiceNotes(e.target.value)} 
                     rows={4}
-                    className="w-full rounded-md border border-slate-800 bg-slate-900 p-3 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none"
+                    className="w-full rounded-md border border-input bg-background p-3 text-sm text-foreground focus:border-primary focus:outline-none"
                   />
                 </div>
 
-                <Button type="submit" disabled={updateProfileMutation.isPending} className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold">
+                <Button type="submit" disabled={updateProfileMutation.isPending}>
                   {updateProfileMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Invoice Preferences
                 </Button>
               </form>
@@ -322,32 +322,32 @@ export default function SettingsPage() {
 
         {/* Tab 4: Security */}
         <TabsContent value="security">
-          <Card className="bg-slate-900/60 border-slate-800">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-slate-100">Security & Credentials</CardTitle>
-              <CardDescription className="text-slate-400">Change your password and inspect active session tokens.</CardDescription>
+              <CardTitle className="text-lg font-bold text-foreground">Security & Credentials</CardTitle>
+              <CardDescription>Change your password and inspect active session tokens.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 max-w-xl">
               <form onSubmit={handleSaveProfile} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Current Password</label>
-                  <Input type="password" placeholder="••••••••" className="bg-slate-900 border-slate-800 text-slate-100" />
+                  <label className="text-sm font-medium text-foreground">Current Password</label>
+                  <Input type="password" placeholder="••••••••" className="bg-background border-input text-foreground" />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">New Password</label>
-                  <Input type="password" placeholder="••••••••" className="bg-slate-900 border-slate-800 text-slate-100" />
+                  <label className="text-sm font-medium text-foreground">New Password</label>
+                  <Input type="password" placeholder="••••••••" className="bg-background border-input text-foreground" />
                 </div>
 
-                <Button type="submit" variant="outline" className="border-slate-800 bg-slate-900 text-slate-200 hover:bg-slate-800">
+                <Button type="submit" variant="outline">
                   Update Password
                 </Button>
               </form>
 
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/60 space-y-2">
-                <p className="text-xs font-semibold text-slate-300">Active Authentication Session</p>
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <Badge variant="outline" className="border-emerald-500/30 text-emerald-400">JWT Bearer Token Active</Badge>
+              <div className="p-4 rounded-xl border border-border bg-muted/50 space-y-2">
+                <p className="text-xs font-semibold text-foreground">Active Authentication Session</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10">JWT Bearer Token Active</Badge>
                   <span>Expires in 15 mins (Auto-refresh enabled)</span>
                 </div>
               </div>
