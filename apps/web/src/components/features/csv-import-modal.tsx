@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, CheckCircle2, FileSpreadsheet, Sparkles, X, AlertCircle } from "lucide-react";
+import { Upload, CheckCircle2, FileSpreadsheet, Sparkles, X, AlertCircle, Download } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 
@@ -17,9 +17,40 @@ export function CSVImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
 
   if (!isOpen) return null;
 
+  // File Validation Logic
+  const validateFile = (file: File): string | null => {
+    const isCSVExtension = file.name.toLowerCase().endsWith('.csv');
+    const isCSVMime = file.type === 'text/csv' || file.type === 'application/vnd.ms-excel' || file.type === '';
+
+    if (!isCSVExtension) {
+      return `Invalid file format: "${file.name}". Please upload a valid .csv file.`;
+    }
+
+    if (file.size === 0) {
+      return `Selected CSV file is empty (0 bytes). Please upload a valid statement.`;
+    }
+
+    const MAX_SIZE_MB = 5;
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      return `File size exceeds ${MAX_SIZE_MB}MB limit. Please upload a smaller statement file.`;
+    }
+
+    return null;
+  };
+
   const processCSVUpload = async (file?: File, csvText?: string) => {
-    setImporting(true);
     setErrorMessage(null);
+
+    if (file) {
+      const validationError = validateFile(file);
+      if (validationError) {
+        setErrorMessage(validationError);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+    }
+
+    setImporting(true);
 
     try {
       let res;
@@ -49,16 +80,34 @@ export function CSVImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
       setErrorMessage(Array.isArray(msg) ? msg.join(", ") : msg);
     } finally {
       setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
   const handleSampleCSVImport = () => {
     const sampleUpworkCSV = `Date,Ref ID,Type,Description,Agency,Amount,Balance
-01/15/2026,98123741,Hourly,"Invoice for TechFlow Inc. - Fullstack Development",,1200.00,1200.00
-01/15/2026,98123742,Service Fee,"Service Fee for TechFlow Inc. - Fullstack Development",,-120.00,1080.00
-01/20/2026,98123743,Fixed Price,"Milestone Payment from Jane Smith - UI Design",,500.00,1580.00
-01/20/2026,98123744,Service Fee,"Service Fee for Jane Smith - UI Design",,-50.00,1530.00`;
+08/01/2026,98123741,Hourly,"Invoice for TechFlow Labs - Sprint 1 Fullstack Engineering",,1450.00,1450.00
+08/01/2026,98123742,Service Fee,"Service Fee for TechFlow Labs - Sprint 1 Fullstack Engineering",,-145.00,1305.00
+08/03/2026,98123743,Fixed Price,"Milestone Payment from Acme Corp - Mobile App API",,850.00,2155.00
+08/03/2026,98123744,Service Fee,"Service Fee for Acme Corp - Mobile App API",,-85.00,2070.00`;
     processCSVUpload(undefined, sampleUpworkCSV);
+  };
+
+  const handleDownloadSampleCSV = () => {
+    const sampleCSVContent = `Date,Ref ID,Type,Description,Agency,Amount,Balance
+08/01/2026,98123741,Hourly,"Invoice for TechFlow Labs - Sprint 1 Fullstack Engineering",,1450.00,1450.00
+08/01/2026,98123742,Service Fee,"Service Fee for TechFlow Labs - Sprint 1 Fullstack Engineering",,-145.00,1305.00
+08/03/2026,98123743,Fixed Price,"Milestone Payment from Acme Corp - Mobile App API",,850.00,2155.00
+08/03/2026,98123744,Service Fee,"Service Fee for Acme Corp - Mobile App API",,-85.00,2070.00`;
+
+    const blob = new Blob([sampleCSVContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "freelancerhisab_sample_statement.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,7 +140,7 @@ export function CSVImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
             <Sparkles className="h-5 w-5 text-emerald-400" />
             <h2 className="text-xl font-bold text-slate-100">Automated CSV / Statement Import</h2>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-100">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-100" type="button">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -104,7 +153,7 @@ export function CSVImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
               </p>
 
               {errorMessage && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2 animate-in fade-in">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   <span>{errorMessage}</span>
                 </div>
@@ -125,11 +174,19 @@ export function CSVImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
                 <p className="text-sm font-semibold text-slate-200">
                   {importing ? "Parsing CSV & Ingesting Transactions..." : "Click to select CSV or drag & drop file"}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">Supports Upwork, Fiverr, Wise, Payoneer, and Meezan Bank CSV exports</p>
+                <p className="text-xs text-slate-500 mt-1">Only .csv files up to 5MB supported (Upwork, Fiverr, Wise, Payoneer)</p>
               </div>
 
-              <div className="flex items-center justify-between gap-4 pt-2 border-t border-slate-800">
-                <span className="text-xs text-slate-500">Don't have a CSV file ready?</span>
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={handleDownloadSampleCSV}
+                  className="border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800 text-xs"
+                >
+                  <Download className="mr-1.5 h-3.5 w-3.5 text-emerald-400" />
+                  Download Sample CSV
+                </Button>
                 <Button 
                   type="button" 
                   variant="outline" 
@@ -138,7 +195,7 @@ export function CSVImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
                   className="border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800 text-xs"
                 >
                   <Sparkles className="mr-1.5 h-3.5 w-3.5 text-emerald-400" />
-                  Import Demo Upwork Statement
+                  Import Demo Statement
                 </Button>
               </div>
 
@@ -174,4 +231,3 @@ export function CSVImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
     </div>
   );
 }
-

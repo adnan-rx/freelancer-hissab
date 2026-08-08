@@ -1,0 +1,7 @@
+Date,Ref ID,Type,Description,Agency,Amount,Balance
+08/01/2026,98123741,Hourly,"Invoice for TechFlow Labs - Sprint 1 Fullstack Engineering",,1450.00,1450.00
+08/01/2026,98123742,Service Fee,"Service Fee for TechFlow Labs - Sprint 1 Fullstack Engineering",,-145.00,1305.00
+08/03/2026,98123743,Fixed Price,"Milestone Payment from Acme Corp - Mobile App API",,850.00,2155.00
+08/03/2026,98123744,Service Fee,"Service Fee for Acme Corp - Mobile App API",,-85.00,2070.00
+08/05/2026,98123745,Fixed Price,"Milestone Payment from Horizon Media - UI UX Redesign",,1200.00,3270.00
+08/05/2026,98123746,Service Fee,"Service Fee for Horizon Media - UI UX Redesign",,-120.00,3150.00
