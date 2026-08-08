@@ -3,6 +3,7 @@ import { useAuthStore } from "../stores/auth.store";
 
 export const apiClient = axios.create({
   baseURL: "http://localhost:3001/api/v1",
+  withCredentials: true,
 });
 
 apiClient.interceptors.request.use((config) => {
@@ -37,14 +38,6 @@ apiClient.interceptors.response.use(
       originalRequest?.url?.includes("/auth/refresh");
 
     if (status === 401 && !isAuthRoute && !originalRequest._retry) {
-      const refreshToken = useAuthStore.getState().refreshToken;
-
-      if (!refreshToken) {
-        useAuthStore.getState().logout();
-        window.location.href = "/login";
-        return Promise.reject(error);
-      }
-
       if (isRefreshing) {
         return new Promise((resolve) => {
           addRefreshSubscriber((newToken: string) => {
@@ -60,13 +53,14 @@ apiClient.interceptors.response.use(
       try {
         const response = await axios.post(
           `${apiClient.defaults.baseURL}/auth/refresh`,
-          { refreshToken }
+          {},
+          { withCredentials: true }
         );
         
         // Backend wraps responses in { success, data, error } via TransformInterceptor
         const refreshData = response.data.data || response.data;
         
-        useAuthStore.getState().setTokens(refreshData.accessToken, refreshData.refreshToken);
+        useAuthStore.getState().setTokens(refreshData.accessToken);
         
         originalRequest.headers.Authorization = `Bearer ${refreshData.accessToken}`;
         onRefreshed(refreshData.accessToken);

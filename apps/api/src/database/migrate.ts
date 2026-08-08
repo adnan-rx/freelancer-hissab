@@ -10,7 +10,11 @@ const runMigrate = async () => {
     throw new Error('DATABASE_URL is not defined');
   }
 
-  const migrationClient = postgres(process.env.DATABASE_URL, { max: 1 });
+  const migrationClient = postgres(process.env.DATABASE_URL, { 
+    max: 1, 
+    ssl: 'require', 
+    connect_timeout: 30 // Wait up to 30s for Neon to wake up
+  });
   const db = drizzle(migrationClient);
 
   console.log('Running migrations...');
