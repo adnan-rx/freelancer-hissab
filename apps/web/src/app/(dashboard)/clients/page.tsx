@@ -137,18 +137,17 @@ export default function ClientsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-100">Clients Directory</h1>
-          <p className="text-sm text-slate-400 mt-1">Manage your international and local client roster, platforms, and contact details.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Clients Directory</h1>
+          <p className="text-sm text-muted-foreground mt-1">Manage your international and local client roster, platforms, and contact details.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button 
             onClick={() => setIsImportOpen(true)}
             variant="outline" 
-            className="border-slate-800 bg-slate-900 text-slate-200 hover:bg-slate-800"
           >
-            <Sparkles className="mr-2 h-4 w-4 text-emerald-400" /> Auto-Import Clients via CSV
+            <Sparkles className="mr-2 h-4 w-4 text-primary" /> Auto-Import Clients via CSV
           </Button>
-          <Button onClick={handleOpenAdd} className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold shadow-lg shadow-emerald-500/20">
+          <Button onClick={handleOpenAdd}>
             <Plus className="mr-2 h-4 w-4" /> Add New Client
           </Button>
         </div>
@@ -156,36 +155,36 @@ export default function ClientsPage() {
 
       {/* KPI Cards Banner */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-slate-900/60 border-slate-800">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Active Clients</CardTitle>
-            <Users className="h-4 w-4 text-emerald-400" />
+            <CardTitle className="text-sm font-medium text-foreground">Active Clients</CardTitle>
+            <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-50">{totalClientsCount}</div>
-            <p className="text-xs text-slate-400 mt-1">Registered Client Accounts</p>
+            <div className="text-2xl font-bold text-foreground">{totalClientsCount}</div>
+            <p className="text-xs text-muted-foreground mt-1">Registered Client Accounts</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900/60 border-slate-800">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Lifetime Revenue (USD)</CardTitle>
-            <DollarSign className="h-4 w-4 text-emerald-400" />
+            <CardTitle className="text-sm font-medium text-foreground">Lifetime Revenue (USD)</CardTitle>
+            <DollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-50">{formatUSD(totalLifetimeUSD)}</div>
-            <p className="text-xs text-emerald-400 mt-1 font-medium">Billed across all portals</p>
+            <div className="text-2xl font-bold text-foreground">{formatUSD(totalLifetimeUSD)}</div>
+            <p className="text-xs text-primary mt-1 font-medium">Billed across all portals</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900/60 border-slate-800">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Converted Lifetime Earnings (PKR)</CardTitle>
-            <DollarSign className="h-4 w-4 text-emerald-400" />
+            <CardTitle className="text-sm font-medium text-foreground">Converted Lifetime Earnings (PKR)</CardTitle>
+            <DollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-400">{formatPKR(totalLifetimePKR)}</div>
-            <p className="text-xs text-emerald-400 mt-1 font-medium">Auto-converted at ~280.50 PKR</p>
+            <div className="text-2xl font-bold text-primary">{formatPKR(totalLifetimePKR)}</div>
+            <p className="text-xs text-primary mt-1 font-medium">Auto-converted at ~280.50 PKR</p>
           </CardContent>
         </Card>
       </div>
@@ -193,15 +192,15 @@ export default function ClientsPage() {
       {/* Filters & Search */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         {/* Platform Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-xl overflow-x-auto">
+        <div className="flex items-center gap-1.5 p-1 bg-card border border-border rounded-xl overflow-x-auto shadow-sm">
           {["all", "upwork", "fiverr", "direct", "freelancer"].map((pl) => (
             <button
               key={pl}
               onClick={() => setPlatformFilter(pl)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
                 platformFilter === pl 
-                  ? "bg-emerald-500 text-slate-950 shadow" 
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                  ? "bg-primary text-primary-foreground shadow" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
               {pl}
@@ -211,91 +210,85 @@ export default function ClientsPage() {
 
         {/* Search Input */}
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Search clients by name, company, email..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 bg-slate-900 border-slate-800 text-slate-100 placeholder:text-slate-500"
+            className="pl-9 bg-background border-border text-foreground"
           />
         </div>
       </div>
 
       {/* Clients Table */}
-      <div className="border border-slate-800 rounded-xl overflow-hidden bg-slate-900/40">
+      <div className="border border-border rounded-xl overflow-hidden bg-card shadow-sm">
         <Table>
-          <TableHeader className="bg-slate-900/80">
-            <TableRow className="border-slate-800">
-              <TableHead className="text-slate-300">Client / Company Name</TableHead>
-              <TableHead className="text-slate-300">Platform</TableHead>
-              <TableHead className="text-slate-300">Email & Contact</TableHead>
-              <TableHead className="text-slate-300">Total Billed</TableHead>
-              <TableHead className="text-slate-300">Status</TableHead>
-              <TableHead className="text-right text-slate-300">Actions</TableHead>
+          <TableHeader className="bg-muted/50">
+            <TableRow className="border-border">
+              <TableHead className="text-muted-foreground font-medium">Client / Company Name</TableHead>
+              <TableHead className="text-muted-foreground font-medium">Platform</TableHead>
+              <TableHead className="text-muted-foreground font-medium">Email & Contact</TableHead>
+              <TableHead className="text-muted-foreground font-medium">Total Billed</TableHead>
+              <TableHead className="text-muted-foreground font-medium">Status</TableHead>
+              <TableHead className="text-right text-muted-foreground font-medium">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-slate-400">Loading client directory...</TableCell>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading client directory...</TableCell>
               </TableRow>
             ) : displayClients.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-slate-400">No clients found matching your search.</TableCell>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No clients found matching your search.</TableCell>
               </TableRow>
             ) : (
               displayClients.map((client: any) => {
                 const lifetimeUSD = Number(client.totalEarnings || client.totalIncome || 0);
                 const lifetimePKR = Number(client.totalEarningsPKR || (lifetimeUSD * 280.50));
                 return (
-                  <TableRow key={client.id} className="border-slate-800 hover:bg-slate-800/40 transition-colors">
+                  <TableRow key={client.id} className="transition-colors">
                     <TableCell>
-                      <div className="font-semibold text-slate-100">{client.name}</div>
-                      {client.company && <div className="text-xs text-slate-400 flex items-center gap-1 mt-0.5"><Building className="h-3 w-3" /> {client.company}</div>}
+                      <div className="font-semibold text-foreground">{client.name}</div>
+                      {client.company && <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"><Building className="h-3 w-3" /> {client.company}</div>}
                     </TableCell>
 
                     <TableCell>
                       <Badge 
-                        variant="outline" 
-                        className={`capitalize ${
-                          client.platform === "upwork" 
-                            ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10" 
-                            : client.platform === "fiverr"
-                            ? "border-green-500/30 text-green-400 bg-green-500/10"
-                            : "border-teal-500/30 text-teal-400 bg-teal-500/10"
-                        }`}
+                        variant="secondary" 
+                        className="capitalize font-medium"
                       >
                         {client.platform || "direct"}
                       </Badge>
                     </TableCell>
 
                     <TableCell className="text-xs space-y-0.5">
-                      <div className="text-slate-300 flex items-center gap-1.5"><Mail className="h-3 w-3 text-slate-500" /> {client.email || "No email"}</div>
-                      {client.phone && <div className="text-slate-500 flex items-center gap-1.5"><Phone className="h-3 w-3" /> {client.phone}</div>}
+                      <div className="text-foreground flex items-center gap-1.5"><Mail className="h-3 w-3 text-muted-foreground" /> {client.email || "No email"}</div>
+                      {client.phone && <div className="text-muted-foreground flex items-center gap-1.5"><Phone className="h-3 w-3" /> {client.phone}</div>}
                     </TableCell>
 
                     <TableCell className="font-mono">
-                      <div className="font-bold text-emerald-400">{formatUSD(lifetimeUSD)}</div>
-                      <div className="text-[11px] text-slate-400">{formatPKR(lifetimePKR)}</div>
+                      <div className="font-bold text-primary">{formatUSD(lifetimeUSD)}</div>
+                      <div className="text-[11px] text-muted-foreground">{formatPKR(lifetimePKR)}</div>
                     </TableCell>
 
                     <TableCell>
-                      <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10">
+                      <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10 font-medium">
                         {client.status || "active"}
                       </Badge>
                     </TableCell>
 
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button asChild size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-emerald-400 hover:bg-slate-800" title="Create Invoice for Client">
+                        <Button asChild size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-muted" title="Create Invoice for Client">
                           <Link href={`/invoices/new?client=${client.id}`}>
                             <FilePlus className="h-4 w-4" />
                           </Link>
                         </Button>
-                        <Button onClick={() => handleOpenEdit(client)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-slate-100 hover:bg-slate-800" title="Edit Client">
+                        <Button onClick={() => handleOpenEdit(client)} size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted" title="Edit Client">
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button onClick={() => setDeleteTarget({ id: client.id, name: client.name })} size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-rose-400 hover:bg-slate-800" title="Delete Client">
+                        <Button onClick={() => setDeleteTarget({ id: client.id, name: client.name })} size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-muted" title="Delete Client">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -310,13 +303,13 @@ export default function ClientsPage() {
 
       {/* Add / Edit Client Modal Overlay */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between p-6 border-b border-slate-800">
-              <h2 className="text-xl font-bold text-slate-100">
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-lg overflow-hidden shadow-xl animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <h2 className="text-xl font-bold text-foreground">
                 {editingClient ? "Edit Client Details" : "Add New Client"}
               </h2>
-              <button onClick={() => setIsAddOpen(false)} className="text-slate-400 hover:text-slate-100">
+              <button onClick={() => setIsAddOpen(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -324,57 +317,57 @@ export default function ClientsPage() {
             <form onSubmit={handleSave} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">Client Contact Name *</label>
+                  <label className="text-xs font-semibold text-foreground">Client Contact Name *</label>
                   <Input 
                     placeholder="John Doe" 
                     value={name} 
                     onChange={(e) => setName(e.target.value)} 
                     required 
-                    className="bg-slate-950 border-slate-800 text-slate-100"
+                    className="bg-background border-input text-foreground"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">Company Name</label>
+                  <label className="text-xs font-semibold text-foreground">Company Name</label>
                   <Input 
                     placeholder="TechFlow Inc." 
                     value={company} 
                     onChange={(e) => setCompany(e.target.value)} 
-                    className="bg-slate-950 border-slate-800 text-slate-100"
+                    className="bg-background border-input text-foreground"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">Email Address</label>
+                  <label className="text-xs font-semibold text-foreground">Email Address</label>
                   <Input 
                     type="email" 
                     placeholder="billing@techflow.com" 
                     value={email} 
                     onChange={(e) => setEmail(e.target.value)} 
-                    className="bg-slate-950 border-slate-800 text-slate-100"
+                    className="bg-background border-input text-foreground"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">Phone Number</label>
+                  <label className="text-xs font-semibold text-foreground">Phone Number</label>
                   <Input 
                     placeholder="+1 415 555 0199" 
                     value={phone} 
                     onChange={(e) => setPhone(e.target.value)} 
-                    className="bg-slate-950 border-slate-800 text-slate-100"
+                    className="bg-background border-input text-foreground"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">Platform</label>
+                  <label className="text-xs font-semibold text-foreground">Platform</label>
                   <select 
                     value={platform} 
                     onChange={(e) => setPlatform(e.target.value)} 
-                    className="w-full h-10 px-3 rounded-md bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:border-emerald-500 focus:outline-none"
+                    className="w-full h-10 px-3 rounded-md bg-background border border-input text-foreground text-sm focus:border-primary focus:outline-none"
                   >
                     <option value="upwork">Upwork Escrow</option>
                     <option value="fiverr">Fiverr Orders</option>
@@ -385,11 +378,11 @@ export default function ClientsPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">Billing Currency</label>
+                  <label className="text-xs font-semibold text-foreground">Billing Currency</label>
                   <select 
                     value={currency} 
                     onChange={(e) => setCurrency(e.target.value)} 
-                    className="w-full h-10 px-3 rounded-md bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:border-emerald-500 focus:outline-none"
+                    className="w-full h-10 px-3 rounded-md bg-background border border-input text-foreground text-sm focus:border-primary focus:outline-none"
                   >
                     <option value="USD">USD ($)</option>
                     <option value="EUR">EUR (€)</option>
@@ -400,21 +393,21 @@ export default function ClientsPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Client Notes</label>
+                <label className="text-xs font-semibold text-foreground">Client Notes</label>
                 <textarea 
                   placeholder="e.g. Pays via Wise or Upwork direct contract on 1st of every month." 
                   value={notes} 
                   onChange={(e) => setNotes(e.target.value)} 
                   rows={3} 
-                  className="w-full rounded-md border border-slate-800 bg-slate-950 p-2.5 text-xs text-slate-100 focus:border-emerald-500 focus:outline-none"
+                  className="w-full rounded-md border border-input bg-background p-2.5 text-xs text-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-                <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)} className="border-slate-800 bg-slate-950 text-slate-300">
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold">
+                <Button type="submit">
                   <Check className="mr-1.5 h-4 w-4" /> {editingClient ? "Update Client" : "Save Client"}
                 </Button>
               </div>

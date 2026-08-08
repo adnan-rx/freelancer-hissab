@@ -14,6 +14,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [hasHydrated, setHasHydrated] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     // Wait for Zustand to hydrate from localStorage before checking auth
@@ -39,11 +40,14 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-950 text-slate-50 print:h-auto print:overflow-visible print:bg-white">
-      <Sidebar />
+    <div className="flex h-[100dvh] overflow-hidden bg-background text-foreground print:h-auto print:overflow-visible print:bg-white">
+      <Sidebar 
+        isOpen={isMobileMenuOpen} 
+        onClose={() => setIsMobileMenuOpen(false)} 
+      />
       <div className="flex flex-col flex-1 overflow-hidden print:overflow-visible">
-        <Header />
-        <main className="flex-1 overflow-y-auto p-6 bg-slate-950 print:p-0 print:m-0 print:bg-white print:overflow-visible">
+        <Header onMenuClick={() => setIsMobileMenuOpen(true)} />
+        <main className="flex-1 overflow-y-auto p-6 bg-background print:p-0 print:m-0 print:bg-white print:overflow-visible">
           {children}
         </main>
       </div>

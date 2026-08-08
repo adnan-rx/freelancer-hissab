@@ -32,7 +32,7 @@ export default function UserGuidePage() {
       id: "quickstart",
       category: "Getting Started",
       icon: Sparkles,
-      color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+      color: "text-primary bg-primary/10 border-primary/20",
       title: "Quick Start Guide (Non-Tech Friendly)",
       description: "Learn how to set up your account, log income, and issue invoices in 4 simple steps.",
       steps: [
@@ -46,7 +46,7 @@ export default function UserGuidePage() {
       id: "invoicing",
       category: "Invoices",
       icon: FileText,
-      color: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+      color: "text-blue-500 bg-blue-500/10 border-blue-500/20",
       title: "Creating & Exporting Invoices",
       description: "How to generate, brand, and download PDF invoices for international clients.",
       content: [
@@ -59,7 +59,7 @@ export default function UserGuidePage() {
       id: "csvimport",
       category: "Automation",
       icon: Upload,
-      color: "text-purple-400 bg-purple-500/10 border-purple-500/20",
+      color: "text-purple-500 bg-purple-500/10 border-purple-500/20",
       title: "Automated CSV & Statement Ingestion",
       description: "Import Upwork, Fiverr, Wise, or Payoneer statements without manual entry.",
       content: [
@@ -73,7 +73,7 @@ export default function UserGuidePage() {
       id: "tax",
       category: "Pakistani Tax & SBP Rules",
       icon: ShieldCheck,
-      color: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+      color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
       title: "FBR Section 154A & SBP Code 9100",
       description: "How to qualify for the 0.25% reduced IT export tax rate in Pakistan.",
       content: [
@@ -94,20 +94,20 @@ export default function UserGuidePage() {
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-12">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10">
+            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10">
               <BookOpen className="mr-1.5 h-3.5 w-3.5" /> Official Help Center
             </Badge>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">User Manual & Feature Guide</h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">User Manual & Feature Guide</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Step-by-step instructions for managing clients, generating invoices, importing CSV statements, and FBR tax filings.
           </p>
         </div>
 
-        <Button asChild className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold shadow-lg shadow-emerald-500/20">
+        <Button asChild>
           <Link href="/dashboard">
             Back to Dashboard <ChevronRight className="ml-1 h-4 w-4" />
           </Link>
@@ -116,13 +116,13 @@ export default function UserGuidePage() {
 
       {/* Search Bar */}
       <div className="relative max-w-xl">
-        <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+        <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
         <Input 
           type="text" 
           placeholder="Search guide topics (e.g., invoice, CSV, SBP Code, tax)..." 
           value={search} 
           onChange={(e) => setSearch(e.target.value)} 
-          className="pl-10 bg-slate-900 border-slate-800 text-slate-100 text-sm focus:border-emerald-500"
+          className="pl-10 bg-background border-border text-foreground text-sm focus:border-primary"
         />
       </div>
 
@@ -131,28 +131,28 @@ export default function UserGuidePage() {
         {filteredSections.map((sec) => {
           const Icon = sec.icon;
           return (
-            <Card key={sec.id} className="bg-slate-900/60 border-slate-800 hover:border-slate-700 transition-all">
+            <Card key={sec.id} className="hover:border-primary/30 transition-all shadow-sm">
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className={`p-2.5 rounded-xl border ${sec.color}`}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg font-bold text-slate-100">{sec.title}</CardTitle>
-                    <CardDescription className="text-xs text-slate-400 mt-0.5">{sec.description}</CardDescription>
+                    <CardTitle className="text-lg font-bold text-foreground">{sec.title}</CardTitle>
+                    <CardDescription className="text-xs text-muted-foreground mt-0.5">{sec.description}</CardDescription>
                   </div>
                 </div>
               </CardHeader>
 
-              <CardContent className="space-y-4 text-xs text-slate-300">
+              <CardContent className="space-y-4 text-xs text-foreground">
                 {sec.steps ? (
                   <div className="space-y-3">
                     {sec.steps.map((step, idx) => (
-                      <div key={idx} className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-950/50 border border-slate-800/80">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <div key={idx} className="flex items-start gap-2.5 p-2.5 rounded-xl bg-muted/50 border border-border">
+                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                         <div>
-                          <p className="font-semibold text-slate-200">{step.title}</p>
-                          <p className="text-slate-400 text-[11px] leading-relaxed mt-0.5">{step.desc}</p>
+                          <p className="font-semibold text-foreground">{step.title}</p>
+                          <p className="text-muted-foreground text-[11px] leading-relaxed mt-0.5">{step.desc}</p>
                         </div>
                       </div>
                     ))}
@@ -160,8 +160,8 @@ export default function UserGuidePage() {
                 ) : (
                   <ul className="space-y-2">
                     {sec.content?.map((point, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-slate-400">
-                        <ChevronRight className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <li key={idx} className="flex items-start gap-2 text-muted-foreground">
+                        <ChevronRight className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                         <span>{point}</span>
                       </li>
                     ))}
@@ -174,27 +174,27 @@ export default function UserGuidePage() {
       </div>
 
       {/* SBP Code 9100 Explanation Banner */}
-      <Card className="bg-slate-900 border-slate-800">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-bold text-slate-100 flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-emerald-400" /> SBP Purpose Code 9100 Cheat Sheet
+          <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-primary" /> SBP Purpose Code 9100 Cheat Sheet
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-xs text-slate-400 space-y-3">
+        <CardContent className="text-xs text-muted-foreground space-y-3">
           <p>
-            When foreign wire transfers arrive in Meezan Bank, JazzCash, or Allied Bank, ensure your client or payment gateway tags the transaction under <strong className="text-slate-200">State Bank Code 9100</strong> (Software Services Export).
+            When foreign wire transfers arrive in Meezan Bank, JazzCash, or Allied Bank, ensure your client or payment gateway tags the transaction under <strong className="text-foreground">State Bank Code 9100</strong> (Software Services Export).
           </p>
           <div className="grid gap-3 md:grid-cols-3 pt-2">
-            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-              <span className="font-bold text-emerald-400 block mb-1">Code 9100</span>
+            <div className="p-3 rounded-xl bg-muted/50 border border-border">
+              <span className="font-bold text-primary block mb-1">Code 9100</span>
               Software Development & IT Export Services
             </div>
-            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-              <span className="font-bold text-teal-400 block mb-1">Code 9102</span>
+            <div className="p-3 rounded-xl bg-muted/50 border border-border">
+              <span className="font-bold text-teal-600 block mb-1">Code 9102</span>
               IT Enabled Services (BPO, Virtual Assistance)
             </div>
-            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-              <span className="font-bold text-blue-400 block mb-1">PRC Document</span>
+            <div className="p-3 rounded-xl bg-muted/50 border border-border">
+              <span className="font-bold text-blue-500 block mb-1">PRC Document</span>
               Proceeds Realization Certificate from Meezan Bank
             </div>
           </div>

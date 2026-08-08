@@ -125,8 +125,8 @@ export function CSVImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95">
+    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-background border border-border rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95">
         <input 
           type="file" 
           ref={fileInputRef} 
@@ -135,12 +135,12 @@ export function CSVImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
           className="hidden" 
         />
 
-        <div className="flex items-center justify-between p-6 border-b border-slate-800">
+        <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-emerald-400" />
-            <h2 className="text-xl font-bold text-slate-100">Automated CSV / Statement Import</h2>
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-bold text-foreground">Automated CSV / Statement Import</h2>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-100" type="button">
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground" type="button">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -148,12 +148,12 @@ export function CSVImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
         <div className="p-6 space-y-6">
           {!importedSuccess ? (
             <>
-              <p className="text-sm text-slate-400">
-                Upload your <strong className="text-slate-200">Upwork Transaction History CSV</strong>, <strong className="text-slate-200">Fiverr Earnings Statement</strong>, or <strong className="text-slate-200">Payoneer/Wise CSV</strong> to auto-import clients and income logs without manual entry.
+              <p className="text-sm text-muted-foreground">
+                Upload your <strong className="text-foreground">Upwork Transaction History CSV</strong>, <strong className="text-foreground">Fiverr Earnings Statement</strong>, or <strong className="text-foreground">Payoneer/Wise CSV</strong> to auto-import clients and income logs without manual entry.
               </p>
 
               {errorMessage && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2 animate-in fade-in">
+                <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs flex items-center gap-2 animate-in fade-in">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   <span>{errorMessage}</span>
                 </div>
@@ -164,27 +164,27 @@ export function CSVImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
                 onDragLeave={() => setDragActive(false)}
                 onDrop={handleDrop}
                 className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer ${
-                  dragActive ? "border-emerald-500 bg-emerald-500/10" : "border-slate-800 bg-slate-950/50 hover:border-slate-700"
+                  dragActive ? "border-primary bg-primary/10" : "border-border bg-muted/50 hover:border-primary/50"
                 }`}
                 onClick={() => fileInputRef.current?.click()}
               >
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mx-auto mb-3">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto mb-3">
                   {importing ? <Sparkles className="h-6 w-6 animate-spin" /> : <Upload className="h-6 w-6" />}
                 </div>
-                <p className="text-sm font-semibold text-slate-200">
+                <p className="text-sm font-semibold text-foreground">
                   {importing ? "Parsing CSV & Ingesting Transactions..." : "Click to select CSV or drag & drop file"}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">Only .csv files up to 5MB supported (Upwork, Fiverr, Wise, Payoneer)</p>
+                <p className="text-xs text-muted-foreground mt-1">Only .csv files up to 5MB supported (Upwork, Fiverr, Wise, Payoneer)</p>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border">
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={handleDownloadSampleCSV}
-                  className="border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800 text-xs"
+                  className="text-xs"
                 >
-                  <Download className="mr-1.5 h-3.5 w-3.5 text-emerald-400" />
+                  <Download className="mr-1.5 h-3.5 w-3.5 text-primary" />
                   Download Sample CSV
                 </Button>
                 <Button 
@@ -192,18 +192,18 @@ export function CSVImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
                   variant="outline" 
                   onClick={handleSampleCSVImport}
                   disabled={importing}
-                  className="border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800 text-xs"
+                  className="text-xs"
                 >
-                  <Sparkles className="mr-1.5 h-3.5 w-3.5 text-emerald-400" />
+                  <Sparkles className="mr-1.5 h-3.5 w-3.5 text-primary" />
                   Import Demo Statement
                 </Button>
               </div>
 
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/60 space-y-2 text-xs text-slate-400">
-                <div className="font-semibold text-slate-300 flex items-center gap-1.5">
-                  <FileSpreadsheet className="h-4 w-4 text-emerald-400" /> What happens automatically?
+              <div className="p-4 rounded-xl border border-border bg-muted/50 space-y-2 text-xs text-muted-foreground">
+                <div className="font-semibold text-foreground flex items-center gap-1.5">
+                  <FileSpreadsheet className="h-4 w-4 text-primary" /> What happens automatically?
                 </div>
-                <ul className="list-disc list-inside space-y-1 text-slate-400">
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                   <li>Creates new client profiles for missing clients</li>
                   <li>Auto-extracts payment currency (USD/EUR) & converts to PKR</li>
                   <li>Categorizes platform service fees vs. net withdrawal earnings</li>
@@ -212,16 +212,16 @@ export function CSVImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
             </>
           ) : (
             <div className="py-6 text-center space-y-4">
-              <div className="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto text-2xl">
+              <div className="w-14 h-14 rounded-full bg-primary/20 border border-primary/40 text-primary flex items-center justify-center mx-auto text-2xl">
                 <CheckCircle2 className="h-8 w-8" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-slate-100">Import Completed!</h3>
-                <p className="text-sm text-slate-400 mt-1">
-                  Successfully extracted <strong className="text-emerald-400">{parsedCount} real transactions</strong> and created client profiles in PostgreSQL.
+                <h3 className="text-xl font-bold text-foreground">Import Completed!</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Successfully extracted <strong className="text-primary">{parsedCount} real transactions</strong> and created client profiles in PostgreSQL.
                 </p>
               </div>
-              <Button onClick={onClose} className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold px-8">
+              <Button onClick={onClose} className="px-8">
                 Done & View Dashboard
               </Button>
             </div>
