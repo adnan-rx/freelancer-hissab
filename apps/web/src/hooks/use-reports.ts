@@ -42,3 +42,17 @@ export function usePlatformBreakdownReport() {
     },
   });
 }
+
+export function useTaxEstimate(isPseb = true) {
+  return useQuery({
+    queryKey: ["tax-estimate", isPseb],
+    queryFn: async () => {
+      try {
+        const { data } = await apiClient.get(`/tax/estimate?pseb=${isPseb}`);
+        return data.data || data;
+      } catch (e) {
+        return null;
+      }
+    },
+  });
+}

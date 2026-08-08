@@ -30,6 +30,14 @@ export class CreateIncomeDto {
   @IsOptional()
   category?: string;
 
+  @IsString()
+  @IsOptional()
+  sbpPurposeCode?: string;
+
+  @IsString()
+  @IsOptional()
+  prcReferenceNumber?: string;
+
   @Type(() => Date)
   @IsOptional()
   receivedAt?: Date;

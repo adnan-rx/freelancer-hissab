@@ -17,6 +17,8 @@ export const income = pgTable('income', {
   platform: clientPlatformEnum('platform').default('direct').notNull(),
   description: varchar('description', { length: 500 }).notNull(),
   category: varchar('category', { length: 100 }),
+  sbpPurposeCode: varchar('sbp_purpose_code', { length: 50 }).default('9100'),
+  prcReferenceNumber: varchar('prc_reference_number', { length: 100 }),
   receivedAt: timestamp('received_at').defaultNow().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => {

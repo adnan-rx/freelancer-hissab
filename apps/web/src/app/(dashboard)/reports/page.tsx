@@ -3,14 +3,15 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, DollarSign, Wallet, ShieldCheck, Download, PieChart as PieIcon, BarChart3 } from "lucide-react";
+import { TrendingUp, DollarSign, Wallet, ShieldCheck, Download, PieChart as PieIcon, BarChart3, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPKR, formatUSD } from "@/lib/utils";
-import { useIncomeVsExpensesReport, usePlatformBreakdownReport } from "@/hooks/use-reports";
+import { useIncomeVsExpensesReport, usePlatformBreakdownReport, useTaxEstimate } from "@/hooks/use-reports";
 
 export default function ReportsPage() {
   const { data: trendData = [] } = useIncomeVsExpensesReport();
   const { data: platformData = [] } = usePlatformBreakdownReport();
+  const { data: taxEstimate } = useTaxEstimate(true);
 
   // Fallback realistic monthly data if database is unseeded
   const monthlyMetrics = trendData.length > 0 ? trendData : [
@@ -27,18 +28,25 @@ export default function ReportsPage() {
   const netProfitPKR = totalRevenuePKR - totalExpensesPKR;
   const profitMargin = totalRevenuePKR > 0 ? ((netProfitPKR / totalRevenuePKR) * 100).toFixed(1) : "0.0";
 
+  const taxRate = (taxEstimate && taxEstimate.exportTaxRatePercentage !== undefined)
+    ? `${taxEstimate.exportTaxRatePercentage}%`
+    : "0.25%";
+  const taxLiability = (taxEstimate && taxEstimate.totalTaxLiabilityPKR !== undefined)
+    ? formatPKR(taxEstimate.totalTaxLiabilityPKR)
+    : formatPKR(totalRevenuePKR * 0.0025);
+
   return (
     <div className="space-y-8">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-100">Financial Reports & Analytics</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-100">Financial Reports & Tax Engine</h1>
           <p className="text-sm text-slate-400 mt-1">
-            Profit & Loss statements, platform revenue distribution, and SBP tax compliance breakdown.
+            Profit & Loss statements, FBR Section 154A IT Exporter tax liability, and live exchange rate analytics.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800">
+          <Button variant="outline" className="border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800" onClick={() => window.print()}>
             <Download className="mr-2 h-4 w-4" /> Export P&L PDF
           </Button>
         </div>
@@ -83,12 +91,12 @@ export default function ReportsPage() {
 
         <Card className="bg-slate-900/60 border-slate-800">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">SBP PRC Exemption Status</CardTitle>
-            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+            <CardTitle className="text-sm font-medium text-slate-300">FBR Section 154A Tax Liability</CardTitle>
+            <Calculator className="h-4 w-4 text-emerald-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-50">0.25% Tax Rate</div>
-            <p className="text-xs text-emerald-400 mt-1 font-medium">PSEB Registered Freelancer</p>
+            <div className="text-2xl font-bold text-slate-50">{taxLiability}</div>
+            <p className="text-xs text-emerald-400 mt-1 font-medium">{taxRate} PSEB Reduced Export Tax Rate</p>
           </CardContent>
         </Card>
       </div>

@@ -13,7 +13,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
     PassportModule,
     JwtModule.registerAsync({
       useFactory: () => ({
-        secret: process.env.JWT_SECRET || 'super-secret',
+        secret: process.env.JWT_SECRET || 'fh_dev_access_secret_key_2026_pk',
       }),
     }),
   ],
