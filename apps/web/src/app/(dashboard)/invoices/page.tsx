@@ -16,14 +16,7 @@ export default function InvoicesPage() {
   const [search, setSearch] = useState("");
   const { data: invoicesList = [], isLoading } = useInvoices(statusFilter === "all" ? undefined : statusFilter);
 
-  // Pre-seeded fallback data if database is unseeded
-  const defaultInvoices = [
-    { id: "FH-2026-0001", invoiceNumber: "FH-2026-0001", client: { name: "TechFlow Inc.", email: "billing@techflow.com" }, dueDate: "2026-08-15", total: 1000, currency: "USD", exchangeRate: 280.5, totalPKR: 280500, status: "paid" },
-    { id: "FH-2026-0002", invoiceNumber: "FH-2026-0002", client: { name: "Jane Smith", email: "jane@example.com" }, dueDate: "2026-08-25", total: 500, currency: "USD", exchangeRate: 280.0, totalPKR: 140000, status: "sent" },
-    { id: "FH-2026-0003", invoiceNumber: "FH-2026-0003", client: { name: "Global Soft LLC", email: "accounts@globalsoft.io" }, dueDate: "2026-08-01", total: 1200, currency: "USD", exchangeRate: 280.0, totalPKR: 336000, status: "overdue" },
-  ];
-
-  const rawList = invoicesList.length > 0 ? invoicesList : defaultInvoices;
+  const rawList = invoicesList;
   
   const displayInvoices = rawList.filter((inv: any) => {
     const matchesStatus = statusFilter === "all" || inv.status === statusFilter;

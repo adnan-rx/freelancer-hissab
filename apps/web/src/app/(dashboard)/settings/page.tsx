@@ -17,42 +17,61 @@ export default function SettingsPage() {
   const updateProfileMutation = useUpdateProfile();
 
   // Profile Form State
-  const [name, setName] = useState("Ahmed Ali");
-  const [businessName, setBusinessName] = useState("Ahmed Web Solutions");
-  const [email, setEmail] = useState("ahmed.dev@example.com");
-  const [phone, setPhone] = useState("+92 300 1234567");
+  const [name, setName] = useState(user?.name || "");
+  const [businessName, setBusinessName] = useState(user?.businessName || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [phone, setPhone] = useState("");
 
   // Bank & Tax State
-  const [bankName, setBankName] = useState("Meezan Bank Limited");
-  const [iban, setIban] = useState("PK36MEZN0001020304050607");
-  const [accountTitle, setAccountTitle] = useState("Ahmed Ali");
-  const [psebId, setPsebId] = useState("PSEB-2026-98765");
+  const [bankName, setBankName] = useState("");
+  const [iban, setIban] = useState("");
+  const [accountTitle, setAccountTitle] = useState(user?.name || "");
+  const [psebId, setPsebId] = useState("");
   const [isFiler, setIsFiler] = useState(true);
 
   // Invoice Prefs State
   const [invoicePrefix, setInvoicePrefix] = useState("FH-2026-");
   const [paymentTerms, setPaymentTerms] = useState("Due on Receipt");
-  const [invoiceNotes, setInvoiceNotes] = useState("Thank you for your business! Please wire foreign payments to Meezan Bank IBAN above.");
+  const [invoiceNotes, setInvoiceNotes] = useState("");
 
   // Save Banner
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   useEffect(() => {
-    if (profile) {
-      if (profile.name) setName(profile.name);
-      if (profile.businessName) setBusinessName(profile.businessName);
-      if (profile.email) setEmail(profile.email);
-      if (profile.phone) setPhone(profile.phone);
-      if (profile.bankName) setBankName(profile.bankName);
-      if (profile.accountTitle) setAccountTitle(profile.accountTitle);
-      if (profile.iban) setIban(profile.iban);
-      if (profile.psebId) setPsebId(profile.psebId);
-      if (profile.isFiler !== undefined) setIsFiler(profile.isFiler);
-      if (profile.invoicePrefix) setInvoicePrefix(profile.invoicePrefix);
-      if (profile.paymentTerms) setPaymentTerms(profile.paymentTerms);
-      if (profile.invoiceNotes) setInvoiceNotes(profile.invoiceNotes);
+    // Safely unwrap double/single nested data if present
+    const pObj = profile?.data?.id ? profile.data : (profile?.id ? profile : (profile?.data || profile));
+
+    if (pObj) {
+      const pName = pObj.name;
+      const pBusinessName = pObj.businessName ?? pObj.business_name;
+      const pEmail = pObj.email;
+      const pPhone = pObj.phone;
+      const pBankName = pObj.bankName ?? pObj.bank_name;
+      const pAccountTitle = pObj.accountTitle ?? pObj.account_title ?? pObj.name;
+      const pIban = pObj.iban;
+      const pPsebId = pObj.psebId ?? pObj.pseb_id;
+      const pIsFiler = pObj.isFiler ?? pObj.is_filer;
+      const pInvoicePrefix = pObj.invoicePrefix ?? pObj.invoice_prefix;
+      const pPaymentTerms = pObj.paymentTerms ?? pObj.payment_terms;
+      const pInvoiceNotes = pObj.invoiceNotes ?? pObj.invoice_notes;
+
+      if (pName) setName(pName);
+      if (pBusinessName !== undefined && pBusinessName !== null) setBusinessName(pBusinessName);
+      if (pEmail) setEmail(pEmail);
+      if (pPhone !== undefined && pPhone !== null) setPhone(pPhone);
+      if (pBankName !== undefined && pBankName !== null) setBankName(pBankName);
+      if (pAccountTitle !== undefined && pAccountTitle !== null) setAccountTitle(pAccountTitle);
+      if (pIban !== undefined && pIban !== null) setIban(pIban);
+      if (pPsebId !== undefined && pPsebId !== null) setPsebId(pPsebId);
+      if (pIsFiler !== undefined && pIsFiler !== null) setIsFiler(pIsFiler);
+      if (pInvoicePrefix !== undefined && pInvoicePrefix !== null) setInvoicePrefix(pInvoicePrefix);
+      if (pPaymentTerms !== undefined && pPaymentTerms !== null) setPaymentTerms(pPaymentTerms);
+      if (pInvoiceNotes !== undefined && pInvoiceNotes !== null) setInvoiceNotes(pInvoiceNotes);
     } else if (user) {
-      if (user.name) setName(user.name);
+      if (user.name) {
+        setName(user.name);
+        setAccountTitle(user.name);
+      }
       if (user.businessName) setBusinessName(user.businessName);
       if (user.email) setEmail(user.email);
     }

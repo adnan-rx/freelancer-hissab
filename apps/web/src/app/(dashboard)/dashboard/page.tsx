@@ -8,10 +8,10 @@ import { useDashboardSummary } from '@/hooks/use-dashboard';
 export default function DashboardPage() {
   const { data: summary, isLoading } = useDashboardSummary();
 
-  const totalIncome = summary?.totalIncome ?? 280500;
-  const totalExpenses = summary?.totalExpenses ?? 4500;
+  const totalIncome = summary?.totalIncome ?? 0;
+  const totalExpenses = summary?.totalExpenses ?? 0;
   const netProfit = summary?.netProfit ?? (totalIncome - totalExpenses);
-  const pendingInvoices = summary?.pendingInvoices ?? 1;
+  const pendingInvoices = summary?.pendingInvoices ?? 0;
 
   return (
     <div className="space-y-6">

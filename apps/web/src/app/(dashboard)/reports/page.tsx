@@ -6,27 +6,50 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingUp, DollarSign, Wallet, ShieldCheck, Download, PieChart as PieIcon, BarChart3, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPKR, formatUSD } from "@/lib/utils";
-import { useIncomeVsExpensesReport, usePlatformBreakdownReport, useTaxEstimate } from "@/hooks/use-reports";
+import { useIncomeVsExpensesReport, useTaxEstimate } from "@/hooks/use-reports";
+import { useIncome } from "@/hooks/use-income";
+import { useExpenses } from "@/hooks/use-expenses";
 
 export default function ReportsPage() {
   const { data: trendData = [] } = useIncomeVsExpensesReport();
-  const { data: platformData = [] } = usePlatformBreakdownReport();
+  const { data: incomeList = [] } = useIncome();
+  const { data: expensesList = [] } = useExpenses();
   const { data: taxEstimate } = useTaxEstimate(true);
 
-  // Fallback realistic monthly data if database is unseeded
-  const monthlyMetrics = trendData.length > 0 ? trendData : [
-    { month: "Jan", income: 240000, expenses: 15000, profit: 225000 },
-    { month: "Feb", income: 280500, expenses: 4500, profit: 276000 },
-    { month: "Mar", income: 320000, expenses: 18000, profit: 302000 },
-    { month: "Apr", income: 290000, expenses: 12000, profit: 278000 },
-    { month: "May", income: 350000, expenses: 22000, profit: 328000 },
-    { month: "Jun", income: 410000, expenses: 25000, profit: 385000 },
-  ];
-
-  const totalRevenuePKR = monthlyMetrics.reduce((sum: number, m: any) => sum + (m.income || 0), 0);
-  const totalExpensesPKR = monthlyMetrics.reduce((sum: number, m: any) => sum + (m.expenses || 0), 0);
+  // 100% Dynamic Financial Totals from Database
+  const totalRevenuePKR = incomeList.reduce((sum: number, inc: any) => sum + Number(inc.amountPKR || inc.amount * 280.50 || 0), 0);
+  const totalExpensesPKR = expensesList.reduce((sum: number, exp: any) => sum + Number(exp.amount || 0), 0);
   const netProfitPKR = totalRevenuePKR - totalExpensesPKR;
   const profitMargin = totalRevenuePKR > 0 ? ((netProfitPKR / totalRevenuePKR) * 100).toFixed(1) : "0.0";
+
+  // Dynamic Platform Distribution Calculation
+  const platformTotals: Record<string, { label: string; amount: number; color: string }> = {};
+  let totalIncomeSum = 0;
+
+  incomeList.forEach((inc: any) => {
+    const platKey = (inc.platform || "upwork").toLowerCase();
+    const amt = Number(inc.amountPKR || inc.amount * 280.50 || 0);
+    totalIncomeSum += amt;
+
+    const metaMap: Record<string, { label: string; color: string }> = {
+      upwork: { label: "Upwork Escrow", color: "bg-emerald-500 text-emerald-400" },
+      fiverr: { label: "Fiverr Orders", color: "bg-green-500 text-green-400" },
+      direct: { label: "Direct Bank Transfer / Wise", color: "bg-teal-400 text-teal-400" },
+      freelancer: { label: "Freelancer.com", color: "bg-blue-500 text-blue-400" },
+      other: { label: "Other Local PKR Client", color: "bg-slate-400 text-slate-300" },
+    };
+
+    const meta = metaMap[platKey] || { label: platKey.toUpperCase(), color: "bg-emerald-500 text-emerald-400" };
+    if (!platformTotals[platKey]) {
+      platformTotals[platKey] = { label: meta.label, amount: 0, color: meta.color };
+    }
+    platformTotals[platKey].amount += amt;
+  });
+
+  const platformDistribution = Object.values(platformTotals).map((p) => ({
+    ...p,
+    percentage: totalIncomeSum > 0 ? Math.round((p.amount / totalIncomeSum) * 100) : 0,
+  }));
 
   const taxRate = (taxEstimate && taxEstimate.exportTaxRatePercentage !== undefined)
     ? `${taxEstimate.exportTaxRatePercentage}%`
@@ -112,79 +135,73 @@ export default function ReportsPage() {
             <CardDescription className="text-slate-400">Monthly gross income vs operating expenses in PKR.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4 pt-2">
-              {monthlyMetrics.map((item: any) => {
-                const maxVal = Math.max(...monthlyMetrics.map((m: any) => m.income || 1));
-                const incPct = Math.round(((item.income || 0) / maxVal) * 100);
-                const expPct = Math.round(((item.expenses || 0) / maxVal) * 100);
+            {trendData.length === 0 ? (
+              <div className="py-12 text-center text-slate-500 text-sm">
+                No monthly trend data recorded yet. Log income and expenses to populate monthly analytics.
+              </div>
+            ) : (
+              <div className="space-y-4 pt-2">
+                {trendData.map((item: any) => {
+                  const maxVal = Math.max(...trendData.map((m: any) => m.income || 1));
+                  const incPct = Math.round(((item.income || 0) / maxVal) * 100);
+                  const expPct = Math.round(((item.expenses || 0) / maxVal) * 100);
 
-                return (
-                  <div key={item.month} className="space-y-1.5">
-                    <div className="flex justify-between text-xs font-medium">
-                      <span className="text-slate-300 w-12">{item.month}</span>
-                      <div className="space-x-4">
-                        <span className="text-emerald-400">Income: {formatPKR(item.income)}</span>
-                        <span className="text-rose-400">Expense: {formatPKR(item.expenses)}</span>
+                  return (
+                    <div key={item.month} className="space-y-1.5">
+                      <div className="flex justify-between text-xs font-medium">
+                        <span className="text-slate-300 w-12">{item.month}</span>
+                        <div className="space-x-4">
+                          <span className="text-emerald-400">Income: {formatPKR(item.income)}</span>
+                          <span className="text-rose-400">Expense: {formatPKR(item.expenses)}</span>
+                        </div>
+                      </div>
+                      <div className="w-full bg-slate-800/80 rounded-full h-3 flex overflow-hidden p-0.5 gap-1">
+                        <div className="bg-emerald-500 rounded-full h-full transition-all duration-500" style={{ width: `${incPct}%` }}></div>
+                        <div className="bg-rose-500 rounded-full h-full transition-all duration-500" style={{ width: `${expPct}%` }}></div>
                       </div>
                     </div>
-                    <div className="w-full bg-slate-800/80 rounded-full h-3 flex overflow-hidden p-0.5 gap-1">
-                      <div className="bg-emerald-500 rounded-full h-full transition-all duration-500" style={{ width: `${incPct}%` }}></div>
-                      <div className="bg-rose-500 rounded-full h-full transition-all duration-500" style={{ width: `${expPct}%` }}></div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Platform Share */}
+        {/* Dynamic Platform Share */}
         <Card className="bg-slate-900/60 border-slate-800">
           <CardHeader>
             <CardTitle className="text-lg font-bold flex items-center gap-2 text-slate-100">
               <PieIcon className="h-5 w-5 text-emerald-400" /> Platform Distribution
             </CardTitle>
-            <CardDescription className="text-slate-400">Earnings share by freelancing portal.</CardDescription>
+            <CardDescription className="text-slate-400">Earnings share calculated from database records.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-200 font-medium">Upwork Escrow</span>
-                  <span className="text-emerald-400 font-bold">65%</span>
-                </div>
-                <div className="w-full bg-slate-800 rounded-full h-2">
-                  <div className="bg-emerald-500 h-2 rounded-full" style={{ width: "65%" }}></div>
-                </div>
+            {platformDistribution.length === 0 ? (
+              <div className="py-8 text-center text-slate-500 text-xs">
+                No platform income logged in database yet.
               </div>
-
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-200 font-medium">Direct Bank Transfer</span>
-                  <span className="text-teal-400 font-bold">25%</span>
-                </div>
-                <div className="w-full bg-slate-800 rounded-full h-2">
-                  <div className="bg-teal-400 h-2 rounded-full" style={{ width: "25%" }}></div>
-                </div>
+            ) : (
+              <div className="space-y-4">
+                {platformDistribution.map((plat) => (
+                  <div key={plat.label}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-slate-200 font-medium">{plat.label}</span>
+                      <span className="font-bold font-mono text-emerald-400">{plat.percentage}%</span>
+                    </div>
+                    <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                      <div className={`h-2 rounded-full ${plat.color.split(' ')[0]}`} style={{ width: `${plat.percentage}%` }}></div>
+                    </div>
+                  </div>
+                ))}
               </div>
-
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-200 font-medium">Fiverr Orders</span>
-                  <span className="text-emerald-300 font-bold">10%</span>
-                </div>
-                <div className="w-full bg-slate-800 rounded-full h-2">
-                  <div className="bg-emerald-300 h-2 rounded-full" style={{ width: "10%" }}></div>
-                </div>
-              </div>
-            </div>
+            )}
 
             <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/60 text-xs text-slate-400 space-y-2 mt-6">
               <div className="font-semibold text-slate-200 flex items-center gap-1.5">
                 <ShieldCheck className="h-4 w-4 text-emerald-400" /> PRC Exemption Advice
               </div>
               <p>
-                Ensure foreign remittances received via Meezan Bank or JazzCash carry proper SBP purpose codes (e.g. 9100 / Software Export Services).
+                Ensure foreign remittances received via Meezan Bank carry proper SBP purpose codes (e.g. 9100 / Software Export Services).
               </p>
             </div>
           </CardContent>
@@ -195,43 +212,47 @@ export default function ReportsPage() {
       <Card className="bg-slate-900/60 border-slate-800">
         <CardHeader>
           <CardTitle className="text-lg font-bold text-slate-100">Profit & Loss Statement (P&L Breakdown)</CardTitle>
-          <CardDescription className="text-slate-400">Detailed financial summary for tax filing and accounting.</CardDescription>
+          <CardDescription className="text-slate-400">Real-time financial statement generated from database logs.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader className="bg-slate-900/80 border-slate-800">
               <TableRow className="border-slate-800">
-                <TableHead className="text-slate-300">Category</TableHead>
+                <TableHead className="text-slate-300">Transaction Description</TableHead>
                 <TableHead className="text-slate-300">Type</TableHead>
                 <TableHead className="text-slate-300 text-right">Amount (PKR)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow className="border-slate-800">
-                <TableCell className="font-semibold text-slate-100">Upwork Foreign Inward Remittance</TableCell>
-                <TableCell><Badge variant="default" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Income</Badge></TableCell>
-                <TableCell className="text-right font-mono text-emerald-400 font-bold">{formatPKR(280500)}</TableCell>
-              </TableRow>
-              <TableRow className="border-slate-800">
-                <TableCell className="font-semibold text-slate-100">Fiverr Direct Transfer</TableCell>
-                <TableCell><Badge variant="default" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Income</Badge></TableCell>
-                <TableCell className="text-right font-mono text-emerald-400 font-bold">{formatPKR(140000)}</TableCell>
-              </TableRow>
-              <TableRow className="border-slate-800">
-                <TableCell className="font-semibold text-slate-100">Nayatel Fiber Broadband Bill</TableCell>
-                <TableCell><Badge variant="secondary" className="bg-rose-500/20 text-rose-400 border-rose-500/30">Expense</Badge></TableCell>
-                <TableCell className="text-right font-mono text-rose-400 font-bold">- {formatPKR(4500)}</TableCell>
-              </TableRow>
-              <TableRow className="border-slate-800">
-                <TableCell className="font-semibold text-slate-100">Adobe Creative Cloud Software Subscription</TableCell>
-                <TableCell><Badge variant="secondary" className="bg-rose-500/20 text-rose-400 border-rose-500/30">Expense</Badge></TableCell>
-                <TableCell className="text-right font-mono text-rose-400 font-bold">- {formatPKR(15000)}</TableCell>
-              </TableRow>
-              <TableRow className="border-slate-800 bg-slate-900 font-bold">
-                <TableCell className="text-slate-100 text-base">Net Freelance Profit</TableCell>
-                <TableCell><Badge className="bg-emerald-500 text-slate-950">Net Operating Revenue</Badge></TableCell>
-                <TableCell className="text-right font-mono text-emerald-400 text-lg">{formatPKR(netProfitPKR)}</TableCell>
-              </TableRow>
+              {incomeList.length === 0 && expensesList.length === 0 ? (
+                <TableRow className="border-slate-800">
+                  <TableCell colSpan={3} className="text-center py-8 text-slate-400">
+                    No P&L transactions recorded in database yet.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                <>
+                  {incomeList.map((inc: any) => (
+                    <TableRow key={`inc-${inc.id}`} className="border-slate-800">
+                      <TableCell className="font-semibold text-slate-100">{inc.description || `${inc.platform || 'Foreign'} Remittance`}</TableCell>
+                      <TableCell><Badge variant="default" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Income</Badge></TableCell>
+                      <TableCell className="text-right font-mono text-emerald-400 font-bold">{formatPKR(inc.amountPKR || inc.amount * 280.50)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {expensesList.map((exp: any) => (
+                    <TableRow key={`exp-${exp.id}`} className="border-slate-800">
+                      <TableCell className="font-semibold text-slate-100">{exp.description || exp.vendor || "Business Expense"}</TableCell>
+                      <TableCell><Badge variant="secondary" className="bg-rose-500/20 text-rose-400 border-rose-500/30">Expense</Badge></TableCell>
+                      <TableCell className="text-right font-mono text-rose-400 font-bold">- {formatPKR(exp.amount || 0)}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="border-slate-800 bg-slate-900 font-bold">
+                    <TableCell className="text-slate-100 text-base">Net Freelance Profit</TableCell>
+                    <TableCell><Badge className="bg-emerald-500 text-slate-950">Net Operating Revenue</Badge></TableCell>
+                    <TableCell className="text-right font-mono text-emerald-400 text-lg">{formatPKR(netProfitPKR)}</TableCell>
+                  </TableRow>
+                </>
+              )}
             </TableBody>
           </Table>
         </CardContent>

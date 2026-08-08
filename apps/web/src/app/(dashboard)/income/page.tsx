@@ -4,21 +4,48 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Sparkles } from 'lucide-react';
+import { Plus, Sparkles, Trash2, DollarSign } from 'lucide-react';
 import { formatPKR, formatUSD } from '@/lib/utils';
-import { useIncome } from '@/hooks/use-income';
+import { useIncome, useDeleteIncome } from '@/hooks/use-income';
 import { CSVImportModal } from '@/components/features/csv-import-modal';
 import { AddIncomeModal } from '@/components/features/add-income-modal';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
+import { Toast } from '@/components/ui/toast';
 
 export default function IncomePage() {
   const { data: incomeList = [], isLoading } = useIncome();
+  const deleteIncomeMutation = useDeleteIncome();
+
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
 
-  const displayIncome = incomeList.length > 0 ? incomeList : [
-    { id: "1", receivedAt: "2026-08-07", clientName: "TechFlow Inc.", platform: "upwork", amount: 1000, currency: "USD", amountPKR: 280500, description: "Upwork Withdrawal to Meezan Bank" },
-    { id: "2", receivedAt: "2026-08-04", clientName: "Jane Smith", platform: "fiverr", amount: 500, currency: "USD", amountPKR: 140000, description: "Fiverr Direct Clearing" },
-  ];
+  // Modal & Toast States
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; description: string } | null>(null);
+  const [toast, setToast] = useState<{ type: 'error' | 'success'; title?: string; message: string } | null>(null);
+
+  const displayIncome = incomeList;
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteIncomeMutation.mutateAsync(deleteTarget.id);
+      setToast({
+        type: "success",
+        title: "Income Entry Deleted",
+        message: "Income log has been removed from database.",
+      });
+      setDeleteTarget(null);
+    } catch (err: any) {
+      console.warn("Delete income error:", err);
+      const apiErr = err?.response?.data?.error;
+      setToast({
+        type: "error",
+        title: "Delete Failed",
+        message: apiErr?.message || "Could not delete income log.",
+      });
+      setDeleteTarget(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -53,17 +80,28 @@ export default function IncomePage() {
               <TableHead className="text-slate-300">Platform</TableHead>
               <TableHead className="text-slate-300">Original Amount</TableHead>
               <TableHead className="text-slate-300">Converted Amount (PKR)</TableHead>
+              <TableHead className="text-right text-slate-300">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-slate-400">Loading income logs...</TableCell>
+                <TableCell colSpan={6} className="text-center py-8 text-slate-400">Loading income logs...</TableCell>
+              </TableRow>
+            ) : displayIncome.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-12 text-slate-400">
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    <DollarSign className="h-8 w-8 text-slate-600" />
+                    <p className="font-semibold text-slate-300">No income entries recorded yet</p>
+                    <p className="text-xs text-slate-500">Log manual foreign income or upload bank statements to start tracking.</p>
+                  </div>
+                </TableCell>
               </TableRow>
             ) : (
               displayIncome.map((inc: any) => (
-                <TableRow key={inc.id} className="border-slate-800 hover:bg-slate-800/40">
-                  <TableCell className="text-slate-400 text-xs font-mono">{inc.receivedAt ? String(inc.receivedAt).substring(0, 10) : "2026-08-07"}</TableCell>
+                <TableRow key={inc.id} className="border-slate-800 hover:bg-slate-800/40 transition-colors">
+                  <TableCell className="text-slate-400 text-xs font-mono">{inc.receivedAt ? String(inc.receivedAt).substring(0, 10) : "N/A"}</TableCell>
                   <TableCell className="font-medium text-slate-100">{inc.description || inc.clientName || "Direct Transfer"}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="capitalize border-emerald-500/30 text-emerald-400 bg-emerald-500/10">
@@ -74,6 +112,17 @@ export default function IncomePage() {
                     {inc.currency === "USD" ? formatUSD(inc.amount) : `${inc.currency || 'USD'} ${inc.amount}`}
                   </TableCell>
                   <TableCell className="font-bold text-emerald-400 font-mono">{formatPKR(inc.amountPKR || 0)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button 
+                      onClick={() => setDeleteTarget({ id: inc.id, description: inc.description || "Income Entry" })} 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8 text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors" 
+                      title="Delete Income Entry"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -83,6 +132,25 @@ export default function IncomePage() {
 
       <CSVImportModal isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} />
       <AddIncomeModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} />
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Income Record?"
+        description={deleteTarget ? `Are you sure you want to delete "${deleteTarget.description}"? This action will remove the record from your income logs.` : ""}
+        confirmText="Delete Income"
+        isLoading={deleteIncomeMutation.isPending}
+      />
+
+      {toast && (
+        <Toast 
+          type={toast.type} 
+          title={toast.title} 
+          message={toast.message} 
+          onClose={() => setToast(null)} 
+        />
+      )}
     </div>
   );
 }

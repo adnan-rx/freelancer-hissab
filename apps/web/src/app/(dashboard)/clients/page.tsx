@@ -11,10 +11,16 @@ import Link from 'next/link';
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '@/hooks/use-clients';
 import { formatPKR, formatUSD } from '@/lib/utils';
 import { CSVImportModal } from '@/components/features/csv-import-modal';
+import { Toast } from '@/components/ui/toast';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 
 export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [platformFilter, setPlatformFilter] = useState("all");
+
+  // Toast & Confirm Modal States
+  const [toast, setToast] = useState<{ type: 'error' | 'success'; title?: string; message: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   // Modal States
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -35,14 +41,7 @@ export default function ClientsPage() {
   const updateClientMutation = useUpdateClient();
   const deleteClientMutation = useDeleteClient();
 
-  // Fallback initial dataset if database is unseeded
-  const defaultClients = [
-    { id: "c1", name: "TechFlow Inc.", company: "TechFlow Labs", platform: "upwork", email: "billing@techflow.com", phone: "+1 415 555 0199", currency: "USD", totalEarnings: 5000, status: "active" },
-    { id: "c2", name: "Jane Smith", company: "Smith Studio", platform: "fiverr", email: "jane@smithstudio.io", phone: "+44 20 7946 0912", currency: "USD", totalEarnings: 1200, status: "active" },
-    { id: "c3", name: "Global Soft LLC", company: "Global Soft", platform: "direct", email: "accounts@globalsoft.com", phone: "+971 4 321 4567", currency: "USD", totalEarnings: 8400, status: "active" },
-  ];
-
-  const rawList = clientsList.length > 0 ? clientsList : defaultClients;
+  const rawList = clientsList;
 
   const displayClients = rawList.filter((client: any) => {
     const matchesPlatform = platformFilter === "all" || client.platform === platformFilter;
@@ -54,7 +53,7 @@ export default function ClientsPage() {
   });
 
   const totalClientsCount = rawList.length;
-  const totalLifetimeUSD = rawList.reduce((sum: number, c: any) => sum + (c.totalEarnings || c.totalIncome || 1000), 0);
+  const totalLifetimeUSD = rawList.reduce((sum: number, c: any) => sum + (c.totalEarnings || c.totalIncome || 0), 0);
   const totalLifetimePKR = totalLifetimeUSD * 280.50;
 
   const handleOpenAdd = () => {
@@ -83,7 +82,16 @@ export default function ClientsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { name, company, email, phone, platform, currency, notes };
+    setToast(null);
+    const payload = { 
+      name, 
+      company: company || undefined, 
+      email: email || undefined, 
+      phone: phone || undefined, 
+      platform, 
+      currency, 
+      notes: notes || undefined 
+    };
 
     try {
       if (editingClient) {
@@ -92,19 +100,35 @@ export default function ClientsPage() {
         await createClientMutation.mutateAsync(payload);
       }
       setIsAddOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.warn("Client save error:", err);
-      setIsAddOpen(false);
+      const apiErr = err?.response?.data?.error;
+      const detailMsg = Array.isArray(apiErr?.details) 
+        ? apiErr.details.join(", ") 
+        : (apiErr?.message || err?.message || "Failed to save client profile.");
+      
+      setToast({
+        type: "error",
+        title: `Client Save Failed (${apiErr?.code || 400})`,
+        message: detailMsg,
+      });
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this client?")) {
-      try {
-        await deleteClientMutation.mutateAsync(id);
-      } catch (err) {
-        console.warn("Delete client error:", err);
-      }
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteClientMutation.mutateAsync(deleteTarget.id);
+      setDeleteTarget(null);
+    } catch (err: any) {
+      console.warn("Delete client error:", err);
+      const apiErr = err?.response?.data?.error;
+      setToast({
+        type: "error",
+        title: "Delete Client Failed",
+        message: apiErr?.message || "Could not delete client from database.",
+      });
+      setDeleteTarget(null);
     }
   };
 
@@ -270,7 +294,7 @@ export default function ClientsPage() {
                         <Button onClick={() => handleOpenEdit(client)} size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-slate-100 hover:bg-slate-800" title="Edit Client">
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button onClick={() => handleDelete(client.id)} size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-rose-400 hover:bg-slate-800" title="Delete Client">
+                        <Button onClick={() => setDeleteTarget({ id: client.id, name: client.name })} size="icon" variant="ghost" className="h-8 w-8 text-slate-500 hover:text-rose-400 hover:bg-slate-800" title="Delete Client">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -399,6 +423,25 @@ export default function ClientsPage() {
       )}
 
       <CSVImportModal isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} />
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Client Profile?"
+        description={deleteTarget ? `Are you sure you want to delete "${deleteTarget.name}"? This action cannot be undone and will remove client records.` : ""}
+        confirmText="Delete Client"
+        isLoading={deleteClientMutation.isPending}
+      />
+
+      {toast && (
+        <Toast 
+          type={toast.type} 
+          title={toast.title} 
+          message={toast.message} 
+          onClose={() => setToast(null)} 
+        />
+      )}
     </div>
   );
 }

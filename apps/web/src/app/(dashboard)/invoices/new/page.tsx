@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,11 +10,17 @@ import Link from 'next/link';
 import { formatPKR, formatUSD } from '@/lib/utils';
 import { useClients } from '@/hooks/use-clients';
 import { useCreateInvoice } from '@/hooks/use-invoices';
+import { useExchangeRate } from '@/hooks/use-exchange-rate';
+
+import { Toast } from '@/components/ui/toast';
 
 export default function NewInvoicePage() {
   const router = useRouter();
   const { data: clients = [] } = useClients();
   const createInvoiceMutation = useCreateInvoice();
+
+  // Toast Notification State
+  const [toast, setToast] = useState<{ type: 'error' | 'success'; title?: string; message: string } | null>(null);
 
   // Invoice Form State
   const [clientId, setClientId] = useState('');
@@ -24,6 +30,16 @@ export default function NewInvoicePage() {
   const [dueDate, setDueDate] = useState(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10));
   const [currency, setCurrency] = useState('USD');
   const [exchangeRate, setExchangeRate] = useState(280.50);
+
+  // Live Exchange Rate
+  const { data: liveRate, isLoading: isRateLoading } = useExchangeRate(currency);
+
+  useEffect(() => {
+    if (liveRate && liveRate > 0) {
+      setExchangeRate(liveRate);
+    }
+  }, [liveRate, currency]);
+
   const [taxRate, setTaxRate] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [notes, setNotes] = useState('Payment instructions: Wire foreign remittance directly to Meezan Bank IBAN: PK36MEZN0001020304050607 under SBP Code 9100.');
@@ -56,9 +72,10 @@ export default function NewInvoicePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setToast(null);
     const payload = {
-      clientId: clientId || "client_dev_123",
-      clientName,
+      clientId: clientId || undefined,
+      clientName: clientName || "Upwork Client",
       clientEmail,
       invoiceNumber,
       dueDate,
@@ -77,9 +94,18 @@ export default function NewInvoicePage() {
     try {
       await createInvoiceMutation.mutateAsync(payload);
       router.push(`/invoices`);
-    } catch (err) {
-      console.warn("API create invoice failed, navigating back to invoices:", err);
-      router.push(`/invoices`);
+    } catch (err: any) {
+      console.warn("API create invoice failed:", err);
+      const apiErr = err?.response?.data?.error;
+      const detailMsg = Array.isArray(apiErr?.details) 
+        ? apiErr.details.join(", ") 
+        : (apiErr?.message || err?.message || "Failed to create invoice.");
+      
+      setToast({
+        type: "error",
+        title: `Validation Error (${apiErr?.code || 400})`,
+        message: detailMsg,
+      });
     }
   };
 
@@ -196,12 +222,18 @@ export default function NewInvoicePage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Exchange Rate (PKR / {currency})</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-slate-300">Exchange Rate (PKR / {currency})</label>
+                  <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+                    {isRateLoading ? "Fetching live rate..." : "Live Market Rate"}
+                  </span>
+                </div>
                 <Input 
                   type="number" 
                   step="0.01" 
-                  value={exchangeRate} 
-                  onChange={(e) => setExchangeRate(parseFloat(e.target.value) || 0)} 
+                  value={exchangeRate || ""} 
+                  placeholder="e.g. 280.50"
+                  onChange={(e) => setExchangeRate(e.target.value === "" ? 0 : parseFloat(e.target.value))} 
                   className="bg-slate-900 border-slate-800 text-slate-100 font-mono text-emerald-400 font-bold"
                 />
               </div>
@@ -337,6 +369,15 @@ export default function NewInvoicePage() {
           </Button>
         </div>
       </form>
+
+      {toast && (
+        <Toast 
+          type={toast.type} 
+          title={toast.title} 
+          message={toast.message} 
+          onClose={() => setToast(null)} 
+        />
+      )}
     </div>
   );
 }

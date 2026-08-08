@@ -54,6 +54,33 @@ export class InvoicesService {
   }
 
   async create(userId: string, dto: CreateInvoiceDto) {
+    let targetClientId = dto.clientId;
+
+    if (!targetClientId || typeof targetClientId !== 'string' || targetClientId.length !== 36) {
+      const clientName = dto.clientName || 'Direct Client';
+      const existingClient = await this.db
+        .select()
+        .from(clients)
+        .where(and(eq(clients.userId, userId), eq(clients.name, clientName)))
+        .limit(1);
+
+      if (existingClient.length > 0) {
+        targetClientId = existingClient[0].id;
+      } else {
+        const [newClient] = await this.db
+          .insert(clients)
+          .values({
+            userId,
+            name: clientName,
+            email: dto.clientEmail || null,
+            platform: 'direct',
+            currency: dto.currency || 'USD',
+          })
+          .returning();
+        targetClientId = newClient.id;
+      }
+    }
+
     let invoiceNumber = dto.invoiceNumber;
     if (!invoiceNumber) {
       const countResult = await this.db.select({ id: invoices.id }).from(invoices).where(eq(invoices.userId, userId));
@@ -72,7 +99,7 @@ export class InvoicesService {
 
     const [invoice] = await this.db.insert(invoices).values({
       userId,
-      clientId: dto.clientId,
+      clientId: targetClientId,
       invoiceNumber,
       dueDate: dto.dueDate ? (typeof dto.dueDate === 'string' ? dto.dueDate : (dto.dueDate as any).toISOString().split('T')[0]) : null,
       currency: dto.currency,
@@ -84,7 +111,7 @@ export class InvoicesService {
       total: total.toString(),
       totalPKR: totalPKR.toString(),
       notes: dto.notes,
-      status: 'draft',
+      status: 'sent',
     }).returning();
 
     if (dto.items && dto.items.length > 0) {

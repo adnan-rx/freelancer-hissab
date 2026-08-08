@@ -13,10 +13,7 @@ export default function ExpensesPage() {
   const { data: expensesList = [], isLoading } = useExpenses();
   const [isAddOpen, setIsAddOpen] = useState(false);
 
-  const displayExpenses = expensesList.length > 0 ? expensesList : [
-    { id: "1", expenseDate: "2026-08-10", description: "Nayatel Monthly Internet Bill", category: "internet", amount: 4500, vendor: "Nayatel" },
-    { id: "2", expenseDate: "2026-08-04", description: "Adobe Creative Cloud Subscription", category: "software", amount: 15000, vendor: "Adobe" },
-  ];
+  const displayExpenses = expensesList;
 
   return (
     <div className="space-y-6">

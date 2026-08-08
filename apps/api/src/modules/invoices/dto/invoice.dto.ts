@@ -1,6 +1,5 @@
 import { IsArray, IsEnum, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { invoiceStatusEnum } from '../../../database/schema/enums';
 
 export class CreateInvoiceItemDto {
   @IsString()
@@ -15,7 +14,16 @@ export class CreateInvoiceItemDto {
 
 export class CreateInvoiceDto {
   @IsString()
-  clientId!: string;
+  @IsOptional()
+  clientId?: string;
+
+  @IsString()
+  @IsOptional()
+  clientName?: string;
+
+  @IsString()
+  @IsOptional()
+  clientEmail?: string;
 
   @IsString()
   @IsOptional()
@@ -39,6 +47,22 @@ export class CreateInvoiceDto {
   @IsNumber()
   @IsOptional()
   discountAmount?: number;
+
+  @IsNumber()
+  @IsOptional()
+  subtotal?: number;
+
+  @IsNumber()
+  @IsOptional()
+  total?: number;
+
+  @IsNumber()
+  @IsOptional()
+  totalPKR?: number;
+
+  @IsString()
+  @IsOptional()
+  status?: string;
 
   @IsString()
   @IsOptional()

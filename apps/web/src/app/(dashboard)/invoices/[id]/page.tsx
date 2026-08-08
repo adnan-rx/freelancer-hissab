@@ -20,29 +20,36 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
   const [paidStatus, setPaidStatus] = useState<string | null>(null);
 
-  // Fallback invoice record for preview/demo
-  const invoice = invoiceData || {
-    id: id || "FH-2026-0001",
-    invoiceNumber: id && id !== "new" ? id : "FH-2026-0001",
-    clientName: "TechFlow Inc.",
-    clientEmail: "billing@techflow.com",
-    clientPlatform: "Upwork Escrow",
-    dueDate: "2026-08-15",
-    createdAt: "2026-08-01",
-    currency: "USD",
-    exchangeRate: 280.50,
-    subtotal: 1000,
-    taxRate: 0,
-    taxAmount: 0,
-    discountAmount: 0,
-    total: 1000,
-    totalPKR: 280500,
-    status: paidStatus || "paid",
-    notes: "Wire foreign remittance directly to Meezan Bank IBAN under SBP Purpose Code 9100 for tax exemption.",
-    items: [
-      { description: "Full Stack Web Application Development & API Integration", quantity: 1, rate: 800, amount: 800 },
-      { description: "PostgreSQL Database Schema Optimization & Drizzle Setup", quantity: 1, rate: 200, amount: 200 },
-    ],
+  // Real invoice record mapped dynamically from database response
+  const rawObj = invoiceData?.data || invoiceData;
+  const invoice = {
+    id: rawObj?.id || id,
+    invoiceNumber: rawObj?.invoiceNumber || rawObj?.invoice_number || id,
+    clientName: rawObj?.client?.name || rawObj?.clientName || "Direct Client",
+    clientEmail: rawObj?.client?.email || rawObj?.clientEmail || "",
+    clientPlatform: rawObj?.client?.platform || "Upwork / Direct",
+    dueDate: rawObj?.dueDate || rawObj?.due_date || new Date().toISOString().split("T")[0],
+    createdAt: rawObj?.createdAt ? new Date(rawObj.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+    currency: rawObj?.currency || "USD",
+    exchangeRate: parseFloat(rawObj?.exchangeRate || rawObj?.exchange_rate || "280.50"),
+    subtotal: parseFloat(rawObj?.subtotal || "0"),
+    taxRate: parseFloat(rawObj?.taxRate || rawObj?.tax_rate || "0"),
+    taxAmount: parseFloat(rawObj?.taxAmount || rawObj?.tax_amount || "0"),
+    discountAmount: parseFloat(rawObj?.discountAmount || rawObj?.discount_amount || "0"),
+    total: parseFloat(rawObj?.total || "0"),
+    totalPKR: parseFloat(rawObj?.totalPKR || rawObj?.total_pkr || "0"),
+    status: paidStatus || rawObj?.status || "sent",
+    notes: rawObj?.notes || "Wire foreign remittance directly to Meezan Bank IBAN under SBP Purpose Code 9100 for tax exemption.",
+    items: Array.isArray(rawObj?.items) && rawObj.items.length > 0 
+      ? rawObj.items.map((it: any) => ({
+          description: it.description || "Service Item",
+          quantity: parseFloat(it.quantity || "1"),
+          rate: parseFloat(it.rate || "0"),
+          amount: parseFloat(it.amount || (parseFloat(it.quantity || "1") * parseFloat(it.rate || "0")).toString()),
+        }))
+      : [
+          { description: "Full Stack Web Application Development & API Integration", quantity: 1, rate: parseFloat(rawObj?.total || "1000"), amount: parseFloat(rawObj?.total || "1000") },
+        ],
   };
 
   // Automatically set document.title to invoice number so "Save as PDF" defaults to invoice number filename
