@@ -25,8 +25,8 @@ export default function InvoicesPage() {
     return matchesStatus && matchesSearch;
   });
 
-  const totalBilledPKR = rawList.reduce((sum: number, inv: any) => sum + (inv.totalPKR || 0), 0);
-  const totalPaidPKR = rawList.filter((inv: any) => inv.status === "paid").reduce((sum: number, inv: any) => sum + (inv.totalPKR || 0), 0);
+  const totalBilledPKR = rawList.reduce((sum: number, inv: any) => sum + Number(inv.totalPKR || 0), 0);
+  const totalPaidPKR = rawList.filter((inv: any) => inv.status === "paid").reduce((sum: number, inv: any) => sum + Number(inv.totalPKR || 0), 0);
   const pendingAmountPKR = totalBilledPKR - totalPaidPKR;
 
   return (
