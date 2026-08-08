@@ -1,159 +1,92 @@
-# Turborepo starter
+# 🇵🇰 FreelancerHisab — Financial Operating System for Pakistani IT Exporters
 
-This Turborepo starter is maintained by the Turborepo core team.
+**FreelancerHisab** is a financial operating system tailored specifically for Pakistani freelancers, agencies, and software exporters. It automates income/expense tracking, Upwork/Fiverr statement parsing, client invoice generation, FBR Section 154A export tax calculations, and State Bank of Pakistan (SBP) Proceeds Realization Certificate (PRC) remittance tracking.
 
-## Using this example
+---
 
-Run the following command:
+## 🚀 Quick Start
 
-```sh
-npx create-turbo@latest
+### 1. Install Dependencies
+```bash
+npm install
 ```
 
-## What's inside?
+### 2. Configure Environment Variables (`apps/api/.env`)
+Create or update `apps/api/.env`:
 
-This Turborepo includes the following packages/apps:
+```env
+PORT=3001
+NODE_ENV=development
 
-### Apps and Packages
+# Database Connection (Local PostgreSQL or Neon DB Cloud)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/freelancerhisab
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+# JWT Configuration
+JWT_SECRET=super-secret-jwt-key
+JWT_EXPIRES_IN=15m
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+# Live Exchange Rate Engine
+EXCHANGE_RATE_API_URL=https://api.exchangerate-api.com/v4/latest/USD
 ```
 
-Without global `turbo`, use your package manager:
+---
 
-```sh
-cd my-turborepo
-npx turbo build
-npm dlx turbo build
-npm exec turbo build
+## 🗄️ Database Migrations & Seeding
+
+### 1. Apply Database Migrations
+Runs Drizzle SQL migrations to create all database tables (`users`, `clients`, `invoices`, `invoice_items`, `income`, `expenses`) on local or Neon DB PostgreSQL:
+
+```bash
+npm --prefix apps/api run db:migrate
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+### 2. Seed Test Freelancer Account & Data
+Populates PostgreSQL with test data (clients, invoices, inward remittances, and operating expenses):
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=docs
+```bash
+npm --prefix apps/api run db:seed
 ```
 
-Without global `turbo`:
+**Default Test Account Credentials:**
+- **Email:** `adnan@gmail.com`
+- **Password:** `password123`
+- **Bank Profile:** Meezan Bank Limited (`IBAN: PK36MEZN0001020304050607`)
+- **PSEB Tax Filer:** Active (0.25% Export Tax Rate)
 
-```sh
-npx turbo build --filter=docs
-npm exec turbo build --filter=docs
-npm exec turbo build --filter=docs
+### 3. Generate New Migrations
+When updating database schemas in `apps/api/src/database/schema/`:
+```bash
+npm --prefix apps/api run db:generate
+npm --prefix apps/api run db:migrate
 ```
 
-### Develop
+---
 
-To develop all apps and packages, run the following command:
+## ☁️ Neon DB Cloud Integration (Free Managed PostgreSQL)
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+1. Create a free project on [neon.tech](https://neon.tech).
+2. Copy your pooled connection string (with `?sslmode=require`).
+3. Set `DATABASE_URL` in `apps/api/.env`:
+   ```env
+   DATABASE_URL=postgresql://user_owner:npg_xxxxxxx@ep-cool-name-a1b2c3d4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+   ```
+4. Run `npm --prefix apps/api run db:migrate` and `npm --prefix apps/api run db:seed`.
 
-```sh
-cd my-turborepo
-turbo dev
+---
+
+## 💻 Running the App Locally
+
+Start both NestJS API Backend (`http://localhost:3001`) and Next.js Web Frontend (`http://localhost:3000`) concurrently:
+
+```bash
+npm run dev
 ```
 
-Without global `turbo`, use your package manager:
+---
 
-```sh
-cd my-turborepo
-npx turbo dev
-npm exec turbo dev
-npm exec turbo dev
-```
+## 📚 Developer Onboarding & Architecture Docs
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-npm exec turbo dev --filter=web
-npm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-npm exec turbo login
-npm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-npm exec turbo link
-npm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+For full technical documentation, architecture blueprints, API specifications, and coding standards, refer to:
+- 📖 [Developer Onboarding Guide](file:///c:/Users/User/Desktop/Freelancerhissab/docs/DEVELOPER_ONBOARDING.md)
+- 📐 [System Architecture Document](file:///c:/Users/User/Desktop/Freelancerhissab/docs/02-SYSTEM-ARCHITECTURE.md)
+- 📊 [Database Schema Design](file:///c:/Users/User/Desktop/Freelancerhissab/docs/03-DATABASE-DESIGN.md)

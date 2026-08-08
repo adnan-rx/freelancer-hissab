@@ -1,6 +1,6 @@
 # FreelancerHisab — Developer Onboarding Guide
 
-Welcome to the **FreelancerHisab** engineering team! This guide provides everything you need to get your local environment running, understand the project architecture, and start contributing quickly.
+Welcome to the **FreelancerHisab** engineering team! This guide provides everything you need to get your local environment running, configure local or Neon cloud databases, run migrations, seed data, and start contributing.
 
 ---
 
@@ -17,7 +17,7 @@ Welcome to the **FreelancerHisab** engineering team! This guide provides everyth
 | **Monorepo Management** | PNPM Workspaces + Turborepo |
 | **Frontend App (`apps/web`)** | Next.js 15 (App Router), React 19, Tailwind CSS, Shadcn UI, Zustand, TanStack Query (v5) |
 | **Backend API (`apps/api`)** | NestJS 11, Drizzle ORM, Passport JWT, RxJS, Swagger |
-| **Database** | PostgreSQL 16 (via Drizzle ORM) |
+| **Database** | PostgreSQL 16 (Local or Neon DB Cloud Serverless) |
 | **Shared Package (`packages/shared`)** | TypeScript schemas, Zod validators, common DTOs, Enums |
 
 ---
@@ -28,34 +28,52 @@ Welcome to the **FreelancerHisab** engineering team! This guide provides everyth
 Ensure you have the following installed on your machine:
 - **Node.js**: `v20.x` or higher (Recommended `v22.x`)
 - **npm**: `v10.x` or **pnpm**: `v9.x`
-- **PostgreSQL**: Local PostgreSQL server running on port `5432` (or via Docker)
+- **PostgreSQL Database**: Local PostgreSQL server OR a free [Neon DB](https://neon.tech) cloud database.
+
+---
 
 ### 2. Clone & Install Dependencies
 ```bash
+# Clone the repository
+git clone https://github.com/adnanniazdev/freelancer-hissab.git
+cd freelancerhissab
+
 # Install dependencies across all monorepo workspaces
 npm install
 ```
 
+---
+
 ### 3. Environment Configuration
 
-#### Backend Environment Setup (`apps/api/.env`)
-Copy `.env.example` or create `apps/api/.env`:
+#### Option A: Local PostgreSQL Setup
+Copy `.env.example` to `apps/api/.env`:
 ```env
 PORT=3001
 NODE_ENV=development
 
-# Database Connection
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/freelancerhisab
+# Local PostgreSQL Database
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/freelancerhisab
 
-# JWT Configuration
+# JWT Secrets
 JWT_SECRET=super-secret-jwt-key-change-in-production
 JWT_EXPIRES_IN=15m
 JWT_REFRESH_SECRET=super-secret-refresh-key
 JWT_REFRESH_EXPIRES_IN=7d
 
-# Exchange Rate API (Free Tier)
+# Exchange Rate API
 EXCHANGE_RATE_API_URL=https://api.exchangerate-api.com/v4/latest/USD
 ```
+
+#### Option B: Neon DB Cloud Setup (Recommended for Cloud Dev)
+1. Create a free project at [neon.tech](https://neon.tech).
+2. Copy your pooled connection string from the Neon Dashboard.
+3. Update `apps/api/.env`:
+```env
+DATABASE_URL=postgresql://user_owner:npg_xxxxxxx@ep-cool-name-a1b2c3d4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+```
+
+> **Note:** `apps/api/src/database/db.ts` uses `postgres(connectionString, { prepare: false })`, which natively supports Neon serverless connection poolers.
 
 #### Frontend Environment Setup (`apps/web/.env.local`)
 Create `apps/web/.env.local`:
@@ -63,20 +81,48 @@ Create `apps/web/.env.local`:
 NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
 ```
 
-### 4. Database Setup & Seeding
+---
+
+### 4. Database Migrations & Seeding
+
+#### Step A: Run Database Migrations
+Applies all Drizzle SQL migration files (including schema updates for bank profiles, invoices, and remittances) to your target database:
+
 ```bash
-# Generate Drizzle migration files (from apps/api)
-npm --workspace=api run db:generate
-
-# Apply migrations to local PostgreSQL database
-npm --workspace=api run db:migrate
-
-# Seed database with initial categories & test user
-npm --workspace=api run db:seed
+# Run migrations using Drizzle ORM
+npm --prefix apps/api run db:migrate
 ```
 
+#### Step B: Seed Rich Test Data
+Populates the database with realistic Pakistani freelancing records (clients, invoices, inward remittances, bank details, and business expenses):
+
+```bash
+# Seed database with Pakistani context freelancing data
+npm --prefix apps/api run db:seed
+```
+
+**Default Test Account Credentials (created by seed):**
+- **Email:** `adnan@gmail.com`
+- **Password:** `password123`
+- **Bank Profile:** Meezan Bank Limited (`IBAN: PK36MEZN0001020304050607`)
+- **PSEB Status:** Active Filer (0.25% Export Tax Rate)
+
+#### Step C: Creating New Migrations (When modifying schemas)
+If you update schema files in `apps/api/src/database/schema/`:
+```bash
+# Generate new migration files
+npm --prefix apps/api run db:generate
+
+# Apply newly generated migrations
+npm --prefix apps/api run db:migrate
+```
+
+---
+
 ### 5. Running the Application Locally
-To start both the NestJS backend (`http://localhost:3001`) and the Next.js frontend (`http://localhost:3000`) concurrently:
+
+Start both the NestJS API backend (`http://localhost:3001`) and the Next.js web frontend (`http://localhost:3000`) concurrently:
+
 ```bash
 npm run dev
 ```
@@ -86,13 +132,16 @@ npm run dev
 ## 📁 Repository Structure
 
 ```
-freelancerhisab/
+freelancerhissab/
 ├── apps/
 │   ├── api/                     # NestJS Backend API
 │   │   ├── src/
 │   │   │   ├── common/          # Guards, Interceptors, Filters, Decorators
 │   │   │   ├── database/        # Drizzle client, migrations, & schema files
-│   │   │   │   └── schema/      # Entity definitions (users, clients, income, expenses, invoices)
+│   │   │   │   ├── migrations/  # Drizzle SQL migration scripts
+│   │   │   │   ├── schema/      # Entity definitions (users, clients, income, expenses, invoices)
+│   │   │   │   ├── db.ts        # Database connection client
+│   │   │   │   └── seed.ts      # Seeder script
 │   │   │   └── modules/         # NestJS Feature Modules
 │   │   │       ├── auth/        # JWT Authentication
 │   │   │       ├── clients/     # Client Management
@@ -104,29 +153,28 @@ freelancerhisab/
 │   └── web/                     # Next.js 15 Frontend
 │       ├── src/
 │       │   ├── app/             # App Router Pages ((auth), (dashboard))
-│       │   ├── components/      # UI primitives & Feature modals
-│       │   ├── hooks/           # Custom React hooks & TanStack Query hooks
-│       │   ├── lib/             # Axios API client & utility helpers
-│       │   └── stores/          # Zustand state management (Auth, Theme)
+│       │   ├── components/      # UI primitives, Toast, & ConfirmModal
+│       │   ├── hooks/           # Custom React Query hooks
+│       │   ├── lib/             # Axios API client & FX conversion helpers
+│       │   └── stores/          # Zustand state management (Auth)
 ├── packages/
 │   ├── shared/                  # Shared TypeScript types, Enums, Zod schemas
 │   ├── eslint-config/           # Monorepo ESLint rules
 │   └── typescript-config/       # Base tsconfig rules
-├── docs/                        # Project documentation & status reports
-├── tasks/                       # Active sprint & priority tasks
+├── docs/                        # Project documentation & sitemaps
 └── package.json                 # Monorepo root scripts
 ```
 
 ---
 
-## 🔑 External API Requirements Summary
+## 🔑 Database Commands Quick Reference
 
-| API Name | Purpose | Cost / Tier | Config Needed |
-| :--- | :--- | :--- | :--- |
-| **ExchangeRate-API** | Live USD/EUR/GBP to PKR conversion rates | **100% Free** (1,500 requests/mo, no credit card required) | `EXCHANGE_RATE_API_URL` |
-| **Frankfurter API** | Alternative open-source FX rates | **100% Free** & Open-Source (ECB data) | Optional fallback |
-| **Browser Print API** | Invoice PDF export (`window.print`) | **100% Free** (Native browser API) | None |
-| **Resend / Nodemailer** | Optional invoice email delivery | **Free Tier** (3,000 emails/mo) | `SMTP_KEY` / `RESEND_API_KEY` |
+| Action | Command |
+| :--- | :--- |
+| **Apply Migrations** | `npm --prefix apps/api run db:migrate` |
+| **Seed Database** | `npm --prefix apps/api run db:seed` |
+| **Generate Migrations** | `npm --prefix apps/api run db:generate` |
+| **Studio DB GUI** | `npx --prefix apps/api drizzle-kit studio` |
 
 ---
 
@@ -142,19 +190,8 @@ npm run check-types
 npm run lint
 
 # Run backend unit tests
-npm --workspace=api run test
+npm --prefix apps/api run test
 ```
-
----
-
-## 🎯 Immediate Development Priorities (P0 Rescue Sprint)
-
-If you are joining during the Hackathon phase, your immediate focus should be on the following tasks listed in `tasks/P0.md`:
-
-1. **Fix UI Tab TS Errors:** Resolve tab component prop mismatches in `apps/web/src/app/(dashboard)/settings/page.tsx`.
-2. **Upwork/Fiverr CSV Import Endpoint:** Build `POST /api/v1/csv/import` in `apps/api/src/modules/csv` to replace the frontend mock modal.
-3. **FBR Tax Calculation Engine:** Implement Pakistan Tax Ordinance 2001 Section 154A logic (0.25% PSEB vs 1.0% non-PSEB rate).
-4. **Live FX Service Integration:** Connect live exchange rate fetching with a 24-hour cache fallback.
 
 ---
 
@@ -162,5 +199,5 @@ If you are joining during the Hackathon phase, your immediate focus should be on
 
 - **No `any` types:** Always use strict TypeScript interfaces or Zod schema inferences from `@freelancerhisab/shared`.
 - **API Call Placement:** Never place `fetch` or `axios` calls directly inside Next.js components; use custom React Query hooks inside `apps/web/src/hooks/`.
-- **Database Modifies:** Modify schemas in `apps/api/src/database/schema/` and run `npm --workspace=api run db:generate`.
-- **Guard Clauses:** Use early returns in services and functions to keep code flat and readable.
+- **Database Modifies:** Modify schemas in `apps/api/src/database/schema/` and run `npm --prefix apps/api run db:generate`.
+- **Error Handling:** Use custom `Toast` notifications for UI error alerts and `ConfirmModal` for destructive actions.
