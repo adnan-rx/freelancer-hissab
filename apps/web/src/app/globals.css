@@ -2,11 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 210 20% 98%; /* Very light slate background #f8fafc */
     --foreground: 0 0% 7%;
-    --card: 0 0% 100%;
+    --card: 0 0% 100%; /* Pure white cards */
     --card-foreground: 0 0% 7%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 7%;
@@ -14,16 +24,16 @@
     --primary-foreground: 0 0% 100%;
     --secondary: 140 33% 97%;
     --secondary-foreground: 145 97% 13%;
-    --muted: 140 33% 97%;
+    --muted: 210 20% 96%;
     --muted-foreground: 215 16.3% 46.9%;
     --accent: 140 33% 97%;
     --accent-foreground: 145 97% 13%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 140 20% 90%;
-    --input: 140 20% 90%;
+    --border: 214 32% 91%; /* #e2e8f0 */
+    --input: 214 32% 91%;
     --ring: 145 97% 13%;
-    --radius: 0.5rem;
+    --radius: 1rem; /* Softer, larger radius for cards */
   }
 }
 

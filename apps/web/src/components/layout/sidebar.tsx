@@ -79,7 +79,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           </button>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden pb-4">
+        <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden pb-4 mt-2 no-scrollbar">
           {navItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
             return (
@@ -87,13 +87,18 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
+                  "flex items-center gap-3 px-3.5 py-2 rounded-2xl text-sm transition-all",
                   isActive
-                    ? "bg-secondary text-primary font-semibold"
-                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                    ? "bg-primary/10 text-primary font-bold shadow-sm"
+                    : "text-muted-foreground font-medium hover:bg-muted/50 hover:text-foreground"
                 )}
               >
-                <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
+                <div className={cn(
+                  "flex items-center justify-center rounded-xl p-1.5 transition-colors",
+                  isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"
+                )}>
+                  <item.icon className="h-4 w-4" strokeWidth={isActive ? 2.5 : 2} />
+                </div>
                 {item.name}
               </Link>
             );

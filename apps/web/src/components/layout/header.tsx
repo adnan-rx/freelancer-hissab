@@ -23,7 +23,7 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   return (
     <>
-      <header className="print:hidden h-16 border-b border-border bg-background/80 backdrop-blur flex items-center justify-between px-6 sticky top-0 z-30">
+      <header className="print:hidden h-20 bg-background flex items-center justify-between px-8 sticky top-0 z-30">
         {!isMobileSearchOpen ? (
           <>
             <div className="flex items-center gap-4">
@@ -35,9 +35,12 @@ export function Header({ onMenuClick }: HeaderProps) {
               >
                 <Menu className="h-5 w-5" />
               </Button>
-              <div className="hidden md:flex items-center w-96 gap-2">
+              <div className="hidden md:flex items-center w-[400px] gap-2 bg-muted/50 rounded-full px-4 border border-transparent focus-within:border-border focus-within:bg-background transition-colors h-11">
                 <Search className="h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search invoices, clients..." className="border-0 bg-transparent focus-visible:ring-0 shadow-none h-9 text-foreground placeholder:text-muted-foreground" />
+                <Input placeholder="Search anything..." className="border-0 bg-transparent focus-visible:ring-0 shadow-none h-full text-foreground placeholder:text-muted-foreground text-sm" />
+                <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium bg-background px-1.5 py-0.5 rounded border border-border shadow-sm">
+                  <span>⌘</span><span>F</span>
+                </div>
               </div>
             </div>
 
