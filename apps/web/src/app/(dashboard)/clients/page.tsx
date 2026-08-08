@@ -46,7 +46,8 @@ export default function ClientsPage() {
 
   const displayClients = rawList.filter((client: any) => {
     const matchesPlatform = platformFilter === "all" || client.platform === platformFilter;
-    const matchesSearch = client.name.toLowerCase().includes(search.toLowerCase()) || 
+    const clientName = client.name || "";
+    const matchesSearch = clientName.toLowerCase().includes(search.toLowerCase()) || 
                           (client.email && client.email.toLowerCase().includes(search.toLowerCase())) ||
                           (client.company && client.company.toLowerCase().includes(search.toLowerCase()));
     return matchesPlatform && matchesSearch;
