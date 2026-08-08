@@ -17,13 +17,6 @@
       "breakpoints": true
     },
     {
-      "idx": 2,
-      "version": "7",
-      "when": 1786198000000,
-      "tag": "0002_user_profile_bank_fields",
-      "breakpoints": true
-    },
-    {
       "idx": 3,
       "version": "7",
       "when": 1786193676999,
