@@ -6,6 +6,7 @@ import { invoices } from './invoices';
 import { income } from './income';
 import { expenses } from './expenses';
 import { categories } from './categories';
+import { refreshTokens } from './refresh-tokens';
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -40,4 +41,5 @@ export const usersRelations = relations(users, ({ many }) => ({
   income: many(income),
   expenses: many(expenses),
   categories: many(categories),
+  refreshTokens: many(refreshTokens),
 }));

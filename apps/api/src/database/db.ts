@@ -8,5 +8,10 @@ config(); // Load environment variables
 const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/freelancerhisab';
 
 // Disable prefetch as it is not supported for "Transaction" pool mode
-const client = postgres(connectionString, { prepare: false, max: 10 });
+const client = postgres(connectionString, { 
+  prepare: false, 
+  max: 10,
+  ssl: 'require',
+  connect_timeout: 30
+});
 export const db = drizzle(client, { schema });

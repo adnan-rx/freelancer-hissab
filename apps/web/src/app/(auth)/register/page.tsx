@@ -28,7 +28,7 @@ export default function RegisterPage() {
       const response = await apiClient.post('/auth/register', { name, businessName, email, password });
       const data = response.data?.data;
       if (data?.accessToken && data?.user) {
-        loginStore(data.accessToken, data.refreshToken, data.user);
+        loginStore(data.accessToken, data.user);
         router.push('/dashboard');
       } else {
         setError('Failed to process registration response');
