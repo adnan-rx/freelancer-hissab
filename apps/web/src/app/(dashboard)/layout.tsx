@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
@@ -13,12 +13,30 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const [hasHydrated, setHasHydrated] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    // Wait for Zustand to hydrate from localStorage before checking auth
+    const unsub = useAuthStore.persist.onFinishHydration(() => {
+      setHasHydrated(true);
+    });
+    // In case hydration already finished before this effect ran
+    if (useAuthStore.persist.hasHydrated()) {
+      setHasHydrated(true);
+    }
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (hasHydrated && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [hasHydrated, isAuthenticated, router]);
+
+  // Don't render anything until hydration is complete to avoid flash
+  if (!hasHydrated) {
+    return null;
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-950 text-slate-50 print:h-auto print:overflow-visible print:bg-white">
@@ -32,3 +50,4 @@ export default function DashboardLayout({
     </div>
   );
 }
+
