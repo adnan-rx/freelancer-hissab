@@ -73,7 +73,7 @@ export class CsvService {
         const dateStr = columns[0] || new Date().toISOString();
         const typeStr = (columns[2] || '').toLowerCase();
         const description = columns[3] || 'Upwork Transaction';
-        const rawAmount = parseFloat((columns[5] || '0').replace(/[\$,]/g, '')) || 0;
+        const rawAmount = parseFloat((columns[5] || '0').replace(/[$,]/g, '')) || 0;
 
         if (rawAmount === 0) continue;
 
@@ -125,7 +125,7 @@ export class CsvService {
         // Generic CSV Format (Date, Description, Amount, Category/Type, Currency)
         const dateStr = columns[0] || new Date().toISOString();
         const description = columns[1] || 'CSV Transaction';
-        const rawAmount = parseFloat((columns[2] || '0').replace(/[\$,]/g, '')) || 0;
+        const rawAmount = parseFloat((columns[2] || '0').replace(/[$,]/g, '')) || 0;
         const typeOrCat = (columns[3] || 'income').toLowerCase();
         const currency = (columns[4] || 'USD').toUpperCase();
 

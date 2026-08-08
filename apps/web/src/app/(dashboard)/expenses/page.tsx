@@ -1,14 +1,17 @@
 "use client";
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Plus } from 'lucide-react';
 import { formatPKR } from '@/lib/utils';
 import { useExpenses } from '@/hooks/use-expenses';
+import { AddExpenseModal } from '@/components/features/add-expense-modal';
 
 export default function ExpensesPage() {
   const { data: expensesList = [], isLoading } = useExpenses();
+  const [isAddOpen, setIsAddOpen] = useState(false);
 
   const displayExpenses = expensesList.length > 0 ? expensesList : [
     { id: "1", expenseDate: "2026-08-10", description: "Nayatel Monthly Internet Bill", category: "internet", amount: 4500, vendor: "Nayatel" },
@@ -22,7 +25,9 @@ export default function ExpensesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Expenses</h1>
           <p className="text-sm text-slate-400 mt-1">Track business expenses, internet bills, hardware, and subscriptions.</p>
         </div>
-        <Button><Plus className="mr-2 h-4 w-4" /> Add Expense</Button>
+        <Button onClick={() => setIsAddOpen(true)} className="bg-rose-500 hover:bg-rose-600 text-slate-950 font-semibold shadow-lg shadow-rose-500/20">
+          <Plus className="mr-2 h-4 w-4" /> Add Expense
+        </Button>
       </div>
 
       <div className="border border-slate-800 rounded-xl overflow-hidden bg-slate-900/40">
@@ -59,6 +64,8 @@ export default function ExpensesPage() {
           </TableBody>
         </Table>
       </div>
+
+      <AddExpenseModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} />
     </div>
   );
 }

@@ -1,7 +1,8 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.module';
 import { users } from '../../database/schema';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class UsersService {
@@ -15,6 +16,41 @@ export class UsersService {
   async findById(id: string) {
     const result = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
     return result[0] || null;
+  }
+
+  async getProfile(id: string) {
+    return this.findById(id);
+  }
+
+  async updateProfile(id: string, dto: UpdateProfileDto) {
+    const existing = await this.findById(id);
+    if (!existing) {
+      throw new NotFoundException('User account not found');
+    }
+
+    const updateData: Record<string, any> = {
+      updatedAt: new Date(),
+    };
+
+    if (dto.name !== undefined) updateData.name = dto.name;
+    if (dto.businessName !== undefined) updateData.businessName = dto.businessName;
+    if (dto.phone !== undefined) updateData.phone = dto.phone;
+    if (dto.bankName !== undefined) updateData.bankName = dto.bankName;
+    if (dto.accountTitle !== undefined) updateData.accountTitle = dto.accountTitle;
+    if (dto.iban !== undefined) updateData.iban = dto.iban;
+    if (dto.psebId !== undefined) updateData.psebId = dto.psebId;
+    if (dto.isFiler !== undefined) updateData.isFiler = dto.isFiler;
+    if (dto.invoicePrefix !== undefined) updateData.invoicePrefix = dto.invoicePrefix;
+    if (dto.paymentTerms !== undefined) updateData.paymentTerms = dto.paymentTerms;
+    if (dto.invoiceNotes !== undefined) updateData.invoiceNotes = dto.invoiceNotes;
+
+    const [updated] = await this.db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, id))
+      .returning();
+
+    return updated;
   }
 
   async create(data: { email: string; passwordHash: string; name: string; businessName?: string }) {

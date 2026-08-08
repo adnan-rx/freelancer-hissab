@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, uniqueIndex, boolean } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { authProviderEnum } from './enums';
 import { clients } from './clients';
@@ -14,6 +14,14 @@ export const users = pgTable('users', {
   name: varchar('name', { length: 255 }).notNull(),
   businessName: varchar('business_name', { length: 255 }),
   phone: varchar('phone', { length: 50 }),
+  bankName: varchar('bank_name', { length: 255 }),
+  accountTitle: varchar('account_title', { length: 255 }),
+  iban: varchar('iban', { length: 100 }),
+  psebId: varchar('pseb_id', { length: 100 }),
+  isFiler: boolean('is_filer').default(true),
+  invoicePrefix: varchar('invoice_prefix', { length: 50 }).default('FH-2026-'),
+  paymentTerms: varchar('payment_terms', { length: 100 }).default('Due on Receipt'),
+  invoiceNotes: varchar('invoice_notes', { length: 1000 }),
   defaultCurrency: varchar('default_currency', { length: 3 }).default('PKR').notNull(),
   timezone: varchar('timezone', { length: 100 }).default('Asia/Karachi').notNull(),
   avatarUrl: varchar('avatar_url', { length: 500 }),

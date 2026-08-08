@@ -4,14 +4,16 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Upload, Sparkles } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 import { formatPKR, formatUSD } from '@/lib/utils';
 import { useIncome } from '@/hooks/use-income';
 import { CSVImportModal } from '@/components/features/csv-import-modal';
+import { AddIncomeModal } from '@/components/features/add-income-modal';
 
 export default function IncomePage() {
   const { data: incomeList = [], isLoading } = useIncome();
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isAddOpen, setIsAddOpen] = useState(false);
 
   const displayIncome = incomeList.length > 0 ? incomeList : [
     { id: "1", receivedAt: "2026-08-07", clientName: "TechFlow Inc.", platform: "upwork", amount: 1000, currency: "USD", amountPKR: 280500, description: "Upwork Withdrawal to Meezan Bank" },
@@ -33,7 +35,10 @@ export default function IncomePage() {
           >
             <Sparkles className="mr-2 h-4 w-4 text-emerald-400" /> Auto-Import Upwork/Fiverr CSV
           </Button>
-          <Button className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold shadow-lg shadow-emerald-500/20">
+          <Button 
+            onClick={() => setIsAddOpen(true)}
+            className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold shadow-lg shadow-emerald-500/20"
+          >
             <Plus className="mr-2 h-4 w-4" /> Log Income Manually
           </Button>
         </div>
@@ -77,6 +82,7 @@ export default function IncomePage() {
       </div>
 
       <CSVImportModal isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} />
+      <AddIncomeModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} />
     </div>
   );
 }

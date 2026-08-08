@@ -1,28 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { User, Building, Landmark, Shield, FileText, CheckCircle2, Save } from "lucide-react";
+import { User, Landmark, Shield, FileText, CheckCircle2, Save, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth.store";
+import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 
 export default function SettingsPage() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
+  const { data: profile, isLoading } = useProfile();
+  const updateProfileMutation = useUpdateProfile();
 
   // Profile Form State
-  const [name, setName] = useState(user?.name || "Ahmed Ali");
-  const [businessName, setBusinessName] = useState(user?.businessName || "Ahmed Web Solutions");
-  const [email] = useState(user?.email || "ahmed.dev@example.com");
+  const [name, setName] = useState("Ahmed Ali");
+  const [businessName, setBusinessName] = useState("Ahmed Web Solutions");
+  const [email, setEmail] = useState("ahmed.dev@example.com");
   const [phone, setPhone] = useState("+92 300 1234567");
 
   // Bank & Tax State
   const [bankName, setBankName] = useState("Meezan Bank Limited");
   const [iban, setIban] = useState("PK36MEZN0001020304050607");
-  const [accountTitle, setAccountTitle] = useState(user?.name || "Ahmed Ali");
+  const [accountTitle, setAccountTitle] = useState("Ahmed Ali");
   const [psebId, setPsebId] = useState("PSEB-2026-98765");
   const [isFiler, setIsFiler] = useState(true);
 
@@ -34,13 +37,53 @@ export default function SettingsPage() {
   // Save Banner
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (user) {
-      setUser({ ...user, name, businessName });
+  useEffect(() => {
+    if (profile) {
+      if (profile.name) setName(profile.name);
+      if (profile.businessName) setBusinessName(profile.businessName);
+      if (profile.email) setEmail(profile.email);
+      if (profile.phone) setPhone(profile.phone);
+      if (profile.bankName) setBankName(profile.bankName);
+      if (profile.accountTitle) setAccountTitle(profile.accountTitle);
+      if (profile.iban) setIban(profile.iban);
+      if (profile.psebId) setPsebId(profile.psebId);
+      if (profile.isFiler !== undefined) setIsFiler(profile.isFiler);
+      if (profile.invoicePrefix) setInvoicePrefix(profile.invoicePrefix);
+      if (profile.paymentTerms) setPaymentTerms(profile.paymentTerms);
+      if (profile.invoiceNotes) setInvoiceNotes(profile.invoiceNotes);
+    } else if (user) {
+      if (user.name) setName(user.name);
+      if (user.businessName) setBusinessName(user.businessName);
+      if (user.email) setEmail(user.email);
     }
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+  }, [profile, user]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload = {
+      name,
+      businessName,
+      phone,
+      bankName,
+      accountTitle,
+      iban,
+      psebId,
+      isFiler,
+      invoicePrefix,
+      paymentTerms,
+      invoiceNotes,
+    };
+
+    try {
+      await updateProfileMutation.mutateAsync(payload);
+      if (user) {
+        setUser({ ...user, name, businessName });
+      }
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3000);
+    } catch (err) {
+      console.warn("Failed to update profile", err);
+    }
   };
 
   return (
@@ -55,7 +98,7 @@ export default function SettingsPage() {
 
         {savedSuccess && (
           <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-medium animate-in fade-in">
-            <CheckCircle2 className="h-4 w-4" /> Settings updated successfully!
+            <CheckCircle2 className="h-4 w-4" /> Settings updated & saved to database!
           </div>
         )}
       </div>
@@ -136,8 +179,8 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <Button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold">
-                  <Save className="mr-2 h-4 w-4" /> Save Profile Changes
+                <Button type="submit" disabled={updateProfileMutation.isPending} className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold">
+                  {updateProfileMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Profile Changes
                 </Button>
               </form>
             </CardContent>
@@ -203,8 +246,8 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <Button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold">
-                  <Save className="mr-2 h-4 w-4" /> Save Bank Details
+                <Button type="submit" disabled={updateProfileMutation.isPending} className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold">
+                  {updateProfileMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Bank Details
                 </Button>
               </form>
             </CardContent>
@@ -250,8 +293,8 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                <Button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold">
-                  <Save className="mr-2 h-4 w-4" /> Save Invoice Preferences
+                <Button type="submit" disabled={updateProfileMutation.isPending} className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold">
+                  {updateProfileMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Invoice Preferences
                 </Button>
               </form>
             </CardContent>
