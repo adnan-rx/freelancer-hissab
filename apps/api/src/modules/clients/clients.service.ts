@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { eq, and, ilike } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.module';
-import { clients, income } from '../../database/schema';
+import { clients, income, invoices } from '../../database/schema';
 import { CreateClientDto, UpdateClientDto } from './dto/client.dto';
 
 @Injectable()
@@ -21,7 +21,30 @@ export class ClientsService {
       whereClause = and(whereClause, eq(clients.platform, query.platform as any));
     }
 
-    return this.db.select().from(clients).where(whereClause);
+    const clientList = await this.db.select().from(clients).where(whereClause);
+    const userIncomes = await this.db.select().from(income).where(eq(income.userId, userId));
+    const userInvoices = await this.db.select().from(invoices).where(eq(invoices.userId, userId));
+
+    return clientList.map((client: any) => {
+      const clientIncomes = userIncomes.filter((inc: any) => inc.clientId === client.id);
+      const clientInvoices = userInvoices.filter((inv: any) => inv.clientId === client.id);
+
+      const incomeUSD = clientIncomes.reduce((sum: number, inc: any) => sum + Number(inc.amount || 0), 0);
+      const invoiceUSD = clientInvoices.reduce((sum: number, inv: any) => sum + Number(inv.total || 0), 0);
+
+      const incomePKR = clientIncomes.reduce((sum: number, inc: any) => sum + Number(inc.amountPKR || (Number(inc.amount || 0) * 280.50)), 0);
+      const invoicePKR = clientInvoices.reduce((sum: number, inv: any) => sum + Number(inv.totalPKR || 0), 0);
+
+      const totalEarnings = incomeUSD > 0 ? incomeUSD : invoiceUSD;
+      const totalEarningsPKR = incomePKR > 0 ? incomePKR : invoicePKR;
+
+      return {
+        ...client,
+        totalEarnings,
+        totalEarningsPKR,
+        totalIncome: totalEarnings,
+      };
+    });
   }
 
   async findOne(userId: string, id: string) {
@@ -37,7 +60,6 @@ export class ClientsService {
 
     const client = clientResult[0];
 
-    // Calculate total income
     const incomeRecords = await this.db
       .select()
       .from(income)
@@ -47,7 +69,7 @@ export class ClientsService {
       return sum + Number(record.amount || 0);
     }, 0);
 
-    return { ...client, totalIncome };
+    return { ...client, totalIncome, totalEarnings: totalIncome };
   }
 
   async create(userId: string, dto: CreateClientDto) {

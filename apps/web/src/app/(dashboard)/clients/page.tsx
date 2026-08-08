@@ -53,8 +53,8 @@ export default function ClientsPage() {
   });
 
   const totalClientsCount = rawList.length;
-  const totalLifetimeUSD = rawList.reduce((sum: number, c: any) => sum + (c.totalEarnings || c.totalIncome || 0), 0);
-  const totalLifetimePKR = totalLifetimeUSD * 280.50;
+  const totalLifetimeUSD = rawList.reduce((sum: number, c: any) => sum + Number(c.totalEarnings || c.totalIncome || 0), 0);
+  const totalLifetimePKR = rawList.reduce((sum: number, c: any) => sum + Number(c.totalEarningsPKR || (Number(c.totalEarnings || 0) * 280.50)), 0);
 
   const handleOpenAdd = () => {
     setName("");
@@ -245,7 +245,8 @@ export default function ClientsPage() {
               </TableRow>
             ) : (
               displayClients.map((client: any) => {
-                const lifetimeUSD = client.totalEarnings || client.totalIncome || 1000;
+                const lifetimeUSD = Number(client.totalEarnings || client.totalIncome || 0);
+                const lifetimePKR = Number(client.totalEarningsPKR || (lifetimeUSD * 280.50));
                 return (
                   <TableRow key={client.id} className="border-slate-800 hover:bg-slate-800/40 transition-colors">
                     <TableCell>
@@ -275,7 +276,7 @@ export default function ClientsPage() {
 
                     <TableCell className="font-mono">
                       <div className="font-bold text-emerald-400">{formatUSD(lifetimeUSD)}</div>
-                      <div className="text-[11px] text-slate-400">{formatPKR(lifetimeUSD * 280.50)}</div>
+                      <div className="text-[11px] text-slate-400">{formatPKR(lifetimePKR)}</div>
                     </TableCell>
 
                     <TableCell>
