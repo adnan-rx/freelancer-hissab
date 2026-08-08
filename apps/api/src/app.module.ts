@@ -14,6 +14,8 @@ import { CsvModule } from './modules/csv/csv.module';
 import { TaxModule } from './modules/tax/tax.module';
 import { ExchangeRateModule } from './modules/exchange-rate/exchange-rate.module';
 
+import { TransactionsModule } from './modules/transactions/transactions.module';
+
 @Module({
   imports: [
     ThrottlerModule.forRoot([
@@ -34,6 +36,7 @@ import { ExchangeRateModule } from './modules/exchange-rate/exchange-rate.module
     CsvModule,
     TaxModule,
     ExchangeRateModule,
+    TransactionsModule,
   ],
   providers: [
     {

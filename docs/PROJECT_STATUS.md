@@ -38,8 +38,8 @@ Following the execution of P0 rescue tasks, **FreelancerHisab has transitioned f
 ## Remaining Pending & Recommended Tasks (P1 / P2 / P3)
 
 ### 🟡 P1 Tasks (Important — Recommended for Post-Submission Sprint)
-- **TASK-007: Settings Profile API Persistence:** Wire Settings form to `POST /api/v1/users/profile` to save bank account IBAN, PSEB registration number, and business details to PostgreSQL instead of local component state.
-- **TASK-008: Unified Transaction Feed:** Combine `/income` and `/expenses` into a single searchable transaction ledger page with category and date range filters.
+- ✅ **TASK-007: Settings Profile API Persistence:** Wire Settings form to `POST /api/v1/users/profile` to save bank account IBAN, PSEB registration number, and business details to PostgreSQL instead of local component state.
+- ✅ **TASK-008: Unified Transaction Feed:** Combine `/income` and `/expenses` into a single searchable transaction ledger page with category and date range filters.
 
 ### 🔵 P2 Tasks (Nice to Have)
 - **TASK-009: Invoice Email Delivery:** Connect Nodemailer / Resend service to send PDF invoice emails directly to clients.

@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Home, Users, FileText, DollarSign, PieChart, Settings, LogOut, Wallet, HelpCircle } from 'lucide-react';
+import { Home, Users, FileText, DollarSign, PieChart, Settings, LogOut, Wallet, ArrowRightLeft, HelpCircle } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Clients', href: '/clients', icon: Users },
   { name: 'Invoices', href: '/invoices', icon: FileText },
+  { name: 'Transactions', href: '/transactions', icon: ArrowRightLeft },
   { name: 'Income', href: '/income', icon: DollarSign },
   { name: 'Expenses', href: '/expenses', icon: Wallet },
   { name: 'Reports', href: '/reports', icon: PieChart },
@@ -42,7 +43,7 @@ export function Sidebar() {
           Freelancer<span className="text-emerald-400">Hisab</span>
         </h1>
       </div>
-      
+
       <nav className="flex-1 space-y-1">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
@@ -52,8 +53,8 @@ export function Sidebar() {
               href={item.href}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
-                isActive 
-                  ? "bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20" 
+                isActive
+                  ? "bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20"
                   : "text-slate-400 hover:bg-slate-900 hover:text-slate-200"
               )}
             >
@@ -73,7 +74,7 @@ export function Sidebar() {
             <p className="text-sm font-semibold text-slate-200 truncate">{userName}</p>
             <p className="text-xs text-slate-400 truncate">{userEmail}</p>
           </div>
-          <button 
+          <button
             onClick={handleLogout}
             title="Sign out"
             className="text-slate-400 hover:text-rose-400 transition-colors p-1"
