@@ -55,8 +55,9 @@ export class ExchangeRateService {
     }
 
     try {
-      // Primary: ExchangeRate-API (Free public rate endpoint)
-      const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+      // Primary: ExchangeRate-API (Configurable via EXCHANGE_RATE_API_URL env variable)
+      const apiUrl = process.env.EXCHANGE_RATE_API_URL || 'https://api.exchangerate-api.com/v4/latest/USD';
+      const res = await fetch(apiUrl);
       if (res.ok) {
         const data = await res.json();
         const usdToPkr = data.rates?.PKR;

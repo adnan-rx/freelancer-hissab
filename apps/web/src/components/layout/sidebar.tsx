@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Home, Users, FileText, DollarSign, PieChart, Settings, LogOut, Wallet } from 'lucide-react';
+import { Home, Users, FileText, DollarSign, PieChart, Settings, LogOut, Wallet, HelpCircle } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 
 const navItems = [
@@ -13,6 +13,7 @@ const navItems = [
   { name: 'Income', href: '/income', icon: DollarSign },
   { name: 'Expenses', href: '/expenses', icon: Wallet },
   { name: 'Reports', href: '/reports', icon: PieChart },
+  { name: 'User Guide', href: '/guide', icon: HelpCircle },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

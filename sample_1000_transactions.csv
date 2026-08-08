@@ -1,0 +1,1001 @@
+Date,Ref ID,Type,Description,Agency,Amount,Balance
+01/01/2025,98100001,Hourly,"Invoice for TechFlow Labs LLC - Sprint 1",,889.00,1889.00
+01/01/2025,98100002,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 1",,-88.90,1800.10
+02/02/2026,98100003,Fixed Price,"Invoice for Acme Corp - Sprint 2",,1532.00,3332.10
+02/02/2026,98100004,Service Fee,"Service Fee for Acme Corp - Sprint 2",,-153.20,3178.90
+03/03/2025,98100005,Hourly,"Invoice for Horizon Media Ltd - Sprint 3",,349.00,3527.90
+03/03/2025,98100006,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 3",,-34.90,3493.00
+04/04/2026,98100007,Fixed Price,"Invoice for Apex Digital Inc - Sprint 4",,1387.00,4880.00
+04/04/2026,98100008,Service Fee,"Service Fee for Apex Digital Inc - Sprint 4",,-138.70,4741.30
+05/05/2025,98100009,Hourly,"Invoice for Vanguard Software Studio - Sprint 5",,1935.00,6676.30
+05/05/2025,98100010,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 5",,-193.50,6482.80
+06/06/2026,98100011,Fixed Price,"Invoice for Nexus Systems - Sprint 6",,633.00,7115.80
+06/06/2026,98100012,Service Fee,"Service Fee for Nexus Systems - Sprint 6",,-63.30,7052.50
+07/07/2025,98100013,Hourly,"Invoice for CyberPulse Interactive - Sprint 7",,1602.00,8654.50
+07/07/2025,98100014,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 7",,-160.20,8494.30
+08/08/2026,98100015,Fixed Price,"Invoice for BlueSky Solutions - Sprint 8",,1201.00,9695.30
+08/08/2026,98100016,Service Fee,"Service Fee for BlueSky Solutions - Sprint 8",,-120.10,9575.20
+09/09/2025,98100017,Hourly,"Invoice for Starlight Interactive - Sprint 9",,1130.00,10705.20
+09/09/2025,98100018,Service Fee,"Service Fee for Starlight Interactive - Sprint 9",,-113.00,10592.20
+10/10/2026,98100019,Fixed Price,"Invoice for Quantum Code Soft - Sprint 10",,1902.00,12494.20
+10/10/2026,98100020,Service Fee,"Service Fee for Quantum Code Soft - Sprint 10",,-190.20,12304.00
+11/11/2025,98100021,Hourly,"Invoice for TechFlow Labs LLC - Sprint 11",,402.00,12706.00
+11/11/2025,98100022,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 11",,-40.20,12665.80
+12/12/2026,98100023,Fixed Price,"Invoice for Acme Corp - Sprint 12",,857.00,13522.80
+12/12/2026,98100024,Service Fee,"Service Fee for Acme Corp - Sprint 12",,-85.70,13437.10
+01/13/2025,98100025,Hourly,"Invoice for Horizon Media Ltd - Sprint 13",,1878.00,15315.10
+01/13/2025,98100026,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 13",,-187.80,15127.30
+02/14/2026,98100027,Fixed Price,"Invoice for Apex Digital Inc - Sprint 14",,1368.00,16495.30
+02/14/2026,98100028,Service Fee,"Service Fee for Apex Digital Inc - Sprint 14",,-136.80,16358.50
+03/15/2025,98100029,Hourly,"Invoice for Vanguard Software Studio - Sprint 15",,853.00,17211.50
+03/15/2025,98100030,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 15",,-85.30,17126.20
+04/16/2026,98100031,Fixed Price,"Invoice for Nexus Systems - Sprint 16",,406.00,17532.20
+04/16/2026,98100032,Service Fee,"Service Fee for Nexus Systems - Sprint 16",,-40.60,17491.60
+05/17/2025,98100033,Hourly,"Invoice for CyberPulse Interactive - Sprint 17",,1385.00,18876.60
+05/17/2025,98100034,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 17",,-138.50,18738.10
+06/18/2026,98100035,Fixed Price,"Invoice for BlueSky Solutions - Sprint 18",,1386.00,20124.10
+06/18/2026,98100036,Service Fee,"Service Fee for BlueSky Solutions - Sprint 18",,-138.60,19985.50
+07/19/2025,98100037,Hourly,"Invoice for Starlight Interactive - Sprint 19",,855.00,20840.50
+07/19/2025,98100038,Service Fee,"Service Fee for Starlight Interactive - Sprint 19",,-85.50,20755.00
+08/20/2026,98100039,Fixed Price,"Invoice for Quantum Code Soft - Sprint 20",,1783.00,22538.00
+08/20/2026,98100040,Service Fee,"Service Fee for Quantum Code Soft - Sprint 20",,-178.30,22359.70
+09/21/2025,98100041,Hourly,"Invoice for TechFlow Labs LLC - Sprint 21",,508.00,22867.70
+09/21/2025,98100042,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 21",,-50.80,22816.90
+10/22/2026,98100043,Fixed Price,"Invoice for Acme Corp - Sprint 22",,1737.00,24553.90
+10/22/2026,98100044,Service Fee,"Service Fee for Acme Corp - Sprint 22",,-173.70,24380.20
+11/23/2025,98100045,Hourly,"Invoice for Horizon Media Ltd - Sprint 23",,1201.00,25581.20
+11/23/2025,98100046,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 23",,-120.10,25461.10
+12/24/2026,98100047,Fixed Price,"Invoice for Apex Digital Inc - Sprint 24",,743.00,26204.10
+12/24/2026,98100048,Service Fee,"Service Fee for Apex Digital Inc - Sprint 24",,-74.30,26129.80
+01/25/2025,98100049,Hourly,"Invoice for Vanguard Software Studio - Sprint 25",,612.00,26741.80
+01/25/2025,98100050,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 25",,-61.20,26680.60
+02/26/2026,98100051,Fixed Price,"Invoice for Nexus Systems - Sprint 26",,1995.00,28675.60
+02/26/2026,98100052,Service Fee,"Service Fee for Nexus Systems - Sprint 26",,-199.50,28476.10
+03/27/2025,98100053,Hourly,"Invoice for CyberPulse Interactive - Sprint 27",,728.00,29204.10
+03/27/2025,98100054,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 27",,-72.80,29131.30
+04/28/2026,98100055,Fixed Price,"Invoice for BlueSky Solutions - Sprint 28",,335.00,29466.30
+04/28/2026,98100056,Service Fee,"Service Fee for BlueSky Solutions - Sprint 28",,-33.50,29432.80
+05/01/2025,98100057,Hourly,"Invoice for Starlight Interactive - Sprint 29",,1607.00,31039.80
+05/01/2025,98100058,Service Fee,"Service Fee for Starlight Interactive - Sprint 29",,-160.70,30879.10
+06/02/2026,98100059,Fixed Price,"Invoice for Quantum Code Soft - Sprint 30",,1855.00,32734.10
+06/02/2026,98100060,Service Fee,"Service Fee for Quantum Code Soft - Sprint 30",,-185.50,32548.60
+07/03/2025,98100061,Hourly,"Invoice for TechFlow Labs LLC - Sprint 31",,1997.00,34545.60
+07/03/2025,98100062,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 31",,-199.70,34345.90
+08/04/2026,98100063,Fixed Price,"Invoice for Acme Corp - Sprint 32",,613.00,34958.90
+08/04/2026,98100064,Service Fee,"Service Fee for Acme Corp - Sprint 32",,-61.30,34897.60
+09/05/2025,98100065,Hourly,"Invoice for Horizon Media Ltd - Sprint 33",,902.00,35799.60
+09/05/2025,98100066,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 33",,-90.20,35709.40
+10/06/2026,98100067,Fixed Price,"Invoice for Apex Digital Inc - Sprint 34",,1489.00,37198.40
+10/06/2026,98100068,Service Fee,"Service Fee for Apex Digital Inc - Sprint 34",,-148.90,37049.50
+11/07/2025,98100069,Hourly,"Invoice for Vanguard Software Studio - Sprint 35",,1825.00,38874.50
+11/07/2025,98100070,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 35",,-182.50,38692.00
+12/08/2026,98100071,Fixed Price,"Invoice for Nexus Systems - Sprint 36",,1894.00,40586.00
+12/08/2026,98100072,Service Fee,"Service Fee for Nexus Systems - Sprint 36",,-189.40,40396.60
+01/09/2025,98100073,Hourly,"Invoice for CyberPulse Interactive - Sprint 37",,1982.00,42378.60
+01/09/2025,98100074,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 37",,-198.20,42180.40
+02/10/2026,98100075,Fixed Price,"Invoice for BlueSky Solutions - Sprint 38",,832.00,43012.40
+02/10/2026,98100076,Service Fee,"Service Fee for BlueSky Solutions - Sprint 38",,-83.20,42929.20
+03/11/2025,98100077,Hourly,"Invoice for Starlight Interactive - Sprint 39",,1788.00,44717.20
+03/11/2025,98100078,Service Fee,"Service Fee for Starlight Interactive - Sprint 39",,-178.80,44538.40
+04/12/2026,98100079,Fixed Price,"Invoice for Quantum Code Soft - Sprint 40",,1351.00,45889.40
+04/12/2026,98100080,Service Fee,"Service Fee for Quantum Code Soft - Sprint 40",,-135.10,45754.30
+05/13/2025,98100081,Hourly,"Invoice for TechFlow Labs LLC - Sprint 41",,1039.00,46793.30
+05/13/2025,98100082,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 41",,-103.90,46689.40
+06/14/2026,98100083,Fixed Price,"Invoice for Acme Corp - Sprint 42",,1164.00,47853.40
+06/14/2026,98100084,Service Fee,"Service Fee for Acme Corp - Sprint 42",,-116.40,47737.00
+07/15/2025,98100085,Hourly,"Invoice for Horizon Media Ltd - Sprint 43",,1805.00,49542.00
+07/15/2025,98100086,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 43",,-180.50,49361.50
+08/16/2026,98100087,Fixed Price,"Invoice for Apex Digital Inc - Sprint 44",,298.00,49659.50
+08/16/2026,98100088,Service Fee,"Service Fee for Apex Digital Inc - Sprint 44",,-29.80,49629.70
+09/17/2025,98100089,Hourly,"Invoice for Vanguard Software Studio - Sprint 45",,1910.00,51539.70
+09/17/2025,98100090,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 45",,-191.00,51348.70
+10/18/2026,98100091,Fixed Price,"Invoice for Nexus Systems - Sprint 46",,352.00,51700.70
+10/18/2026,98100092,Service Fee,"Service Fee for Nexus Systems - Sprint 46",,-35.20,51665.50
+11/19/2025,98100093,Hourly,"Invoice for CyberPulse Interactive - Sprint 47",,1072.00,52737.50
+11/19/2025,98100094,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 47",,-107.20,52630.30
+12/20/2026,98100095,Fixed Price,"Invoice for BlueSky Solutions - Sprint 48",,1884.00,54514.30
+12/20/2026,98100096,Service Fee,"Service Fee for BlueSky Solutions - Sprint 48",,-188.40,54325.90
+01/21/2025,98100097,Hourly,"Invoice for Starlight Interactive - Sprint 49",,1905.00,56230.90
+01/21/2025,98100098,Service Fee,"Service Fee for Starlight Interactive - Sprint 49",,-190.50,56040.40
+02/22/2026,98100099,Fixed Price,"Invoice for Quantum Code Soft - Sprint 50",,1546.00,57586.40
+02/22/2026,98100100,Service Fee,"Service Fee for Quantum Code Soft - Sprint 50",,-154.60,57431.80
+03/23/2025,98100101,Hourly,"Invoice for TechFlow Labs LLC - Sprint 51",,1489.00,58920.80
+03/23/2025,98100102,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 51",,-148.90,58771.90
+04/24/2026,98100103,Fixed Price,"Invoice for Acme Corp - Sprint 52",,1755.00,60526.90
+04/24/2026,98100104,Service Fee,"Service Fee for Acme Corp - Sprint 52",,-175.50,60351.40
+05/25/2025,98100105,Hourly,"Invoice for Horizon Media Ltd - Sprint 53",,1383.00,61734.40
+05/25/2025,98100106,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 53",,-138.30,61596.10
+06/26/2026,98100107,Fixed Price,"Invoice for Apex Digital Inc - Sprint 54",,609.00,62205.10
+06/26/2026,98100108,Service Fee,"Service Fee for Apex Digital Inc - Sprint 54",,-60.90,62144.20
+07/27/2025,98100109,Hourly,"Invoice for Vanguard Software Studio - Sprint 55",,1759.00,63903.20
+07/27/2025,98100110,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 55",,-175.90,63727.30
+08/28/2026,98100111,Fixed Price,"Invoice for Nexus Systems - Sprint 56",,1730.00,65457.30
+08/28/2026,98100112,Service Fee,"Service Fee for Nexus Systems - Sprint 56",,-173.00,65284.30
+09/01/2025,98100113,Hourly,"Invoice for CyberPulse Interactive - Sprint 57",,1625.00,66909.30
+09/01/2025,98100114,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 57",,-162.50,66746.80
+10/02/2026,98100115,Fixed Price,"Invoice for BlueSky Solutions - Sprint 58",,1263.00,68009.80
+10/02/2026,98100116,Service Fee,"Service Fee for BlueSky Solutions - Sprint 58",,-126.30,67883.50
+11/03/2025,98100117,Hourly,"Invoice for Starlight Interactive - Sprint 59",,891.00,68774.50
+11/03/2025,98100118,Service Fee,"Service Fee for Starlight Interactive - Sprint 59",,-89.10,68685.40
+12/04/2026,98100119,Fixed Price,"Invoice for Quantum Code Soft - Sprint 60",,1782.00,70467.40
+12/04/2026,98100120,Service Fee,"Service Fee for Quantum Code Soft - Sprint 60",,-178.20,70289.20
+01/05/2025,98100121,Hourly,"Invoice for TechFlow Labs LLC - Sprint 61",,1272.00,71561.20
+01/05/2025,98100122,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 61",,-127.20,71434.00
+02/06/2026,98100123,Fixed Price,"Invoice for Acme Corp - Sprint 62",,275.00,71709.00
+02/06/2026,98100124,Service Fee,"Service Fee for Acme Corp - Sprint 62",,-27.50,71681.50
+03/07/2025,98100125,Hourly,"Invoice for Horizon Media Ltd - Sprint 63",,718.00,72399.50
+03/07/2025,98100126,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 63",,-71.80,72327.70
+04/08/2026,98100127,Fixed Price,"Invoice for Apex Digital Inc - Sprint 64",,309.00,72636.70
+04/08/2026,98100128,Service Fee,"Service Fee for Apex Digital Inc - Sprint 64",,-30.90,72605.80
+05/09/2025,98100129,Hourly,"Invoice for Vanguard Software Studio - Sprint 65",,1087.00,73692.80
+05/09/2025,98100130,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 65",,-108.70,73584.10
+06/10/2026,98100131,Fixed Price,"Invoice for Nexus Systems - Sprint 66",,1081.00,74665.10
+06/10/2026,98100132,Service Fee,"Service Fee for Nexus Systems - Sprint 66",,-108.10,74557.00
+07/11/2025,98100133,Hourly,"Invoice for CyberPulse Interactive - Sprint 67",,1578.00,76135.00
+07/11/2025,98100134,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 67",,-157.80,75977.20
+08/12/2026,98100135,Fixed Price,"Invoice for BlueSky Solutions - Sprint 68",,1835.00,77812.20
+08/12/2026,98100136,Service Fee,"Service Fee for BlueSky Solutions - Sprint 68",,-183.50,77628.70
+09/13/2025,98100137,Hourly,"Invoice for Starlight Interactive - Sprint 69",,1107.00,78735.70
+09/13/2025,98100138,Service Fee,"Service Fee for Starlight Interactive - Sprint 69",,-110.70,78625.00
+10/14/2026,98100139,Fixed Price,"Invoice for Quantum Code Soft - Sprint 70",,1029.00,79654.00
+10/14/2026,98100140,Service Fee,"Service Fee for Quantum Code Soft - Sprint 70",,-102.90,79551.10
+11/15/2025,98100141,Hourly,"Invoice for TechFlow Labs LLC - Sprint 71",,915.00,80466.10
+11/15/2025,98100142,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 71",,-91.50,80374.60
+12/16/2026,98100143,Fixed Price,"Invoice for Acme Corp - Sprint 72",,559.00,80933.60
+12/16/2026,98100144,Service Fee,"Service Fee for Acme Corp - Sprint 72",,-55.90,80877.70
+01/17/2025,98100145,Hourly,"Invoice for Horizon Media Ltd - Sprint 73",,851.00,81728.70
+01/17/2025,98100146,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 73",,-85.10,81643.60
+02/18/2026,98100147,Fixed Price,"Invoice for Apex Digital Inc - Sprint 74",,1770.00,83413.60
+02/18/2026,98100148,Service Fee,"Service Fee for Apex Digital Inc - Sprint 74",,-177.00,83236.60
+03/19/2025,98100149,Hourly,"Invoice for Vanguard Software Studio - Sprint 75",,1045.00,84281.60
+03/19/2025,98100150,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 75",,-104.50,84177.10
+04/20/2026,98100151,Fixed Price,"Invoice for Nexus Systems - Sprint 76",,421.00,84598.10
+04/20/2026,98100152,Service Fee,"Service Fee for Nexus Systems - Sprint 76",,-42.10,84556.00
+05/21/2025,98100153,Hourly,"Invoice for CyberPulse Interactive - Sprint 77",,1513.00,86069.00
+05/21/2025,98100154,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 77",,-151.30,85917.70
+06/22/2026,98100155,Fixed Price,"Invoice for BlueSky Solutions - Sprint 78",,669.00,86586.70
+06/22/2026,98100156,Service Fee,"Service Fee for BlueSky Solutions - Sprint 78",,-66.90,86519.80
+07/23/2025,98100157,Hourly,"Invoice for Starlight Interactive - Sprint 79",,390.00,86909.80
+07/23/2025,98100158,Service Fee,"Service Fee for Starlight Interactive - Sprint 79",,-39.00,86870.80
+08/24/2026,98100159,Fixed Price,"Invoice for Quantum Code Soft - Sprint 80",,319.00,87189.80
+08/24/2026,98100160,Service Fee,"Service Fee for Quantum Code Soft - Sprint 80",,-31.90,87157.90
+09/25/2025,98100161,Hourly,"Invoice for TechFlow Labs LLC - Sprint 81",,990.00,88147.90
+09/25/2025,98100162,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 81",,-99.00,88048.90
+10/26/2026,98100163,Fixed Price,"Invoice for Acme Corp - Sprint 82",,1420.00,89468.90
+10/26/2026,98100164,Service Fee,"Service Fee for Acme Corp - Sprint 82",,-142.00,89326.90
+11/27/2025,98100165,Hourly,"Invoice for Horizon Media Ltd - Sprint 83",,775.00,90101.90
+11/27/2025,98100166,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 83",,-77.50,90024.40
+12/28/2026,98100167,Fixed Price,"Invoice for Apex Digital Inc - Sprint 84",,1996.00,92020.40
+12/28/2026,98100168,Service Fee,"Service Fee for Apex Digital Inc - Sprint 84",,-199.60,91820.80
+01/01/2025,98100169,Hourly,"Invoice for Vanguard Software Studio - Sprint 85",,475.00,92295.80
+01/01/2025,98100170,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 85",,-47.50,92248.30
+02/02/2026,98100171,Fixed Price,"Invoice for Nexus Systems - Sprint 86",,1625.00,93873.30
+02/02/2026,98100172,Service Fee,"Service Fee for Nexus Systems - Sprint 86",,-162.50,93710.80
+03/03/2025,98100173,Hourly,"Invoice for CyberPulse Interactive - Sprint 87",,1094.00,94804.80
+03/03/2025,98100174,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 87",,-109.40,94695.40
+04/04/2026,98100175,Fixed Price,"Invoice for BlueSky Solutions - Sprint 88",,528.00,95223.40
+04/04/2026,98100176,Service Fee,"Service Fee for BlueSky Solutions - Sprint 88",,-52.80,95170.60
+05/05/2025,98100177,Hourly,"Invoice for Starlight Interactive - Sprint 89",,395.00,95565.60
+05/05/2025,98100178,Service Fee,"Service Fee for Starlight Interactive - Sprint 89",,-39.50,95526.10
+06/06/2026,98100179,Fixed Price,"Invoice for Quantum Code Soft - Sprint 90",,423.00,95949.10
+06/06/2026,98100180,Service Fee,"Service Fee for Quantum Code Soft - Sprint 90",,-42.30,95906.80
+07/07/2025,98100181,Hourly,"Invoice for TechFlow Labs LLC - Sprint 91",,569.00,96475.80
+07/07/2025,98100182,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 91",,-56.90,96418.90
+08/08/2026,98100183,Fixed Price,"Invoice for Acme Corp - Sprint 92",,1972.00,98390.90
+08/08/2026,98100184,Service Fee,"Service Fee for Acme Corp - Sprint 92",,-197.20,98193.70
+09/09/2025,98100185,Hourly,"Invoice for Horizon Media Ltd - Sprint 93",,1582.00,99775.70
+09/09/2025,98100186,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 93",,-158.20,99617.50
+10/10/2026,98100187,Fixed Price,"Invoice for Apex Digital Inc - Sprint 94",,270.00,99887.50
+10/10/2026,98100188,Service Fee,"Service Fee for Apex Digital Inc - Sprint 94",,-27.00,99860.50
+11/11/2025,98100189,Hourly,"Invoice for Vanguard Software Studio - Sprint 95",,1674.00,101534.50
+11/11/2025,98100190,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 95",,-167.40,101367.10
+12/12/2026,98100191,Fixed Price,"Invoice for Nexus Systems - Sprint 96",,1474.00,102841.10
+12/12/2026,98100192,Service Fee,"Service Fee for Nexus Systems - Sprint 96",,-147.40,102693.70
+01/13/2025,98100193,Hourly,"Invoice for CyberPulse Interactive - Sprint 97",,1121.00,103814.70
+01/13/2025,98100194,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 97",,-112.10,103702.60
+02/14/2026,98100195,Fixed Price,"Invoice for BlueSky Solutions - Sprint 98",,621.00,104323.60
+02/14/2026,98100196,Service Fee,"Service Fee for BlueSky Solutions - Sprint 98",,-62.10,104261.50
+03/15/2025,98100197,Hourly,"Invoice for Starlight Interactive - Sprint 99",,1814.00,106075.50
+03/15/2025,98100198,Service Fee,"Service Fee for Starlight Interactive - Sprint 99",,-181.40,105894.10
+04/16/2026,98100199,Fixed Price,"Invoice for Quantum Code Soft - Sprint 100",,1094.00,106988.10
+04/16/2026,98100200,Service Fee,"Service Fee for Quantum Code Soft - Sprint 100",,-109.40,106878.70
+05/17/2025,98100201,Hourly,"Invoice for TechFlow Labs LLC - Sprint 101",,1134.00,108012.70
+05/17/2025,98100202,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 101",,-113.40,107899.30
+06/18/2026,98100203,Fixed Price,"Invoice for Acme Corp - Sprint 102",,463.00,108362.30
+06/18/2026,98100204,Service Fee,"Service Fee for Acme Corp - Sprint 102",,-46.30,108316.00
+07/19/2025,98100205,Hourly,"Invoice for Horizon Media Ltd - Sprint 103",,460.00,108776.00
+07/19/2025,98100206,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 103",,-46.00,108730.00
+08/20/2026,98100207,Fixed Price,"Invoice for Apex Digital Inc - Sprint 104",,411.00,109141.00
+08/20/2026,98100208,Service Fee,"Service Fee for Apex Digital Inc - Sprint 104",,-41.10,109099.90
+09/21/2025,98100209,Hourly,"Invoice for Vanguard Software Studio - Sprint 105",,1436.00,110535.90
+09/21/2025,98100210,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 105",,-143.60,110392.30
+10/22/2026,98100211,Fixed Price,"Invoice for Nexus Systems - Sprint 106",,1206.00,111598.30
+10/22/2026,98100212,Service Fee,"Service Fee for Nexus Systems - Sprint 106",,-120.60,111477.70
+11/23/2025,98100213,Hourly,"Invoice for CyberPulse Interactive - Sprint 107",,570.00,112047.70
+11/23/2025,98100214,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 107",,-57.00,111990.70
+12/24/2026,98100215,Fixed Price,"Invoice for BlueSky Solutions - Sprint 108",,1320.00,113310.70
+12/24/2026,98100216,Service Fee,"Service Fee for BlueSky Solutions - Sprint 108",,-132.00,113178.70
+01/25/2025,98100217,Hourly,"Invoice for Starlight Interactive - Sprint 109",,1628.00,114806.70
+01/25/2025,98100218,Service Fee,"Service Fee for Starlight Interactive - Sprint 109",,-162.80,114643.90
+02/26/2026,98100219,Fixed Price,"Invoice for Quantum Code Soft - Sprint 110",,1402.00,116045.90
+02/26/2026,98100220,Service Fee,"Service Fee for Quantum Code Soft - Sprint 110",,-140.20,115905.70
+03/27/2025,98100221,Hourly,"Invoice for TechFlow Labs LLC - Sprint 111",,1897.00,117802.70
+03/27/2025,98100222,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 111",,-189.70,117613.00
+04/28/2026,98100223,Fixed Price,"Invoice for Acme Corp - Sprint 112",,1074.00,118687.00
+04/28/2026,98100224,Service Fee,"Service Fee for Acme Corp - Sprint 112",,-107.40,118579.60
+05/01/2025,98100225,Hourly,"Invoice for Horizon Media Ltd - Sprint 113",,1324.00,119903.60
+05/01/2025,98100226,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 113",,-132.40,119771.20
+06/02/2026,98100227,Fixed Price,"Invoice for Apex Digital Inc - Sprint 114",,1843.00,121614.20
+06/02/2026,98100228,Service Fee,"Service Fee for Apex Digital Inc - Sprint 114",,-184.30,121429.90
+07/03/2025,98100229,Hourly,"Invoice for Vanguard Software Studio - Sprint 115",,1849.00,123278.90
+07/03/2025,98100230,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 115",,-184.90,123094.00
+08/04/2026,98100231,Fixed Price,"Invoice for Nexus Systems - Sprint 116",,1139.00,124233.00
+08/04/2026,98100232,Service Fee,"Service Fee for Nexus Systems - Sprint 116",,-113.90,124119.10
+09/05/2025,98100233,Hourly,"Invoice for CyberPulse Interactive - Sprint 117",,624.00,124743.10
+09/05/2025,98100234,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 117",,-62.40,124680.70
+10/06/2026,98100235,Fixed Price,"Invoice for BlueSky Solutions - Sprint 118",,925.00,125605.70
+10/06/2026,98100236,Service Fee,"Service Fee for BlueSky Solutions - Sprint 118",,-92.50,125513.20
+11/07/2025,98100237,Hourly,"Invoice for Starlight Interactive - Sprint 119",,1169.00,126682.20
+11/07/2025,98100238,Service Fee,"Service Fee for Starlight Interactive - Sprint 119",,-116.90,126565.30
+12/08/2026,98100239,Fixed Price,"Invoice for Quantum Code Soft - Sprint 120",,1444.00,128009.30
+12/08/2026,98100240,Service Fee,"Service Fee for Quantum Code Soft - Sprint 120",,-144.40,127864.90
+01/09/2025,98100241,Hourly,"Invoice for TechFlow Labs LLC - Sprint 121",,1878.00,129742.90
+01/09/2025,98100242,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 121",,-187.80,129555.10
+02/10/2026,98100243,Fixed Price,"Invoice for Acme Corp - Sprint 122",,1881.00,131436.10
+02/10/2026,98100244,Service Fee,"Service Fee for Acme Corp - Sprint 122",,-188.10,131248.00
+03/11/2025,98100245,Hourly,"Invoice for Horizon Media Ltd - Sprint 123",,1170.00,132418.00
+03/11/2025,98100246,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 123",,-117.00,132301.00
+04/12/2026,98100247,Fixed Price,"Invoice for Apex Digital Inc - Sprint 124",,914.00,133215.00
+04/12/2026,98100248,Service Fee,"Service Fee for Apex Digital Inc - Sprint 124",,-91.40,133123.60
+05/13/2025,98100249,Hourly,"Invoice for Vanguard Software Studio - Sprint 125",,1684.00,134807.60
+05/13/2025,98100250,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 125",,-168.40,134639.20
+06/14/2026,98100251,Fixed Price,"Invoice for Nexus Systems - Sprint 126",,1025.00,135664.20
+06/14/2026,98100252,Service Fee,"Service Fee for Nexus Systems - Sprint 126",,-102.50,135561.70
+07/15/2025,98100253,Hourly,"Invoice for CyberPulse Interactive - Sprint 127",,485.00,136046.70
+07/15/2025,98100254,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 127",,-48.50,135998.20
+08/16/2026,98100255,Fixed Price,"Invoice for BlueSky Solutions - Sprint 128",,1779.00,137777.20
+08/16/2026,98100256,Service Fee,"Service Fee for BlueSky Solutions - Sprint 128",,-177.90,137599.30
+09/17/2025,98100257,Hourly,"Invoice for Starlight Interactive - Sprint 129",,1230.00,138829.30
+09/17/2025,98100258,Service Fee,"Service Fee for Starlight Interactive - Sprint 129",,-123.00,138706.30
+10/18/2026,98100259,Fixed Price,"Invoice for Quantum Code Soft - Sprint 130",,521.00,139227.30
+10/18/2026,98100260,Service Fee,"Service Fee for Quantum Code Soft - Sprint 130",,-52.10,139175.20
+11/19/2025,98100261,Hourly,"Invoice for TechFlow Labs LLC - Sprint 131",,1630.00,140805.20
+11/19/2025,98100262,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 131",,-163.00,140642.20
+12/20/2026,98100263,Fixed Price,"Invoice for Acme Corp - Sprint 132",,1030.00,141672.20
+12/20/2026,98100264,Service Fee,"Service Fee for Acme Corp - Sprint 132",,-103.00,141569.20
+01/21/2025,98100265,Hourly,"Invoice for Horizon Media Ltd - Sprint 133",,348.00,141917.20
+01/21/2025,98100266,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 133",,-34.80,141882.40
+02/22/2026,98100267,Fixed Price,"Invoice for Apex Digital Inc - Sprint 134",,580.00,142462.40
+02/22/2026,98100268,Service Fee,"Service Fee for Apex Digital Inc - Sprint 134",,-58.00,142404.40
+03/23/2025,98100269,Hourly,"Invoice for Vanguard Software Studio - Sprint 135",,471.00,142875.40
+03/23/2025,98100270,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 135",,-47.10,142828.30
+04/24/2026,98100271,Fixed Price,"Invoice for Nexus Systems - Sprint 136",,1382.00,144210.30
+04/24/2026,98100272,Service Fee,"Service Fee for Nexus Systems - Sprint 136",,-138.20,144072.10
+05/25/2025,98100273,Hourly,"Invoice for CyberPulse Interactive - Sprint 137",,884.00,144956.10
+05/25/2025,98100274,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 137",,-88.40,144867.70
+06/26/2026,98100275,Fixed Price,"Invoice for BlueSky Solutions - Sprint 138",,1197.00,146064.70
+06/26/2026,98100276,Service Fee,"Service Fee for BlueSky Solutions - Sprint 138",,-119.70,145945.00
+07/27/2025,98100277,Hourly,"Invoice for Starlight Interactive - Sprint 139",,1264.00,147209.00
+07/27/2025,98100278,Service Fee,"Service Fee for Starlight Interactive - Sprint 139",,-126.40,147082.60
+08/28/2026,98100279,Fixed Price,"Invoice for Quantum Code Soft - Sprint 140",,1148.00,148230.60
+08/28/2026,98100280,Service Fee,"Service Fee for Quantum Code Soft - Sprint 140",,-114.80,148115.80
+09/01/2025,98100281,Hourly,"Invoice for TechFlow Labs LLC - Sprint 141",,561.00,148676.80
+09/01/2025,98100282,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 141",,-56.10,148620.70
+10/02/2026,98100283,Fixed Price,"Invoice for Acme Corp - Sprint 142",,571.00,149191.70
+10/02/2026,98100284,Service Fee,"Service Fee for Acme Corp - Sprint 142",,-57.10,149134.60
+11/03/2025,98100285,Hourly,"Invoice for Horizon Media Ltd - Sprint 143",,644.00,149778.60
+11/03/2025,98100286,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 143",,-64.40,149714.20
+12/04/2026,98100287,Fixed Price,"Invoice for Apex Digital Inc - Sprint 144",,902.00,150616.20
+12/04/2026,98100288,Service Fee,"Service Fee for Apex Digital Inc - Sprint 144",,-90.20,150526.00
+01/05/2025,98100289,Hourly,"Invoice for Vanguard Software Studio - Sprint 145",,1767.00,152293.00
+01/05/2025,98100290,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 145",,-176.70,152116.30
+02/06/2026,98100291,Fixed Price,"Invoice for Nexus Systems - Sprint 146",,1969.00,154085.30
+02/06/2026,98100292,Service Fee,"Service Fee for Nexus Systems - Sprint 146",,-196.90,153888.40
+03/07/2025,98100293,Hourly,"Invoice for CyberPulse Interactive - Sprint 147",,1762.00,155650.40
+03/07/2025,98100294,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 147",,-176.20,155474.20
+04/08/2026,98100295,Fixed Price,"Invoice for BlueSky Solutions - Sprint 148",,484.00,155958.20
+04/08/2026,98100296,Service Fee,"Service Fee for BlueSky Solutions - Sprint 148",,-48.40,155909.80
+05/09/2025,98100297,Hourly,"Invoice for Starlight Interactive - Sprint 149",,255.00,156164.80
+05/09/2025,98100298,Service Fee,"Service Fee for Starlight Interactive - Sprint 149",,-25.50,156139.30
+06/10/2026,98100299,Fixed Price,"Invoice for Quantum Code Soft - Sprint 150",,928.00,157067.30
+06/10/2026,98100300,Service Fee,"Service Fee for Quantum Code Soft - Sprint 150",,-92.80,156974.50
+07/11/2025,98100301,Hourly,"Invoice for TechFlow Labs LLC - Sprint 151",,1658.00,158632.50
+07/11/2025,98100302,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 151",,-165.80,158466.70
+08/12/2026,98100303,Fixed Price,"Invoice for Acme Corp - Sprint 152",,1378.00,159844.70
+08/12/2026,98100304,Service Fee,"Service Fee for Acme Corp - Sprint 152",,-137.80,159706.90
+09/13/2025,98100305,Hourly,"Invoice for Horizon Media Ltd - Sprint 153",,456.00,160162.90
+09/13/2025,98100306,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 153",,-45.60,160117.30
+10/14/2026,98100307,Fixed Price,"Invoice for Apex Digital Inc - Sprint 154",,746.00,160863.30
+10/14/2026,98100308,Service Fee,"Service Fee for Apex Digital Inc - Sprint 154",,-74.60,160788.70
+11/15/2025,98100309,Hourly,"Invoice for Vanguard Software Studio - Sprint 155",,1704.00,162492.70
+11/15/2025,98100310,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 155",,-170.40,162322.30
+12/16/2026,98100311,Fixed Price,"Invoice for Nexus Systems - Sprint 156",,627.00,162949.30
+12/16/2026,98100312,Service Fee,"Service Fee for Nexus Systems - Sprint 156",,-62.70,162886.60
+01/17/2025,98100313,Hourly,"Invoice for CyberPulse Interactive - Sprint 157",,1621.00,164507.60
+01/17/2025,98100314,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 157",,-162.10,164345.50
+02/18/2026,98100315,Fixed Price,"Invoice for BlueSky Solutions - Sprint 158",,1616.00,165961.50
+02/18/2026,98100316,Service Fee,"Service Fee for BlueSky Solutions - Sprint 158",,-161.60,165799.90
+03/19/2025,98100317,Hourly,"Invoice for Starlight Interactive - Sprint 159",,571.00,166370.90
+03/19/2025,98100318,Service Fee,"Service Fee for Starlight Interactive - Sprint 159",,-57.10,166313.80
+04/20/2026,98100319,Fixed Price,"Invoice for Quantum Code Soft - Sprint 160",,758.00,167071.80
+04/20/2026,98100320,Service Fee,"Service Fee for Quantum Code Soft - Sprint 160",,-75.80,166996.00
+05/21/2025,98100321,Hourly,"Invoice for TechFlow Labs LLC - Sprint 161",,476.00,167472.00
+05/21/2025,98100322,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 161",,-47.60,167424.40
+06/22/2026,98100323,Fixed Price,"Invoice for Acme Corp - Sprint 162",,1714.00,169138.40
+06/22/2026,98100324,Service Fee,"Service Fee for Acme Corp - Sprint 162",,-171.40,168967.00
+07/23/2025,98100325,Hourly,"Invoice for Horizon Media Ltd - Sprint 163",,1723.00,170690.00
+07/23/2025,98100326,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 163",,-172.30,170517.70
+08/24/2026,98100327,Fixed Price,"Invoice for Apex Digital Inc - Sprint 164",,1967.00,172484.70
+08/24/2026,98100328,Service Fee,"Service Fee for Apex Digital Inc - Sprint 164",,-196.70,172288.00
+09/25/2025,98100329,Hourly,"Invoice for Vanguard Software Studio - Sprint 165",,992.00,173280.00
+09/25/2025,98100330,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 165",,-99.20,173180.80
+10/26/2026,98100331,Fixed Price,"Invoice for Nexus Systems - Sprint 166",,558.00,173738.80
+10/26/2026,98100332,Service Fee,"Service Fee for Nexus Systems - Sprint 166",,-55.80,173683.00
+11/27/2025,98100333,Hourly,"Invoice for CyberPulse Interactive - Sprint 167",,509.00,174192.00
+11/27/2025,98100334,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 167",,-50.90,174141.10
+12/28/2026,98100335,Fixed Price,"Invoice for BlueSky Solutions - Sprint 168",,1169.00,175310.10
+12/28/2026,98100336,Service Fee,"Service Fee for BlueSky Solutions - Sprint 168",,-116.90,175193.20
+01/01/2025,98100337,Hourly,"Invoice for Starlight Interactive - Sprint 169",,1395.00,176588.20
+01/01/2025,98100338,Service Fee,"Service Fee for Starlight Interactive - Sprint 169",,-139.50,176448.70
+02/02/2026,98100339,Fixed Price,"Invoice for Quantum Code Soft - Sprint 170",,1970.00,178418.70
+02/02/2026,98100340,Service Fee,"Service Fee for Quantum Code Soft - Sprint 170",,-197.00,178221.70
+03/03/2025,98100341,Hourly,"Invoice for TechFlow Labs LLC - Sprint 171",,690.00,178911.70
+03/03/2025,98100342,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 171",,-69.00,178842.70
+04/04/2026,98100343,Fixed Price,"Invoice for Acme Corp - Sprint 172",,443.00,179285.70
+04/04/2026,98100344,Service Fee,"Service Fee for Acme Corp - Sprint 172",,-44.30,179241.40
+05/05/2025,98100345,Hourly,"Invoice for Horizon Media Ltd - Sprint 173",,1179.00,180420.40
+05/05/2025,98100346,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 173",,-117.90,180302.50
+06/06/2026,98100347,Fixed Price,"Invoice for Apex Digital Inc - Sprint 174",,1564.00,181866.50
+06/06/2026,98100348,Service Fee,"Service Fee for Apex Digital Inc - Sprint 174",,-156.40,181710.10
+07/07/2025,98100349,Hourly,"Invoice for Vanguard Software Studio - Sprint 175",,573.00,182283.10
+07/07/2025,98100350,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 175",,-57.30,182225.80
+08/08/2026,98100351,Fixed Price,"Invoice for Nexus Systems - Sprint 176",,442.00,182667.80
+08/08/2026,98100352,Service Fee,"Service Fee for Nexus Systems - Sprint 176",,-44.20,182623.60
+09/09/2025,98100353,Hourly,"Invoice for CyberPulse Interactive - Sprint 177",,1044.00,183667.60
+09/09/2025,98100354,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 177",,-104.40,183563.20
+10/10/2026,98100355,Fixed Price,"Invoice for BlueSky Solutions - Sprint 178",,1286.00,184849.20
+10/10/2026,98100356,Service Fee,"Service Fee for BlueSky Solutions - Sprint 178",,-128.60,184720.60
+11/11/2025,98100357,Hourly,"Invoice for Starlight Interactive - Sprint 179",,912.00,185632.60
+11/11/2025,98100358,Service Fee,"Service Fee for Starlight Interactive - Sprint 179",,-91.20,185541.40
+12/12/2026,98100359,Fixed Price,"Invoice for Quantum Code Soft - Sprint 180",,833.00,186374.40
+12/12/2026,98100360,Service Fee,"Service Fee for Quantum Code Soft - Sprint 180",,-83.30,186291.10
+01/13/2025,98100361,Hourly,"Invoice for TechFlow Labs LLC - Sprint 181",,1732.00,188023.10
+01/13/2025,98100362,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 181",,-173.20,187849.90
+02/14/2026,98100363,Fixed Price,"Invoice for Acme Corp - Sprint 182",,835.00,188684.90
+02/14/2026,98100364,Service Fee,"Service Fee for Acme Corp - Sprint 182",,-83.50,188601.40
+03/15/2025,98100365,Hourly,"Invoice for Horizon Media Ltd - Sprint 183",,844.00,189445.40
+03/15/2025,98100366,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 183",,-84.40,189361.00
+04/16/2026,98100367,Fixed Price,"Invoice for Apex Digital Inc - Sprint 184",,282.00,189643.00
+04/16/2026,98100368,Service Fee,"Service Fee for Apex Digital Inc - Sprint 184",,-28.20,189614.80
+05/17/2025,98100369,Hourly,"Invoice for Vanguard Software Studio - Sprint 185",,651.00,190265.80
+05/17/2025,98100370,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 185",,-65.10,190200.70
+06/18/2026,98100371,Fixed Price,"Invoice for Nexus Systems - Sprint 186",,1120.00,191320.70
+06/18/2026,98100372,Service Fee,"Service Fee for Nexus Systems - Sprint 186",,-112.00,191208.70
+07/19/2025,98100373,Hourly,"Invoice for CyberPulse Interactive - Sprint 187",,259.00,191467.70
+07/19/2025,98100374,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 187",,-25.90,191441.80
+08/20/2026,98100375,Fixed Price,"Invoice for BlueSky Solutions - Sprint 188",,726.00,192167.80
+08/20/2026,98100376,Service Fee,"Service Fee for BlueSky Solutions - Sprint 188",,-72.60,192095.20
+09/21/2025,98100377,Hourly,"Invoice for Starlight Interactive - Sprint 189",,331.00,192426.20
+09/21/2025,98100378,Service Fee,"Service Fee for Starlight Interactive - Sprint 189",,-33.10,192393.10
+10/22/2026,98100379,Fixed Price,"Invoice for Quantum Code Soft - Sprint 190",,1728.00,194121.10
+10/22/2026,98100380,Service Fee,"Service Fee for Quantum Code Soft - Sprint 190",,-172.80,193948.30
+11/23/2025,98100381,Hourly,"Invoice for TechFlow Labs LLC - Sprint 191",,795.00,194743.30
+11/23/2025,98100382,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 191",,-79.50,194663.80
+12/24/2026,98100383,Fixed Price,"Invoice for Acme Corp - Sprint 192",,1156.00,195819.80
+12/24/2026,98100384,Service Fee,"Service Fee for Acme Corp - Sprint 192",,-115.60,195704.20
+01/25/2025,98100385,Hourly,"Invoice for Horizon Media Ltd - Sprint 193",,887.00,196591.20
+01/25/2025,98100386,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 193",,-88.70,196502.50
+02/26/2026,98100387,Fixed Price,"Invoice for Apex Digital Inc - Sprint 194",,356.00,196858.50
+02/26/2026,98100388,Service Fee,"Service Fee for Apex Digital Inc - Sprint 194",,-35.60,196822.90
+03/27/2025,98100389,Hourly,"Invoice for Vanguard Software Studio - Sprint 195",,805.00,197627.90
+03/27/2025,98100390,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 195",,-80.50,197547.40
+04/28/2026,98100391,Fixed Price,"Invoice for Nexus Systems - Sprint 196",,502.00,198049.40
+04/28/2026,98100392,Service Fee,"Service Fee for Nexus Systems - Sprint 196",,-50.20,197999.20
+05/01/2025,98100393,Hourly,"Invoice for CyberPulse Interactive - Sprint 197",,1277.00,199276.20
+05/01/2025,98100394,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 197",,-127.70,199148.50
+06/02/2026,98100395,Fixed Price,"Invoice for BlueSky Solutions - Sprint 198",,563.00,199711.50
+06/02/2026,98100396,Service Fee,"Service Fee for BlueSky Solutions - Sprint 198",,-56.30,199655.20
+07/03/2025,98100397,Hourly,"Invoice for Starlight Interactive - Sprint 199",,528.00,200183.20
+07/03/2025,98100398,Service Fee,"Service Fee for Starlight Interactive - Sprint 199",,-52.80,200130.40
+08/04/2026,98100399,Fixed Price,"Invoice for Quantum Code Soft - Sprint 200",,1487.00,201617.40
+08/04/2026,98100400,Service Fee,"Service Fee for Quantum Code Soft - Sprint 200",,-148.70,201468.70
+09/05/2025,98100401,Hourly,"Invoice for TechFlow Labs LLC - Sprint 201",,334.00,201802.70
+09/05/2025,98100402,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 201",,-33.40,201769.30
+10/06/2026,98100403,Fixed Price,"Invoice for Acme Corp - Sprint 202",,1302.00,203071.30
+10/06/2026,98100404,Service Fee,"Service Fee for Acme Corp - Sprint 202",,-130.20,202941.10
+11/07/2025,98100405,Hourly,"Invoice for Horizon Media Ltd - Sprint 203",,783.00,203724.10
+11/07/2025,98100406,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 203",,-78.30,203645.80
+12/08/2026,98100407,Fixed Price,"Invoice for Apex Digital Inc - Sprint 204",,1154.00,204799.80
+12/08/2026,98100408,Service Fee,"Service Fee for Apex Digital Inc - Sprint 204",,-115.40,204684.40
+01/09/2025,98100409,Hourly,"Invoice for Vanguard Software Studio - Sprint 205",,1724.00,206408.40
+01/09/2025,98100410,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 205",,-172.40,206236.00
+02/10/2026,98100411,Fixed Price,"Invoice for Nexus Systems - Sprint 206",,1798.00,208034.00
+02/10/2026,98100412,Service Fee,"Service Fee for Nexus Systems - Sprint 206",,-179.80,207854.20
+03/11/2025,98100413,Hourly,"Invoice for CyberPulse Interactive - Sprint 207",,1694.00,209548.20
+03/11/2025,98100414,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 207",,-169.40,209378.80
+04/12/2026,98100415,Fixed Price,"Invoice for BlueSky Solutions - Sprint 208",,1468.00,210846.80
+04/12/2026,98100416,Service Fee,"Service Fee for BlueSky Solutions - Sprint 208",,-146.80,210700.00
+05/13/2025,98100417,Hourly,"Invoice for Starlight Interactive - Sprint 209",,862.00,211562.00
+05/13/2025,98100418,Service Fee,"Service Fee for Starlight Interactive - Sprint 209",,-86.20,211475.80
+06/14/2026,98100419,Fixed Price,"Invoice for Quantum Code Soft - Sprint 210",,659.00,212134.80
+06/14/2026,98100420,Service Fee,"Service Fee for Quantum Code Soft - Sprint 210",,-65.90,212068.90
+07/15/2025,98100421,Hourly,"Invoice for TechFlow Labs LLC - Sprint 211",,994.00,213062.90
+07/15/2025,98100422,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 211",,-99.40,212963.50
+08/16/2026,98100423,Fixed Price,"Invoice for Acme Corp - Sprint 212",,609.00,213572.50
+08/16/2026,98100424,Service Fee,"Service Fee for Acme Corp - Sprint 212",,-60.90,213511.60
+09/17/2025,98100425,Hourly,"Invoice for Horizon Media Ltd - Sprint 213",,387.00,213898.60
+09/17/2025,98100426,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 213",,-38.70,213859.90
+10/18/2026,98100427,Fixed Price,"Invoice for Apex Digital Inc - Sprint 214",,346.00,214205.90
+10/18/2026,98100428,Service Fee,"Service Fee for Apex Digital Inc - Sprint 214",,-34.60,214171.30
+11/19/2025,98100429,Hourly,"Invoice for Vanguard Software Studio - Sprint 215",,1882.00,216053.30
+11/19/2025,98100430,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 215",,-188.20,215865.10
+12/20/2026,98100431,Fixed Price,"Invoice for Nexus Systems - Sprint 216",,1680.00,217545.10
+12/20/2026,98100432,Service Fee,"Service Fee for Nexus Systems - Sprint 216",,-168.00,217377.10
+01/21/2025,98100433,Hourly,"Invoice for CyberPulse Interactive - Sprint 217",,536.00,217913.10
+01/21/2025,98100434,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 217",,-53.60,217859.50
+02/22/2026,98100435,Fixed Price,"Invoice for BlueSky Solutions - Sprint 218",,1272.00,219131.50
+02/22/2026,98100436,Service Fee,"Service Fee for BlueSky Solutions - Sprint 218",,-127.20,219004.30
+03/23/2025,98100437,Hourly,"Invoice for Starlight Interactive - Sprint 219",,1780.00,220784.30
+03/23/2025,98100438,Service Fee,"Service Fee for Starlight Interactive - Sprint 219",,-178.00,220606.30
+04/24/2026,98100439,Fixed Price,"Invoice for Quantum Code Soft - Sprint 220",,445.00,221051.30
+04/24/2026,98100440,Service Fee,"Service Fee for Quantum Code Soft - Sprint 220",,-44.50,221006.80
+05/25/2025,98100441,Hourly,"Invoice for TechFlow Labs LLC - Sprint 221",,884.00,221890.80
+05/25/2025,98100442,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 221",,-88.40,221802.40
+06/26/2026,98100443,Fixed Price,"Invoice for Acme Corp - Sprint 222",,562.00,222364.40
+06/26/2026,98100444,Service Fee,"Service Fee for Acme Corp - Sprint 222",,-56.20,222308.20
+07/27/2025,98100445,Hourly,"Invoice for Horizon Media Ltd - Sprint 223",,1048.00,223356.20
+07/27/2025,98100446,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 223",,-104.80,223251.40
+08/28/2026,98100447,Fixed Price,"Invoice for Apex Digital Inc - Sprint 224",,1227.00,224478.40
+08/28/2026,98100448,Service Fee,"Service Fee for Apex Digital Inc - Sprint 224",,-122.70,224355.70
+09/01/2025,98100449,Hourly,"Invoice for Vanguard Software Studio - Sprint 225",,1233.00,225588.70
+09/01/2025,98100450,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 225",,-123.30,225465.40
+10/02/2026,98100451,Fixed Price,"Invoice for Nexus Systems - Sprint 226",,444.00,225909.40
+10/02/2026,98100452,Service Fee,"Service Fee for Nexus Systems - Sprint 226",,-44.40,225865.00
+11/03/2025,98100453,Hourly,"Invoice for CyberPulse Interactive - Sprint 227",,1573.00,227438.00
+11/03/2025,98100454,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 227",,-157.30,227280.70
+12/04/2026,98100455,Fixed Price,"Invoice for BlueSky Solutions - Sprint 228",,273.00,227553.70
+12/04/2026,98100456,Service Fee,"Service Fee for BlueSky Solutions - Sprint 228",,-27.30,227526.40
+01/05/2025,98100457,Hourly,"Invoice for Starlight Interactive - Sprint 229",,1343.00,228869.40
+01/05/2025,98100458,Service Fee,"Service Fee for Starlight Interactive - Sprint 229",,-134.30,228735.10
+02/06/2026,98100459,Fixed Price,"Invoice for Quantum Code Soft - Sprint 230",,1810.00,230545.10
+02/06/2026,98100460,Service Fee,"Service Fee for Quantum Code Soft - Sprint 230",,-181.00,230364.10
+03/07/2025,98100461,Hourly,"Invoice for TechFlow Labs LLC - Sprint 231",,713.00,231077.10
+03/07/2025,98100462,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 231",,-71.30,231005.80
+04/08/2026,98100463,Fixed Price,"Invoice for Acme Corp - Sprint 232",,1186.00,232191.80
+04/08/2026,98100464,Service Fee,"Service Fee for Acme Corp - Sprint 232",,-118.60,232073.20
+05/09/2025,98100465,Hourly,"Invoice for Horizon Media Ltd - Sprint 233",,671.00,232744.20
+05/09/2025,98100466,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 233",,-67.10,232677.10
+06/10/2026,98100467,Fixed Price,"Invoice for Apex Digital Inc - Sprint 234",,1498.00,234175.10
+06/10/2026,98100468,Service Fee,"Service Fee for Apex Digital Inc - Sprint 234",,-149.80,234025.30
+07/11/2025,98100469,Hourly,"Invoice for Vanguard Software Studio - Sprint 235",,790.00,234815.30
+07/11/2025,98100470,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 235",,-79.00,234736.30
+08/12/2026,98100471,Fixed Price,"Invoice for Nexus Systems - Sprint 236",,298.00,235034.30
+08/12/2026,98100472,Service Fee,"Service Fee for Nexus Systems - Sprint 236",,-29.80,235004.50
+09/13/2025,98100473,Hourly,"Invoice for CyberPulse Interactive - Sprint 237",,1317.00,236321.50
+09/13/2025,98100474,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 237",,-131.70,236189.80
+10/14/2026,98100475,Fixed Price,"Invoice for BlueSky Solutions - Sprint 238",,704.00,236893.80
+10/14/2026,98100476,Service Fee,"Service Fee for BlueSky Solutions - Sprint 238",,-70.40,236823.40
+11/15/2025,98100477,Hourly,"Invoice for Starlight Interactive - Sprint 239",,1179.00,238002.40
+11/15/2025,98100478,Service Fee,"Service Fee for Starlight Interactive - Sprint 239",,-117.90,237884.50
+12/16/2026,98100479,Fixed Price,"Invoice for Quantum Code Soft - Sprint 240",,952.00,238836.50
+12/16/2026,98100480,Service Fee,"Service Fee for Quantum Code Soft - Sprint 240",,-95.20,238741.30
+01/17/2025,98100481,Hourly,"Invoice for TechFlow Labs LLC - Sprint 241",,986.00,239727.30
+01/17/2025,98100482,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 241",,-98.60,239628.70
+02/18/2026,98100483,Fixed Price,"Invoice for Acme Corp - Sprint 242",,1765.00,241393.70
+02/18/2026,98100484,Service Fee,"Service Fee for Acme Corp - Sprint 242",,-176.50,241217.20
+03/19/2025,98100485,Hourly,"Invoice for Horizon Media Ltd - Sprint 243",,1691.00,242908.20
+03/19/2025,98100486,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 243",,-169.10,242739.10
+04/20/2026,98100487,Fixed Price,"Invoice for Apex Digital Inc - Sprint 244",,1685.00,244424.10
+04/20/2026,98100488,Service Fee,"Service Fee for Apex Digital Inc - Sprint 244",,-168.50,244255.60
+05/21/2025,98100489,Hourly,"Invoice for Vanguard Software Studio - Sprint 245",,313.00,244568.60
+05/21/2025,98100490,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 245",,-31.30,244537.30
+06/22/2026,98100491,Fixed Price,"Invoice for Nexus Systems - Sprint 246",,1993.00,246530.30
+06/22/2026,98100492,Service Fee,"Service Fee for Nexus Systems - Sprint 246",,-199.30,246331.00
+07/23/2025,98100493,Hourly,"Invoice for CyberPulse Interactive - Sprint 247",,1783.00,248114.00
+07/23/2025,98100494,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 247",,-178.30,247935.70
+08/24/2026,98100495,Fixed Price,"Invoice for BlueSky Solutions - Sprint 248",,1528.00,249463.70
+08/24/2026,98100496,Service Fee,"Service Fee for BlueSky Solutions - Sprint 248",,-152.80,249310.90
+09/25/2025,98100497,Hourly,"Invoice for Starlight Interactive - Sprint 249",,1756.00,251066.90
+09/25/2025,98100498,Service Fee,"Service Fee for Starlight Interactive - Sprint 249",,-175.60,250891.30
+10/26/2026,98100499,Fixed Price,"Invoice for Quantum Code Soft - Sprint 250",,1801.00,252692.30
+10/26/2026,98100500,Service Fee,"Service Fee for Quantum Code Soft - Sprint 250",,-180.10,252512.20
+11/27/2025,98100501,Hourly,"Invoice for TechFlow Labs LLC - Sprint 251",,1807.00,254319.20
+11/27/2025,98100502,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 251",,-180.70,254138.50
+12/28/2026,98100503,Fixed Price,"Invoice for Acme Corp - Sprint 252",,1506.00,255644.50
+12/28/2026,98100504,Service Fee,"Service Fee for Acme Corp - Sprint 252",,-150.60,255493.90
+01/01/2025,98100505,Hourly,"Invoice for Horizon Media Ltd - Sprint 253",,1995.00,257488.90
+01/01/2025,98100506,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 253",,-199.50,257289.40
+02/02/2026,98100507,Fixed Price,"Invoice for Apex Digital Inc - Sprint 254",,735.00,258024.40
+02/02/2026,98100508,Service Fee,"Service Fee for Apex Digital Inc - Sprint 254",,-73.50,257950.90
+03/03/2025,98100509,Hourly,"Invoice for Vanguard Software Studio - Sprint 255",,864.00,258814.90
+03/03/2025,98100510,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 255",,-86.40,258728.50
+04/04/2026,98100511,Fixed Price,"Invoice for Nexus Systems - Sprint 256",,1080.00,259808.50
+04/04/2026,98100512,Service Fee,"Service Fee for Nexus Systems - Sprint 256",,-108.00,259700.50
+05/05/2025,98100513,Hourly,"Invoice for CyberPulse Interactive - Sprint 257",,707.00,260407.50
+05/05/2025,98100514,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 257",,-70.70,260336.80
+06/06/2026,98100515,Fixed Price,"Invoice for BlueSky Solutions - Sprint 258",,1750.00,262086.80
+06/06/2026,98100516,Service Fee,"Service Fee for BlueSky Solutions - Sprint 258",,-175.00,261911.80
+07/07/2025,98100517,Hourly,"Invoice for Starlight Interactive - Sprint 259",,1321.00,263232.80
+07/07/2025,98100518,Service Fee,"Service Fee for Starlight Interactive - Sprint 259",,-132.10,263100.70
+08/08/2026,98100519,Fixed Price,"Invoice for Quantum Code Soft - Sprint 260",,1283.00,264383.70
+08/08/2026,98100520,Service Fee,"Service Fee for Quantum Code Soft - Sprint 260",,-128.30,264255.40
+09/09/2025,98100521,Hourly,"Invoice for TechFlow Labs LLC - Sprint 261",,1643.00,265898.40
+09/09/2025,98100522,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 261",,-164.30,265734.10
+10/10/2026,98100523,Fixed Price,"Invoice for Acme Corp - Sprint 262",,1877.00,267611.10
+10/10/2026,98100524,Service Fee,"Service Fee for Acme Corp - Sprint 262",,-187.70,267423.40
+11/11/2025,98100525,Hourly,"Invoice for Horizon Media Ltd - Sprint 263",,729.00,268152.40
+11/11/2025,98100526,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 263",,-72.90,268079.50
+12/12/2026,98100527,Fixed Price,"Invoice for Apex Digital Inc - Sprint 264",,1843.00,269922.50
+12/12/2026,98100528,Service Fee,"Service Fee for Apex Digital Inc - Sprint 264",,-184.30,269738.20
+01/13/2025,98100529,Hourly,"Invoice for Vanguard Software Studio - Sprint 265",,1137.00,270875.20
+01/13/2025,98100530,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 265",,-113.70,270761.50
+02/14/2026,98100531,Fixed Price,"Invoice for Nexus Systems - Sprint 266",,431.00,271192.50
+02/14/2026,98100532,Service Fee,"Service Fee for Nexus Systems - Sprint 266",,-43.10,271149.40
+03/15/2025,98100533,Hourly,"Invoice for CyberPulse Interactive - Sprint 267",,1528.00,272677.40
+03/15/2025,98100534,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 267",,-152.80,272524.60
+04/16/2026,98100535,Fixed Price,"Invoice for BlueSky Solutions - Sprint 268",,541.00,273065.60
+04/16/2026,98100536,Service Fee,"Service Fee for BlueSky Solutions - Sprint 268",,-54.10,273011.50
+05/17/2025,98100537,Hourly,"Invoice for Starlight Interactive - Sprint 269",,771.00,273782.50
+05/17/2025,98100538,Service Fee,"Service Fee for Starlight Interactive - Sprint 269",,-77.10,273705.40
+06/18/2026,98100539,Fixed Price,"Invoice for Quantum Code Soft - Sprint 270",,1781.00,275486.40
+06/18/2026,98100540,Service Fee,"Service Fee for Quantum Code Soft - Sprint 270",,-178.10,275308.30
+07/19/2025,98100541,Hourly,"Invoice for TechFlow Labs LLC - Sprint 271",,721.00,276029.30
+07/19/2025,98100542,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 271",,-72.10,275957.20
+08/20/2026,98100543,Fixed Price,"Invoice for Acme Corp - Sprint 272",,892.00,276849.20
+08/20/2026,98100544,Service Fee,"Service Fee for Acme Corp - Sprint 272",,-89.20,276760.00
+09/21/2025,98100545,Hourly,"Invoice for Horizon Media Ltd - Sprint 273",,793.00,277553.00
+09/21/2025,98100546,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 273",,-79.30,277473.70
+10/22/2026,98100547,Fixed Price,"Invoice for Apex Digital Inc - Sprint 274",,1993.00,279466.70
+10/22/2026,98100548,Service Fee,"Service Fee for Apex Digital Inc - Sprint 274",,-199.30,279267.40
+11/23/2025,98100549,Hourly,"Invoice for Vanguard Software Studio - Sprint 275",,672.00,279939.40
+11/23/2025,98100550,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 275",,-67.20,279872.20
+12/24/2026,98100551,Fixed Price,"Invoice for Nexus Systems - Sprint 276",,628.00,280500.20
+12/24/2026,98100552,Service Fee,"Service Fee for Nexus Systems - Sprint 276",,-62.80,280437.40
+01/25/2025,98100553,Hourly,"Invoice for CyberPulse Interactive - Sprint 277",,1428.00,281865.40
+01/25/2025,98100554,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 277",,-142.80,281722.60
+02/26/2026,98100555,Fixed Price,"Invoice for BlueSky Solutions - Sprint 278",,413.00,282135.60
+02/26/2026,98100556,Service Fee,"Service Fee for BlueSky Solutions - Sprint 278",,-41.30,282094.30
+03/27/2025,98100557,Hourly,"Invoice for Starlight Interactive - Sprint 279",,954.00,283048.30
+03/27/2025,98100558,Service Fee,"Service Fee for Starlight Interactive - Sprint 279",,-95.40,282952.90
+04/28/2026,98100559,Fixed Price,"Invoice for Quantum Code Soft - Sprint 280",,693.00,283645.90
+04/28/2026,98100560,Service Fee,"Service Fee for Quantum Code Soft - Sprint 280",,-69.30,283576.60
+05/01/2025,98100561,Hourly,"Invoice for TechFlow Labs LLC - Sprint 281",,744.00,284320.60
+05/01/2025,98100562,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 281",,-74.40,284246.20
+06/02/2026,98100563,Fixed Price,"Invoice for Acme Corp - Sprint 282",,573.00,284819.20
+06/02/2026,98100564,Service Fee,"Service Fee for Acme Corp - Sprint 282",,-57.30,284761.90
+07/03/2025,98100565,Hourly,"Invoice for Horizon Media Ltd - Sprint 283",,1664.00,286425.90
+07/03/2025,98100566,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 283",,-166.40,286259.50
+08/04/2026,98100567,Fixed Price,"Invoice for Apex Digital Inc - Sprint 284",,729.00,286988.50
+08/04/2026,98100568,Service Fee,"Service Fee for Apex Digital Inc - Sprint 284",,-72.90,286915.60
+09/05/2025,98100569,Hourly,"Invoice for Vanguard Software Studio - Sprint 285",,1962.00,288877.60
+09/05/2025,98100570,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 285",,-196.20,288681.40
+10/06/2026,98100571,Fixed Price,"Invoice for Nexus Systems - Sprint 286",,1661.00,290342.40
+10/06/2026,98100572,Service Fee,"Service Fee for Nexus Systems - Sprint 286",,-166.10,290176.30
+11/07/2025,98100573,Hourly,"Invoice for CyberPulse Interactive - Sprint 287",,744.00,290920.30
+11/07/2025,98100574,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 287",,-74.40,290845.90
+12/08/2026,98100575,Fixed Price,"Invoice for BlueSky Solutions - Sprint 288",,1630.00,292475.90
+12/08/2026,98100576,Service Fee,"Service Fee for BlueSky Solutions - Sprint 288",,-163.00,292312.90
+01/09/2025,98100577,Hourly,"Invoice for Starlight Interactive - Sprint 289",,1354.00,293666.90
+01/09/2025,98100578,Service Fee,"Service Fee for Starlight Interactive - Sprint 289",,-135.40,293531.50
+02/10/2026,98100579,Fixed Price,"Invoice for Quantum Code Soft - Sprint 290",,1863.00,295394.50
+02/10/2026,98100580,Service Fee,"Service Fee for Quantum Code Soft - Sprint 290",,-186.30,295208.20
+03/11/2025,98100581,Hourly,"Invoice for TechFlow Labs LLC - Sprint 291",,1300.00,296508.20
+03/11/2025,98100582,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 291",,-130.00,296378.20
+04/12/2026,98100583,Fixed Price,"Invoice for Acme Corp - Sprint 292",,1012.00,297390.20
+04/12/2026,98100584,Service Fee,"Service Fee for Acme Corp - Sprint 292",,-101.20,297289.00
+05/13/2025,98100585,Hourly,"Invoice for Horizon Media Ltd - Sprint 293",,1254.00,298543.00
+05/13/2025,98100586,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 293",,-125.40,298417.60
+06/14/2026,98100587,Fixed Price,"Invoice for Apex Digital Inc - Sprint 294",,774.00,299191.60
+06/14/2026,98100588,Service Fee,"Service Fee for Apex Digital Inc - Sprint 294",,-77.40,299114.20
+07/15/2025,98100589,Hourly,"Invoice for Vanguard Software Studio - Sprint 295",,1873.00,300987.20
+07/15/2025,98100590,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 295",,-187.30,300799.90
+08/16/2026,98100591,Fixed Price,"Invoice for Nexus Systems - Sprint 296",,728.00,301527.90
+08/16/2026,98100592,Service Fee,"Service Fee for Nexus Systems - Sprint 296",,-72.80,301455.10
+09/17/2025,98100593,Hourly,"Invoice for CyberPulse Interactive - Sprint 297",,777.00,302232.10
+09/17/2025,98100594,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 297",,-77.70,302154.40
+10/18/2026,98100595,Fixed Price,"Invoice for BlueSky Solutions - Sprint 298",,474.00,302628.40
+10/18/2026,98100596,Service Fee,"Service Fee for BlueSky Solutions - Sprint 298",,-47.40,302581.00
+11/19/2025,98100597,Hourly,"Invoice for Starlight Interactive - Sprint 299",,1313.00,303894.00
+11/19/2025,98100598,Service Fee,"Service Fee for Starlight Interactive - Sprint 299",,-131.30,303762.70
+12/20/2026,98100599,Fixed Price,"Invoice for Quantum Code Soft - Sprint 300",,655.00,304417.70
+12/20/2026,98100600,Service Fee,"Service Fee for Quantum Code Soft - Sprint 300",,-65.50,304352.20
+01/21/2025,98100601,Hourly,"Invoice for TechFlow Labs LLC - Sprint 301",,735.00,305087.20
+01/21/2025,98100602,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 301",,-73.50,305013.70
+02/22/2026,98100603,Fixed Price,"Invoice for Acme Corp - Sprint 302",,1807.00,306820.70
+02/22/2026,98100604,Service Fee,"Service Fee for Acme Corp - Sprint 302",,-180.70,306640.00
+03/23/2025,98100605,Hourly,"Invoice for Horizon Media Ltd - Sprint 303",,1442.00,308082.00
+03/23/2025,98100606,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 303",,-144.20,307937.80
+04/24/2026,98100607,Fixed Price,"Invoice for Apex Digital Inc - Sprint 304",,914.00,308851.80
+04/24/2026,98100608,Service Fee,"Service Fee for Apex Digital Inc - Sprint 304",,-91.40,308760.40
+05/25/2025,98100609,Hourly,"Invoice for Vanguard Software Studio - Sprint 305",,872.00,309632.40
+05/25/2025,98100610,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 305",,-87.20,309545.20
+06/26/2026,98100611,Fixed Price,"Invoice for Nexus Systems - Sprint 306",,1255.00,310800.20
+06/26/2026,98100612,Service Fee,"Service Fee for Nexus Systems - Sprint 306",,-125.50,310674.70
+07/27/2025,98100613,Hourly,"Invoice for CyberPulse Interactive - Sprint 307",,1507.00,312181.70
+07/27/2025,98100614,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 307",,-150.70,312031.00
+08/28/2026,98100615,Fixed Price,"Invoice for BlueSky Solutions - Sprint 308",,282.00,312313.00
+08/28/2026,98100616,Service Fee,"Service Fee for BlueSky Solutions - Sprint 308",,-28.20,312284.80
+09/01/2025,98100617,Hourly,"Invoice for Starlight Interactive - Sprint 309",,494.00,312778.80
+09/01/2025,98100618,Service Fee,"Service Fee for Starlight Interactive - Sprint 309",,-49.40,312729.40
+10/02/2026,98100619,Fixed Price,"Invoice for Quantum Code Soft - Sprint 310",,550.00,313279.40
+10/02/2026,98100620,Service Fee,"Service Fee for Quantum Code Soft - Sprint 310",,-55.00,313224.40
+11/03/2025,98100621,Hourly,"Invoice for TechFlow Labs LLC - Sprint 311",,1240.00,314464.40
+11/03/2025,98100622,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 311",,-124.00,314340.40
+12/04/2026,98100623,Fixed Price,"Invoice for Acme Corp - Sprint 312",,1282.00,315622.40
+12/04/2026,98100624,Service Fee,"Service Fee for Acme Corp - Sprint 312",,-128.20,315494.20
+01/05/2025,98100625,Hourly,"Invoice for Horizon Media Ltd - Sprint 313",,1228.00,316722.20
+01/05/2025,98100626,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 313",,-122.80,316599.40
+02/06/2026,98100627,Fixed Price,"Invoice for Apex Digital Inc - Sprint 314",,440.00,317039.40
+02/06/2026,98100628,Service Fee,"Service Fee for Apex Digital Inc - Sprint 314",,-44.00,316995.40
+03/07/2025,98100629,Hourly,"Invoice for Vanguard Software Studio - Sprint 315",,668.00,317663.40
+03/07/2025,98100630,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 315",,-66.80,317596.60
+04/08/2026,98100631,Fixed Price,"Invoice for Nexus Systems - Sprint 316",,1247.00,318843.60
+04/08/2026,98100632,Service Fee,"Service Fee for Nexus Systems - Sprint 316",,-124.70,318718.90
+05/09/2025,98100633,Hourly,"Invoice for CyberPulse Interactive - Sprint 317",,1266.00,319984.90
+05/09/2025,98100634,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 317",,-126.60,319858.30
+06/10/2026,98100635,Fixed Price,"Invoice for BlueSky Solutions - Sprint 318",,815.00,320673.30
+06/10/2026,98100636,Service Fee,"Service Fee for BlueSky Solutions - Sprint 318",,-81.50,320591.80
+07/11/2025,98100637,Hourly,"Invoice for Starlight Interactive - Sprint 319",,1635.00,322226.80
+07/11/2025,98100638,Service Fee,"Service Fee for Starlight Interactive - Sprint 319",,-163.50,322063.30
+08/12/2026,98100639,Fixed Price,"Invoice for Quantum Code Soft - Sprint 320",,1776.00,323839.30
+08/12/2026,98100640,Service Fee,"Service Fee for Quantum Code Soft - Sprint 320",,-177.60,323661.70
+09/13/2025,98100641,Hourly,"Invoice for TechFlow Labs LLC - Sprint 321",,1552.00,325213.70
+09/13/2025,98100642,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 321",,-155.20,325058.50
+10/14/2026,98100643,Fixed Price,"Invoice for Acme Corp - Sprint 322",,1189.00,326247.50
+10/14/2026,98100644,Service Fee,"Service Fee for Acme Corp - Sprint 322",,-118.90,326128.60
+11/15/2025,98100645,Hourly,"Invoice for Horizon Media Ltd - Sprint 323",,1941.00,328069.60
+11/15/2025,98100646,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 323",,-194.10,327875.50
+12/16/2026,98100647,Fixed Price,"Invoice for Apex Digital Inc - Sprint 324",,612.00,328487.50
+12/16/2026,98100648,Service Fee,"Service Fee for Apex Digital Inc - Sprint 324",,-61.20,328426.30
+01/17/2025,98100649,Hourly,"Invoice for Vanguard Software Studio - Sprint 325",,491.00,328917.30
+01/17/2025,98100650,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 325",,-49.10,328868.20
+02/18/2026,98100651,Fixed Price,"Invoice for Nexus Systems - Sprint 326",,379.00,329247.20
+02/18/2026,98100652,Service Fee,"Service Fee for Nexus Systems - Sprint 326",,-37.90,329209.30
+03/19/2025,98100653,Hourly,"Invoice for CyberPulse Interactive - Sprint 327",,830.00,330039.30
+03/19/2025,98100654,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 327",,-83.00,329956.30
+04/20/2026,98100655,Fixed Price,"Invoice for BlueSky Solutions - Sprint 328",,1475.00,331431.30
+04/20/2026,98100656,Service Fee,"Service Fee for BlueSky Solutions - Sprint 328",,-147.50,331283.80
+05/21/2025,98100657,Hourly,"Invoice for Starlight Interactive - Sprint 329",,379.00,331662.80
+05/21/2025,98100658,Service Fee,"Service Fee for Starlight Interactive - Sprint 329",,-37.90,331624.90
+06/22/2026,98100659,Fixed Price,"Invoice for Quantum Code Soft - Sprint 330",,1283.00,332907.90
+06/22/2026,98100660,Service Fee,"Service Fee for Quantum Code Soft - Sprint 330",,-128.30,332779.60
+07/23/2025,98100661,Hourly,"Invoice for TechFlow Labs LLC - Sprint 331",,1715.00,334494.60
+07/23/2025,98100662,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 331",,-171.50,334323.10
+08/24/2026,98100663,Fixed Price,"Invoice for Acme Corp - Sprint 332",,1941.00,336264.10
+08/24/2026,98100664,Service Fee,"Service Fee for Acme Corp - Sprint 332",,-194.10,336070.00
+09/25/2025,98100665,Hourly,"Invoice for Horizon Media Ltd - Sprint 333",,1253.00,337323.00
+09/25/2025,98100666,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 333",,-125.30,337197.70
+10/26/2026,98100667,Fixed Price,"Invoice for Apex Digital Inc - Sprint 334",,1381.00,338578.70
+10/26/2026,98100668,Service Fee,"Service Fee for Apex Digital Inc - Sprint 334",,-138.10,338440.60
+11/27/2025,98100669,Hourly,"Invoice for Vanguard Software Studio - Sprint 335",,1273.00,339713.60
+11/27/2025,98100670,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 335",,-127.30,339586.30
+12/28/2026,98100671,Fixed Price,"Invoice for Nexus Systems - Sprint 336",,1632.00,341218.30
+12/28/2026,98100672,Service Fee,"Service Fee for Nexus Systems - Sprint 336",,-163.20,341055.10
+01/01/2025,98100673,Hourly,"Invoice for CyberPulse Interactive - Sprint 337",,280.00,341335.10
+01/01/2025,98100674,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 337",,-28.00,341307.10
+02/02/2026,98100675,Fixed Price,"Invoice for BlueSky Solutions - Sprint 338",,1665.00,342972.10
+02/02/2026,98100676,Service Fee,"Service Fee for BlueSky Solutions - Sprint 338",,-166.50,342805.60
+03/03/2025,98100677,Hourly,"Invoice for Starlight Interactive - Sprint 339",,1947.00,344752.60
+03/03/2025,98100678,Service Fee,"Service Fee for Starlight Interactive - Sprint 339",,-194.70,344557.90
+04/04/2026,98100679,Fixed Price,"Invoice for Quantum Code Soft - Sprint 340",,865.00,345422.90
+04/04/2026,98100680,Service Fee,"Service Fee for Quantum Code Soft - Sprint 340",,-86.50,345336.40
+05/05/2025,98100681,Hourly,"Invoice for TechFlow Labs LLC - Sprint 341",,401.00,345737.40
+05/05/2025,98100682,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 341",,-40.10,345697.30
+06/06/2026,98100683,Fixed Price,"Invoice for Acme Corp - Sprint 342",,1131.00,346828.30
+06/06/2026,98100684,Service Fee,"Service Fee for Acme Corp - Sprint 342",,-113.10,346715.20
+07/07/2025,98100685,Hourly,"Invoice for Horizon Media Ltd - Sprint 343",,1736.00,348451.20
+07/07/2025,98100686,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 343",,-173.60,348277.60
+08/08/2026,98100687,Fixed Price,"Invoice for Apex Digital Inc - Sprint 344",,274.00,348551.60
+08/08/2026,98100688,Service Fee,"Service Fee for Apex Digital Inc - Sprint 344",,-27.40,348524.20
+09/09/2025,98100689,Hourly,"Invoice for Vanguard Software Studio - Sprint 345",,832.00,349356.20
+09/09/2025,98100690,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 345",,-83.20,349273.00
+10/10/2026,98100691,Fixed Price,"Invoice for Nexus Systems - Sprint 346",,1792.00,351065.00
+10/10/2026,98100692,Service Fee,"Service Fee for Nexus Systems - Sprint 346",,-179.20,350885.80
+11/11/2025,98100693,Hourly,"Invoice for CyberPulse Interactive - Sprint 347",,748.00,351633.80
+11/11/2025,98100694,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 347",,-74.80,351559.00
+12/12/2026,98100695,Fixed Price,"Invoice for BlueSky Solutions - Sprint 348",,992.00,352551.00
+12/12/2026,98100696,Service Fee,"Service Fee for BlueSky Solutions - Sprint 348",,-99.20,352451.80
+01/13/2025,98100697,Hourly,"Invoice for Starlight Interactive - Sprint 349",,1388.00,353839.80
+01/13/2025,98100698,Service Fee,"Service Fee for Starlight Interactive - Sprint 349",,-138.80,353701.00
+02/14/2026,98100699,Fixed Price,"Invoice for Quantum Code Soft - Sprint 350",,1251.00,354952.00
+02/14/2026,98100700,Service Fee,"Service Fee for Quantum Code Soft - Sprint 350",,-125.10,354826.90
+03/15/2025,98100701,Hourly,"Invoice for TechFlow Labs LLC - Sprint 351",,282.00,355108.90
+03/15/2025,98100702,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 351",,-28.20,355080.70
+04/16/2026,98100703,Fixed Price,"Invoice for Acme Corp - Sprint 352",,1566.00,356646.70
+04/16/2026,98100704,Service Fee,"Service Fee for Acme Corp - Sprint 352",,-156.60,356490.10
+05/17/2025,98100705,Hourly,"Invoice for Horizon Media Ltd - Sprint 353",,1992.00,358482.10
+05/17/2025,98100706,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 353",,-199.20,358282.90
+06/18/2026,98100707,Fixed Price,"Invoice for Apex Digital Inc - Sprint 354",,651.00,358933.90
+06/18/2026,98100708,Service Fee,"Service Fee for Apex Digital Inc - Sprint 354",,-65.10,358868.80
+07/19/2025,98100709,Hourly,"Invoice for Vanguard Software Studio - Sprint 355",,902.00,359770.80
+07/19/2025,98100710,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 355",,-90.20,359680.60
+08/20/2026,98100711,Fixed Price,"Invoice for Nexus Systems - Sprint 356",,1636.00,361316.60
+08/20/2026,98100712,Service Fee,"Service Fee for Nexus Systems - Sprint 356",,-163.60,361153.00
+09/21/2025,98100713,Hourly,"Invoice for CyberPulse Interactive - Sprint 357",,1683.00,362836.00
+09/21/2025,98100714,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 357",,-168.30,362667.70
+10/22/2026,98100715,Fixed Price,"Invoice for BlueSky Solutions - Sprint 358",,1555.00,364222.70
+10/22/2026,98100716,Service Fee,"Service Fee for BlueSky Solutions - Sprint 358",,-155.50,364067.20
+11/23/2025,98100717,Hourly,"Invoice for Starlight Interactive - Sprint 359",,1865.00,365932.20
+11/23/2025,98100718,Service Fee,"Service Fee for Starlight Interactive - Sprint 359",,-186.50,365745.70
+12/24/2026,98100719,Fixed Price,"Invoice for Quantum Code Soft - Sprint 360",,1612.00,367357.70
+12/24/2026,98100720,Service Fee,"Service Fee for Quantum Code Soft - Sprint 360",,-161.20,367196.50
+01/25/2025,98100721,Hourly,"Invoice for TechFlow Labs LLC - Sprint 361",,771.00,367967.50
+01/25/2025,98100722,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 361",,-77.10,367890.40
+02/26/2026,98100723,Fixed Price,"Invoice for Acme Corp - Sprint 362",,1789.00,369679.40
+02/26/2026,98100724,Service Fee,"Service Fee for Acme Corp - Sprint 362",,-178.90,369500.50
+03/27/2025,98100725,Hourly,"Invoice for Horizon Media Ltd - Sprint 363",,1280.00,370780.50
+03/27/2025,98100726,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 363",,-128.00,370652.50
+04/28/2026,98100727,Fixed Price,"Invoice for Apex Digital Inc - Sprint 364",,1424.00,372076.50
+04/28/2026,98100728,Service Fee,"Service Fee for Apex Digital Inc - Sprint 364",,-142.40,371934.10
+05/01/2025,98100729,Hourly,"Invoice for Vanguard Software Studio - Sprint 365",,760.00,372694.10
+05/01/2025,98100730,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 365",,-76.00,372618.10
+06/02/2026,98100731,Fixed Price,"Invoice for Nexus Systems - Sprint 366",,1337.00,373955.10
+06/02/2026,98100732,Service Fee,"Service Fee for Nexus Systems - Sprint 366",,-133.70,373821.40
+07/03/2025,98100733,Hourly,"Invoice for CyberPulse Interactive - Sprint 367",,943.00,374764.40
+07/03/2025,98100734,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 367",,-94.30,374670.10
+08/04/2026,98100735,Fixed Price,"Invoice for BlueSky Solutions - Sprint 368",,1249.00,375919.10
+08/04/2026,98100736,Service Fee,"Service Fee for BlueSky Solutions - Sprint 368",,-124.90,375794.20
+09/05/2025,98100737,Hourly,"Invoice for Starlight Interactive - Sprint 369",,1815.00,377609.20
+09/05/2025,98100738,Service Fee,"Service Fee for Starlight Interactive - Sprint 369",,-181.50,377427.70
+10/06/2026,98100739,Fixed Price,"Invoice for Quantum Code Soft - Sprint 370",,1699.00,379126.70
+10/06/2026,98100740,Service Fee,"Service Fee for Quantum Code Soft - Sprint 370",,-169.90,378956.80
+11/07/2025,98100741,Hourly,"Invoice for TechFlow Labs LLC - Sprint 371",,1030.00,379986.80
+11/07/2025,98100742,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 371",,-103.00,379883.80
+12/08/2026,98100743,Fixed Price,"Invoice for Acme Corp - Sprint 372",,1953.00,381836.80
+12/08/2026,98100744,Service Fee,"Service Fee for Acme Corp - Sprint 372",,-195.30,381641.50
+01/09/2025,98100745,Hourly,"Invoice for Horizon Media Ltd - Sprint 373",,1736.00,383377.50
+01/09/2025,98100746,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 373",,-173.60,383203.90
+02/10/2026,98100747,Fixed Price,"Invoice for Apex Digital Inc - Sprint 374",,1530.00,384733.90
+02/10/2026,98100748,Service Fee,"Service Fee for Apex Digital Inc - Sprint 374",,-153.00,384580.90
+03/11/2025,98100749,Hourly,"Invoice for Vanguard Software Studio - Sprint 375",,709.00,385289.90
+03/11/2025,98100750,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 375",,-70.90,385219.00
+04/12/2026,98100751,Fixed Price,"Invoice for Nexus Systems - Sprint 376",,458.00,385677.00
+04/12/2026,98100752,Service Fee,"Service Fee for Nexus Systems - Sprint 376",,-45.80,385631.20
+05/13/2025,98100753,Hourly,"Invoice for CyberPulse Interactive - Sprint 377",,1648.00,387279.20
+05/13/2025,98100754,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 377",,-164.80,387114.40
+06/14/2026,98100755,Fixed Price,"Invoice for BlueSky Solutions - Sprint 378",,1926.00,389040.40
+06/14/2026,98100756,Service Fee,"Service Fee for BlueSky Solutions - Sprint 378",,-192.60,388847.80
+07/15/2025,98100757,Hourly,"Invoice for Starlight Interactive - Sprint 379",,1891.00,390738.80
+07/15/2025,98100758,Service Fee,"Service Fee for Starlight Interactive - Sprint 379",,-189.10,390549.70
+08/16/2026,98100759,Fixed Price,"Invoice for Quantum Code Soft - Sprint 380",,1356.00,391905.70
+08/16/2026,98100760,Service Fee,"Service Fee for Quantum Code Soft - Sprint 380",,-135.60,391770.10
+09/17/2025,98100761,Hourly,"Invoice for TechFlow Labs LLC - Sprint 381",,1211.00,392981.10
+09/17/2025,98100762,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 381",,-121.10,392860.00
+10/18/2026,98100763,Fixed Price,"Invoice for Acme Corp - Sprint 382",,325.00,393185.00
+10/18/2026,98100764,Service Fee,"Service Fee for Acme Corp - Sprint 382",,-32.50,393152.50
+11/19/2025,98100765,Hourly,"Invoice for Horizon Media Ltd - Sprint 383",,765.00,393917.50
+11/19/2025,98100766,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 383",,-76.50,393841.00
+12/20/2026,98100767,Fixed Price,"Invoice for Apex Digital Inc - Sprint 384",,631.00,394472.00
+12/20/2026,98100768,Service Fee,"Service Fee for Apex Digital Inc - Sprint 384",,-63.10,394408.90
+01/21/2025,98100769,Hourly,"Invoice for Vanguard Software Studio - Sprint 385",,1840.00,396248.90
+01/21/2025,98100770,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 385",,-184.00,396064.90
+02/22/2026,98100771,Fixed Price,"Invoice for Nexus Systems - Sprint 386",,537.00,396601.90
+02/22/2026,98100772,Service Fee,"Service Fee for Nexus Systems - Sprint 386",,-53.70,396548.20
+03/23/2025,98100773,Hourly,"Invoice for CyberPulse Interactive - Sprint 387",,311.00,396859.20
+03/23/2025,98100774,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 387",,-31.10,396828.10
+04/24/2026,98100775,Fixed Price,"Invoice for BlueSky Solutions - Sprint 388",,1028.00,397856.10
+04/24/2026,98100776,Service Fee,"Service Fee for BlueSky Solutions - Sprint 388",,-102.80,397753.30
+05/25/2025,98100777,Hourly,"Invoice for Starlight Interactive - Sprint 389",,1487.00,399240.30
+05/25/2025,98100778,Service Fee,"Service Fee for Starlight Interactive - Sprint 389",,-148.70,399091.60
+06/26/2026,98100779,Fixed Price,"Invoice for Quantum Code Soft - Sprint 390",,1665.00,400756.60
+06/26/2026,98100780,Service Fee,"Service Fee for Quantum Code Soft - Sprint 390",,-166.50,400590.10
+07/27/2025,98100781,Hourly,"Invoice for TechFlow Labs LLC - Sprint 391",,635.00,401225.10
+07/27/2025,98100782,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 391",,-63.50,401161.60
+08/28/2026,98100783,Fixed Price,"Invoice for Acme Corp - Sprint 392",,1381.00,402542.60
+08/28/2026,98100784,Service Fee,"Service Fee for Acme Corp - Sprint 392",,-138.10,402404.50
+09/01/2025,98100785,Hourly,"Invoice for Horizon Media Ltd - Sprint 393",,1956.00,404360.50
+09/01/2025,98100786,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 393",,-195.60,404164.90
+10/02/2026,98100787,Fixed Price,"Invoice for Apex Digital Inc - Sprint 394",,497.00,404661.90
+10/02/2026,98100788,Service Fee,"Service Fee for Apex Digital Inc - Sprint 394",,-49.70,404612.20
+11/03/2025,98100789,Hourly,"Invoice for Vanguard Software Studio - Sprint 395",,1246.00,405858.20
+11/03/2025,98100790,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 395",,-124.60,405733.60
+12/04/2026,98100791,Fixed Price,"Invoice for Nexus Systems - Sprint 396",,626.00,406359.60
+12/04/2026,98100792,Service Fee,"Service Fee for Nexus Systems - Sprint 396",,-62.60,406297.00
+01/05/2025,98100793,Hourly,"Invoice for CyberPulse Interactive - Sprint 397",,1839.00,408136.00
+01/05/2025,98100794,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 397",,-183.90,407952.10
+02/06/2026,98100795,Fixed Price,"Invoice for BlueSky Solutions - Sprint 398",,828.00,408780.10
+02/06/2026,98100796,Service Fee,"Service Fee for BlueSky Solutions - Sprint 398",,-82.80,408697.30
+03/07/2025,98100797,Hourly,"Invoice for Starlight Interactive - Sprint 399",,700.00,409397.30
+03/07/2025,98100798,Service Fee,"Service Fee for Starlight Interactive - Sprint 399",,-70.00,409327.30
+04/08/2026,98100799,Fixed Price,"Invoice for Quantum Code Soft - Sprint 400",,583.00,409910.30
+04/08/2026,98100800,Service Fee,"Service Fee for Quantum Code Soft - Sprint 400",,-58.30,409852.00
+05/09/2025,98100801,Hourly,"Invoice for TechFlow Labs LLC - Sprint 401",,993.00,410845.00
+05/09/2025,98100802,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 401",,-99.30,410745.70
+06/10/2026,98100803,Fixed Price,"Invoice for Acme Corp - Sprint 402",,659.00,411404.70
+06/10/2026,98100804,Service Fee,"Service Fee for Acme Corp - Sprint 402",,-65.90,411338.80
+07/11/2025,98100805,Hourly,"Invoice for Horizon Media Ltd - Sprint 403",,1027.00,412365.80
+07/11/2025,98100806,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 403",,-102.70,412263.10
+08/12/2026,98100807,Fixed Price,"Invoice for Apex Digital Inc - Sprint 404",,605.00,412868.10
+08/12/2026,98100808,Service Fee,"Service Fee for Apex Digital Inc - Sprint 404",,-60.50,412807.60
+09/13/2025,98100809,Hourly,"Invoice for Vanguard Software Studio - Sprint 405",,1158.00,413965.60
+09/13/2025,98100810,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 405",,-115.80,413849.80
+10/14/2026,98100811,Fixed Price,"Invoice for Nexus Systems - Sprint 406",,316.00,414165.80
+10/14/2026,98100812,Service Fee,"Service Fee for Nexus Systems - Sprint 406",,-31.60,414134.20
+11/15/2025,98100813,Hourly,"Invoice for CyberPulse Interactive - Sprint 407",,1471.00,415605.20
+11/15/2025,98100814,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 407",,-147.10,415458.10
+12/16/2026,98100815,Fixed Price,"Invoice for BlueSky Solutions - Sprint 408",,1831.00,417289.10
+12/16/2026,98100816,Service Fee,"Service Fee for BlueSky Solutions - Sprint 408",,-183.10,417106.00
+01/17/2025,98100817,Hourly,"Invoice for Starlight Interactive - Sprint 409",,1952.00,419058.00
+01/17/2025,98100818,Service Fee,"Service Fee for Starlight Interactive - Sprint 409",,-195.20,418862.80
+02/18/2026,98100819,Fixed Price,"Invoice for Quantum Code Soft - Sprint 410",,1118.00,419980.80
+02/18/2026,98100820,Service Fee,"Service Fee for Quantum Code Soft - Sprint 410",,-111.80,419869.00
+03/19/2025,98100821,Hourly,"Invoice for TechFlow Labs LLC - Sprint 411",,609.00,420478.00
+03/19/2025,98100822,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 411",,-60.90,420417.10
+04/20/2026,98100823,Fixed Price,"Invoice for Acme Corp - Sprint 412",,860.00,421277.10
+04/20/2026,98100824,Service Fee,"Service Fee for Acme Corp - Sprint 412",,-86.00,421191.10
+05/21/2025,98100825,Hourly,"Invoice for Horizon Media Ltd - Sprint 413",,1959.00,423150.10
+05/21/2025,98100826,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 413",,-195.90,422954.20
+06/22/2026,98100827,Fixed Price,"Invoice for Apex Digital Inc - Sprint 414",,317.00,423271.20
+06/22/2026,98100828,Service Fee,"Service Fee for Apex Digital Inc - Sprint 414",,-31.70,423239.50
+07/23/2025,98100829,Hourly,"Invoice for Vanguard Software Studio - Sprint 415",,1230.00,424469.50
+07/23/2025,98100830,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 415",,-123.00,424346.50
+08/24/2026,98100831,Fixed Price,"Invoice for Nexus Systems - Sprint 416",,1632.00,425978.50
+08/24/2026,98100832,Service Fee,"Service Fee for Nexus Systems - Sprint 416",,-163.20,425815.30
+09/25/2025,98100833,Hourly,"Invoice for CyberPulse Interactive - Sprint 417",,1099.00,426914.30
+09/25/2025,98100834,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 417",,-109.90,426804.40
+10/26/2026,98100835,Fixed Price,"Invoice for BlueSky Solutions - Sprint 418",,324.00,427128.40
+10/26/2026,98100836,Service Fee,"Service Fee for BlueSky Solutions - Sprint 418",,-32.40,427096.00
+11/27/2025,98100837,Hourly,"Invoice for Starlight Interactive - Sprint 419",,834.00,427930.00
+11/27/2025,98100838,Service Fee,"Service Fee for Starlight Interactive - Sprint 419",,-83.40,427846.60
+12/28/2026,98100839,Fixed Price,"Invoice for Quantum Code Soft - Sprint 420",,429.00,428275.60
+12/28/2026,98100840,Service Fee,"Service Fee for Quantum Code Soft - Sprint 420",,-42.90,428232.70
+01/01/2025,98100841,Hourly,"Invoice for TechFlow Labs LLC - Sprint 421",,1097.00,429329.70
+01/01/2025,98100842,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 421",,-109.70,429220.00
+02/02/2026,98100843,Fixed Price,"Invoice for Acme Corp - Sprint 422",,1450.00,430670.00
+02/02/2026,98100844,Service Fee,"Service Fee for Acme Corp - Sprint 422",,-145.00,430525.00
+03/03/2025,98100845,Hourly,"Invoice for Horizon Media Ltd - Sprint 423",,1449.00,431974.00
+03/03/2025,98100846,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 423",,-144.90,431829.10
+04/04/2026,98100847,Fixed Price,"Invoice for Apex Digital Inc - Sprint 424",,756.00,432585.10
+04/04/2026,98100848,Service Fee,"Service Fee for Apex Digital Inc - Sprint 424",,-75.60,432509.50
+05/05/2025,98100849,Hourly,"Invoice for Vanguard Software Studio - Sprint 425",,1219.00,433728.50
+05/05/2025,98100850,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 425",,-121.90,433606.60
+06/06/2026,98100851,Fixed Price,"Invoice for Nexus Systems - Sprint 426",,930.00,434536.60
+06/06/2026,98100852,Service Fee,"Service Fee for Nexus Systems - Sprint 426",,-93.00,434443.60
+07/07/2025,98100853,Hourly,"Invoice for CyberPulse Interactive - Sprint 427",,942.00,435385.60
+07/07/2025,98100854,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 427",,-94.20,435291.40
+08/08/2026,98100855,Fixed Price,"Invoice for BlueSky Solutions - Sprint 428",,336.00,435627.40
+08/08/2026,98100856,Service Fee,"Service Fee for BlueSky Solutions - Sprint 428",,-33.60,435593.80
+09/09/2025,98100857,Hourly,"Invoice for Starlight Interactive - Sprint 429",,541.00,436134.80
+09/09/2025,98100858,Service Fee,"Service Fee for Starlight Interactive - Sprint 429",,-54.10,436080.70
+10/10/2026,98100859,Fixed Price,"Invoice for Quantum Code Soft - Sprint 430",,1716.00,437796.70
+10/10/2026,98100860,Service Fee,"Service Fee for Quantum Code Soft - Sprint 430",,-171.60,437625.10
+11/11/2025,98100861,Hourly,"Invoice for TechFlow Labs LLC - Sprint 431",,1472.00,439097.10
+11/11/2025,98100862,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 431",,-147.20,438949.90
+12/12/2026,98100863,Fixed Price,"Invoice for Acme Corp - Sprint 432",,349.00,439298.90
+12/12/2026,98100864,Service Fee,"Service Fee for Acme Corp - Sprint 432",,-34.90,439264.00
+01/13/2025,98100865,Hourly,"Invoice for Horizon Media Ltd - Sprint 433",,640.00,439904.00
+01/13/2025,98100866,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 433",,-64.00,439840.00
+02/14/2026,98100867,Fixed Price,"Invoice for Apex Digital Inc - Sprint 434",,805.00,440645.00
+02/14/2026,98100868,Service Fee,"Service Fee for Apex Digital Inc - Sprint 434",,-80.50,440564.50
+03/15/2025,98100869,Hourly,"Invoice for Vanguard Software Studio - Sprint 435",,1376.00,441940.50
+03/15/2025,98100870,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 435",,-137.60,441802.90
+04/16/2026,98100871,Fixed Price,"Invoice for Nexus Systems - Sprint 436",,687.00,442489.90
+04/16/2026,98100872,Service Fee,"Service Fee for Nexus Systems - Sprint 436",,-68.70,442421.20
+05/17/2025,98100873,Hourly,"Invoice for CyberPulse Interactive - Sprint 437",,1325.00,443746.20
+05/17/2025,98100874,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 437",,-132.50,443613.70
+06/18/2026,98100875,Fixed Price,"Invoice for BlueSky Solutions - Sprint 438",,1894.00,445507.70
+06/18/2026,98100876,Service Fee,"Service Fee for BlueSky Solutions - Sprint 438",,-189.40,445318.30
+07/19/2025,98100877,Hourly,"Invoice for Starlight Interactive - Sprint 439",,988.00,446306.30
+07/19/2025,98100878,Service Fee,"Service Fee for Starlight Interactive - Sprint 439",,-98.80,446207.50
+08/20/2026,98100879,Fixed Price,"Invoice for Quantum Code Soft - Sprint 440",,1813.00,448020.50
+08/20/2026,98100880,Service Fee,"Service Fee for Quantum Code Soft - Sprint 440",,-181.30,447839.20
+09/21/2025,98100881,Hourly,"Invoice for TechFlow Labs LLC - Sprint 441",,1233.00,449072.20
+09/21/2025,98100882,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 441",,-123.30,448948.90
+10/22/2026,98100883,Fixed Price,"Invoice for Acme Corp - Sprint 442",,1797.00,450745.90
+10/22/2026,98100884,Service Fee,"Service Fee for Acme Corp - Sprint 442",,-179.70,450566.20
+11/23/2025,98100885,Hourly,"Invoice for Horizon Media Ltd - Sprint 443",,1416.00,451982.20
+11/23/2025,98100886,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 443",,-141.60,451840.60
+12/24/2026,98100887,Fixed Price,"Invoice for Apex Digital Inc - Sprint 444",,404.00,452244.60
+12/24/2026,98100888,Service Fee,"Service Fee for Apex Digital Inc - Sprint 444",,-40.40,452204.20
+01/25/2025,98100889,Hourly,"Invoice for Vanguard Software Studio - Sprint 445",,1069.00,453273.20
+01/25/2025,98100890,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 445",,-106.90,453166.30
+02/26/2026,98100891,Fixed Price,"Invoice for Nexus Systems - Sprint 446",,1824.00,454990.30
+02/26/2026,98100892,Service Fee,"Service Fee for Nexus Systems - Sprint 446",,-182.40,454807.90
+03/27/2025,98100893,Hourly,"Invoice for CyberPulse Interactive - Sprint 447",,525.00,455332.90
+03/27/2025,98100894,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 447",,-52.50,455280.40
+04/28/2026,98100895,Fixed Price,"Invoice for BlueSky Solutions - Sprint 448",,1786.00,457066.40
+04/28/2026,98100896,Service Fee,"Service Fee for BlueSky Solutions - Sprint 448",,-178.60,456887.80
+05/01/2025,98100897,Hourly,"Invoice for Starlight Interactive - Sprint 449",,1330.00,458217.80
+05/01/2025,98100898,Service Fee,"Service Fee for Starlight Interactive - Sprint 449",,-133.00,458084.80
+06/02/2026,98100899,Fixed Price,"Invoice for Quantum Code Soft - Sprint 450",,743.00,458827.80
+06/02/2026,98100900,Service Fee,"Service Fee for Quantum Code Soft - Sprint 450",,-74.30,458753.50
+07/03/2025,98100901,Hourly,"Invoice for TechFlow Labs LLC - Sprint 451",,1595.00,460348.50
+07/03/2025,98100902,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 451",,-159.50,460189.00
+08/04/2026,98100903,Fixed Price,"Invoice for Acme Corp - Sprint 452",,1121.00,461310.00
+08/04/2026,98100904,Service Fee,"Service Fee for Acme Corp - Sprint 452",,-112.10,461197.90
+09/05/2025,98100905,Hourly,"Invoice for Horizon Media Ltd - Sprint 453",,1151.00,462348.90
+09/05/2025,98100906,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 453",,-115.10,462233.80
+10/06/2026,98100907,Fixed Price,"Invoice for Apex Digital Inc - Sprint 454",,401.00,462634.80
+10/06/2026,98100908,Service Fee,"Service Fee for Apex Digital Inc - Sprint 454",,-40.10,462594.70
+11/07/2025,98100909,Hourly,"Invoice for Vanguard Software Studio - Sprint 455",,1550.00,464144.70
+11/07/2025,98100910,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 455",,-155.00,463989.70
+12/08/2026,98100911,Fixed Price,"Invoice for Nexus Systems - Sprint 456",,1769.00,465758.70
+12/08/2026,98100912,Service Fee,"Service Fee for Nexus Systems - Sprint 456",,-176.90,465581.80
+01/09/2025,98100913,Hourly,"Invoice for CyberPulse Interactive - Sprint 457",,698.00,466279.80
+01/09/2025,98100914,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 457",,-69.80,466210.00
+02/10/2026,98100915,Fixed Price,"Invoice for BlueSky Solutions - Sprint 458",,276.00,466486.00
+02/10/2026,98100916,Service Fee,"Service Fee for BlueSky Solutions - Sprint 458",,-27.60,466458.40
+03/11/2025,98100917,Hourly,"Invoice for Starlight Interactive - Sprint 459",,1641.00,468099.40
+03/11/2025,98100918,Service Fee,"Service Fee for Starlight Interactive - Sprint 459",,-164.10,467935.30
+04/12/2026,98100919,Fixed Price,"Invoice for Quantum Code Soft - Sprint 460",,1473.00,469408.30
+04/12/2026,98100920,Service Fee,"Service Fee for Quantum Code Soft - Sprint 460",,-147.30,469261.00
+05/13/2025,98100921,Hourly,"Invoice for TechFlow Labs LLC - Sprint 461",,1366.00,470627.00
+05/13/2025,98100922,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 461",,-136.60,470490.40
+06/14/2026,98100923,Fixed Price,"Invoice for Acme Corp - Sprint 462",,1225.00,471715.40
+06/14/2026,98100924,Service Fee,"Service Fee for Acme Corp - Sprint 462",,-122.50,471592.90
+07/15/2025,98100925,Hourly,"Invoice for Horizon Media Ltd - Sprint 463",,991.00,472583.90
+07/15/2025,98100926,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 463",,-99.10,472484.80
+08/16/2026,98100927,Fixed Price,"Invoice for Apex Digital Inc - Sprint 464",,1838.00,474322.80
+08/16/2026,98100928,Service Fee,"Service Fee for Apex Digital Inc - Sprint 464",,-183.80,474139.00
+09/17/2025,98100929,Hourly,"Invoice for Vanguard Software Studio - Sprint 465",,1681.00,475820.00
+09/17/2025,98100930,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 465",,-168.10,475651.90
+10/18/2026,98100931,Fixed Price,"Invoice for Nexus Systems - Sprint 466",,326.00,475977.90
+10/18/2026,98100932,Service Fee,"Service Fee for Nexus Systems - Sprint 466",,-32.60,475945.30
+11/19/2025,98100933,Hourly,"Invoice for CyberPulse Interactive - Sprint 467",,725.00,476670.30
+11/19/2025,98100934,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 467",,-72.50,476597.80
+12/20/2026,98100935,Fixed Price,"Invoice for BlueSky Solutions - Sprint 468",,1202.00,477799.80
+12/20/2026,98100936,Service Fee,"Service Fee for BlueSky Solutions - Sprint 468",,-120.20,477679.60
+01/21/2025,98100937,Hourly,"Invoice for Starlight Interactive - Sprint 469",,1422.00,479101.60
+01/21/2025,98100938,Service Fee,"Service Fee for Starlight Interactive - Sprint 469",,-142.20,478959.40
+02/22/2026,98100939,Fixed Price,"Invoice for Quantum Code Soft - Sprint 470",,604.00,479563.40
+02/22/2026,98100940,Service Fee,"Service Fee for Quantum Code Soft - Sprint 470",,-60.40,479503.00
+03/23/2025,98100941,Hourly,"Invoice for TechFlow Labs LLC - Sprint 471",,1291.00,480794.00
+03/23/2025,98100942,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 471",,-129.10,480664.90
+04/24/2026,98100943,Fixed Price,"Invoice for Acme Corp - Sprint 472",,1563.00,482227.90
+04/24/2026,98100944,Service Fee,"Service Fee for Acme Corp - Sprint 472",,-156.30,482071.60
+05/25/2025,98100945,Hourly,"Invoice for Horizon Media Ltd - Sprint 473",,837.00,482908.60
+05/25/2025,98100946,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 473",,-83.70,482824.90
+06/26/2026,98100947,Fixed Price,"Invoice for Apex Digital Inc - Sprint 474",,1416.00,484240.90
+06/26/2026,98100948,Service Fee,"Service Fee for Apex Digital Inc - Sprint 474",,-141.60,484099.30
+07/27/2025,98100949,Hourly,"Invoice for Vanguard Software Studio - Sprint 475",,1755.00,485854.30
+07/27/2025,98100950,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 475",,-175.50,485678.80
+08/28/2026,98100951,Fixed Price,"Invoice for Nexus Systems - Sprint 476",,1515.00,487193.80
+08/28/2026,98100952,Service Fee,"Service Fee for Nexus Systems - Sprint 476",,-151.50,487042.30
+09/01/2025,98100953,Hourly,"Invoice for CyberPulse Interactive - Sprint 477",,1999.00,489041.30
+09/01/2025,98100954,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 477",,-199.90,488841.40
+10/02/2026,98100955,Fixed Price,"Invoice for BlueSky Solutions - Sprint 478",,542.00,489383.40
+10/02/2026,98100956,Service Fee,"Service Fee for BlueSky Solutions - Sprint 478",,-54.20,489329.20
+11/03/2025,98100957,Hourly,"Invoice for Starlight Interactive - Sprint 479",,281.00,489610.20
+11/03/2025,98100958,Service Fee,"Service Fee for Starlight Interactive - Sprint 479",,-28.10,489582.10
+12/04/2026,98100959,Fixed Price,"Invoice for Quantum Code Soft - Sprint 480",,829.00,490411.10
+12/04/2026,98100960,Service Fee,"Service Fee for Quantum Code Soft - Sprint 480",,-82.90,490328.20
+01/05/2025,98100961,Hourly,"Invoice for TechFlow Labs LLC - Sprint 481",,1897.00,492225.20
+01/05/2025,98100962,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 481",,-189.70,492035.50
+02/06/2026,98100963,Fixed Price,"Invoice for Acme Corp - Sprint 482",,1922.00,493957.50
+02/06/2026,98100964,Service Fee,"Service Fee for Acme Corp - Sprint 482",,-192.20,493765.30
+03/07/2025,98100965,Hourly,"Invoice for Horizon Media Ltd - Sprint 483",,1802.00,495567.30
+03/07/2025,98100966,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 483",,-180.20,495387.10
+04/08/2026,98100967,Fixed Price,"Invoice for Apex Digital Inc - Sprint 484",,1041.00,496428.10
+04/08/2026,98100968,Service Fee,"Service Fee for Apex Digital Inc - Sprint 484",,-104.10,496324.00
+05/09/2025,98100969,Hourly,"Invoice for Vanguard Software Studio - Sprint 485",,1122.00,497446.00
+05/09/2025,98100970,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 485",,-112.20,497333.80
+06/10/2026,98100971,Fixed Price,"Invoice for Nexus Systems - Sprint 486",,1557.00,498890.80
+06/10/2026,98100972,Service Fee,"Service Fee for Nexus Systems - Sprint 486",,-155.70,498735.10
+07/11/2025,98100973,Hourly,"Invoice for CyberPulse Interactive - Sprint 487",,655.00,499390.10
+07/11/2025,98100974,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 487",,-65.50,499324.60
+08/12/2026,98100975,Fixed Price,"Invoice for BlueSky Solutions - Sprint 488",,1153.00,500477.60
+08/12/2026,98100976,Service Fee,"Service Fee for BlueSky Solutions - Sprint 488",,-115.30,500362.30
+09/13/2025,98100977,Hourly,"Invoice for Starlight Interactive - Sprint 489",,1334.00,501696.30
+09/13/2025,98100978,Service Fee,"Service Fee for Starlight Interactive - Sprint 489",,-133.40,501562.90
+10/14/2026,98100979,Fixed Price,"Invoice for Quantum Code Soft - Sprint 490",,866.00,502428.90
+10/14/2026,98100980,Service Fee,"Service Fee for Quantum Code Soft - Sprint 490",,-86.60,502342.30
+11/15/2025,98100981,Hourly,"Invoice for TechFlow Labs LLC - Sprint 491",,304.00,502646.30
+11/15/2025,98100982,Service Fee,"Service Fee for TechFlow Labs LLC - Sprint 491",,-30.40,502615.90
+12/16/2026,98100983,Fixed Price,"Invoice for Acme Corp - Sprint 492",,1309.00,503924.90
+12/16/2026,98100984,Service Fee,"Service Fee for Acme Corp - Sprint 492",,-130.90,503794.00
+01/17/2025,98100985,Hourly,"Invoice for Horizon Media Ltd - Sprint 493",,307.00,504101.00
+01/17/2025,98100986,Service Fee,"Service Fee for Horizon Media Ltd - Sprint 493",,-30.70,504070.30
+02/18/2026,98100987,Fixed Price,"Invoice for Apex Digital Inc - Sprint 494",,1656.00,505726.30
+02/18/2026,98100988,Service Fee,"Service Fee for Apex Digital Inc - Sprint 494",,-165.60,505560.70
+03/19/2025,98100989,Hourly,"Invoice for Vanguard Software Studio - Sprint 495",,1766.00,507326.70
+03/19/2025,98100990,Service Fee,"Service Fee for Vanguard Software Studio - Sprint 495",,-176.60,507150.10
+04/20/2026,98100991,Fixed Price,"Invoice for Nexus Systems - Sprint 496",,1686.00,508836.10
+04/20/2026,98100992,Service Fee,"Service Fee for Nexus Systems - Sprint 496",,-168.60,508667.50
+05/21/2025,98100993,Hourly,"Invoice for CyberPulse Interactive - Sprint 497",,609.00,509276.50
+05/21/2025,98100994,Service Fee,"Service Fee for CyberPulse Interactive - Sprint 497",,-60.90,509215.60
+06/22/2026,98100995,Fixed Price,"Invoice for BlueSky Solutions - Sprint 498",,1373.00,510588.60
+06/22/2026,98100996,Service Fee,"Service Fee for BlueSky Solutions - Sprint 498",,-137.30,510451.30
+07/23/2025,98100997,Hourly,"Invoice for Starlight Interactive - Sprint 499",,1829.00,512280.30
+07/23/2025,98100998,Service Fee,"Service Fee for Starlight Interactive - Sprint 499",,-182.90,512097.40
+08/24/2026,98100999,Fixed Price,"Invoice for Quantum Code Soft - Sprint 500",,1074.00,513171.40
+08/24/2026,98101000,Service Fee,"Service Fee for Quantum Code Soft - Sprint 500",,-107.40,513064.00
