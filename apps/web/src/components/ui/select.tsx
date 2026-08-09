@@ -6,10 +6,10 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-const Select: React.FC<React.ComponentProps<typeof SelectPrimitive.Root>> = ({
+const Select: React.FC<React.ComponentProps<typeof SelectPrimitive.Root> & { modal?: boolean }> = ({
   modal = false,
   ...props
-}) => <SelectPrimitive.Root modal={modal} {...props} />
+}) => <SelectPrimitive.Root {...(props as any)} modal={modal} />
 const SelectGroup = SelectPrimitive.Group
 
 const SelectValue = SelectPrimitive.Value

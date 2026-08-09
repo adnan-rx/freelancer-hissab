@@ -1,21 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/stores/auth.store";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Shield, Zap, TrendingUp, ArrowRight, CheckCircle2 } from "lucide-react";
+import { DollarSign, Shield, Zap, TrendingUp, ArrowRight, CheckCircle2, Calculator, Wallet, Users } from "lucide-react";
 
 export default function Home() {
-  const router = useRouter();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.push("/dashboard");
-    }
-  }, [isAuthenticated, router]);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-primary/20 selection:text-primary">
@@ -32,16 +23,26 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Link href="/login">
-              <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
-                Get Started
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <Link href="/dashboard">
+                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
+                  Go to Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -65,25 +66,35 @@ export default function Home() {
         </p>
 
         <div className="mt-12 flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-          <Link href="/register" className="w-full sm:w-auto">
-            <Button size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 py-6 text-lg rounded-xl shadow-sm transition-all active:scale-[0.98]">
-              Create Free Account <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </Link>
-          <Link href="/login" className="w-full sm:w-auto">
-            <Button size="lg" variant="outline" className="w-full sm:w-auto border-border text-foreground hover:bg-secondary px-8 py-6 text-lg rounded-xl transition-all active:scale-[0.98]">
-              Demo Login
-            </Button>
-          </Link>
+          {isAuthenticated ? (
+            <Link href="/dashboard" className="w-full sm:w-auto">
+              <Button size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 py-6 text-lg rounded-xl shadow-sm transition-all active:scale-[0.98]">
+                Go to Dashboard <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+          ) : (
+            <>
+              <Link href="/register" className="w-full sm:w-auto">
+                <Button size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 py-6 text-lg rounded-xl shadow-sm transition-all active:scale-[0.98]">
+                  Create Free Account <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/login" className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto border-border text-foreground hover:bg-secondary px-8 py-6 text-lg rounded-xl transition-all active:scale-[0.98]">
+                  Demo Login
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Feature Highlights Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-32 text-left w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-32 text-left w-full">
           <div className="p-8 rounded-3xl border border-border bg-card shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-300">
             <div className="w-12 h-12 rounded-2xl bg-secondary border border-primary/10 flex items-center justify-center text-primary mb-6">
               <DollarSign className="h-6 w-6" />
             </div>
-            <h3 className="text-xl font-bold text-foreground">Multi-Currency PKR Conversion</h3>
+            <h3 className="text-xl font-bold text-foreground">Multi-Currency Income</h3>
             <p className="mt-3 text-muted-foreground leading-relaxed text-sm">
               Log payments in USD, EUR, or GBP. Auto-convert to PKR at live exchange rates so you always know your exact home income.
             </p>
@@ -106,11 +117,41 @@ export default function Home() {
 
           <div className="p-8 rounded-3xl border border-border bg-card shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-300">
             <div className="w-12 h-12 rounded-2xl bg-secondary border border-primary/10 flex items-center justify-center text-primary mb-6">
+              <Calculator className="h-6 w-6" />
+            </div>
+            <h3 className="text-xl font-bold text-foreground">FBR Tax Simulator</h3>
+            <p className="mt-3 text-muted-foreground leading-relaxed text-sm">
+              Simulate your tax liability in real-time based on your total income and business expenses according to FBR guidelines.
+            </p>
+          </div>
+
+          <div className="p-8 rounded-3xl border border-border bg-card shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-300">
+            <div className="w-12 h-12 rounded-2xl bg-secondary border border-primary/10 flex items-center justify-center text-primary mb-6">
+              <Wallet className="h-6 w-6" />
+            </div>
+            <h3 className="text-xl font-bold text-foreground">Wealth Reconciliation</h3>
+            <p className="mt-3 text-muted-foreground leading-relaxed text-sm">
+              Track your assets and liabilities. Automatically reconcile your wealth statement to ensure you are ready for tax filing.
+            </p>
+          </div>
+
+          <div className="p-8 rounded-3xl border border-border bg-card shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-300">
+            <div className="w-12 h-12 rounded-2xl bg-secondary border border-primary/10 flex items-center justify-center text-primary mb-6">
               <TrendingUp className="h-6 w-6" />
             </div>
             <h3 className="text-xl font-bold text-foreground">Financial Reports & Charts</h3>
             <p className="mt-3 text-muted-foreground leading-relaxed text-sm">
               Visualize monthly revenue, expense trends, and client/platform contribution graphs with real-time analytics.
+            </p>
+          </div>
+
+          <div className="p-8 rounded-3xl border border-border bg-card shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-300">
+            <div className="w-12 h-12 rounded-2xl bg-secondary border border-primary/10 flex items-center justify-center text-primary mb-6">
+              <Users className="h-6 w-6" />
+            </div>
+            <h3 className="text-xl font-bold text-foreground">Client Management</h3>
+            <p className="mt-3 text-muted-foreground leading-relaxed text-sm">
+              Keep a detailed directory of your clients, track their specific payment histories, and manage outstanding balances.
             </p>
           </div>
         </div>
