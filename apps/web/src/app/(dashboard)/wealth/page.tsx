@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuthStore } from "@/stores/auth.store"
+import { apiClient } from "@/lib/api-client"
 
 export default function WealthPage() {
   const token = useAuthStore((state) => state.accessToken)
@@ -29,19 +30,18 @@ export default function WealthPage() {
     if (!token) return
     try {
       setLoading(true)
-      const headers = { Authorization: `Bearer ${token}` }
       
       const [stmtRes, assetsRes, liabRes, reconRes] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/wealth/statement?year=${taxYear}`, { headers }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/wealth/assets?year=${taxYear}`, { headers }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/wealth/liabilities?year=${taxYear}`, { headers }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/wealth/reconciliation?year=${taxYear}`, { headers }),
+        apiClient.get(`/wealth/statement?year=${taxYear}`),
+        apiClient.get(`/wealth/assets?year=${taxYear}`),
+        apiClient.get(`/wealth/liabilities?year=${taxYear}`),
+        apiClient.get(`/wealth/reconciliation?year=${taxYear}`),
       ])
 
-      const stmtData = await stmtRes.json()
-      const assetsData = await assetsRes.json()
-      const liabData = await liabRes.json()
-      const reconData = await reconRes.json()
+      const stmtData = stmtRes.data
+      const assetsData = assetsRes.data
+      const liabData = liabRes.data
+      const reconData = reconRes.data
 
       setStatement(stmtData?.data || stmtData)
       setAssets(Array.isArray(assetsData?.data) ? assetsData.data : Array.isArray(assetsData) ? assetsData : [])
@@ -61,10 +61,8 @@ export default function WealthPage() {
 
   const updateOpeningWealth = async () => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wealth/statement?year=${taxYear}`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ openingWealthPKR: Number(openingWealth) })
+      await apiClient.patch(`/wealth/statement?year=${taxYear}`, {
+        openingWealthPKR: Number(openingWealth)
       })
       fetchData()
     } catch (error) {
@@ -75,15 +73,11 @@ export default function WealthPage() {
   const addAsset = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wealth/assets`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          taxYear,
-          type: newAsset.type,
-          description: newAsset.description,
-          valuePKR: Number(newAsset.valuePKR)
-        })
+      await apiClient.post(`/wealth/assets`, {
+        taxYear,
+        type: newAsset.type,
+        description: newAsset.description,
+        valuePKR: Number(newAsset.valuePKR)
       })
       setNewAsset({ type: "CASH", description: "", valuePKR: "" })
       fetchData()
@@ -94,10 +88,7 @@ export default function WealthPage() {
 
   const deleteAsset = async (id: string) => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wealth/assets/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      await apiClient.delete(`/wealth/assets/${id}`)
       fetchData()
     } catch (error) {
       console.error(error)
@@ -107,14 +98,10 @@ export default function WealthPage() {
   const addLiability = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wealth/liabilities`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          taxYear,
-          description: newLiability.description,
-          amountPKR: Number(newLiability.amountPKR)
-        })
+      await apiClient.post(`/wealth/liabilities`, {
+        taxYear,
+        description: newLiability.description,
+        amountPKR: Number(newLiability.amountPKR)
       })
       setNewLiability({ description: "", amountPKR: "" })
       fetchData()
@@ -125,10 +112,7 @@ export default function WealthPage() {
 
   const deleteLiability = async (id: string) => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wealth/liabilities/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      await apiClient.delete(`/wealth/liabilities/${id}`)
       fetchData()
     } catch (error) {
       console.error(error)
