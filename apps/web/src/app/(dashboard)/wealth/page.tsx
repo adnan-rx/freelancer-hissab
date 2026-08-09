@@ -1,12 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Trash2, CheckCircle2, XCircle } from "lucide-react"
+import { Plus, Trash2, CheckCircle2, XCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useAuthStore } from "@/stores/auth.store"
 import { apiClient } from "@/lib/api-client"
 
@@ -22,6 +24,8 @@ export default function WealthPage() {
 
   // Forms
   const [openingWealth, setOpeningWealth] = useState("")
+  const [isAssetDialogOpen, setIsAssetDialogOpen] = useState(false)
+  const [isLiabilityDialogOpen, setIsLiabilityDialogOpen] = useState(false)
   
   const [newAsset, setNewAsset] = useState({ type: "CASH", description: "", valuePKR: "" })
   const [newLiability, setNewLiability] = useState({ description: "", amountPKR: "" })
@@ -80,6 +84,7 @@ export default function WealthPage() {
         valuePKR: Number(newAsset.valuePKR)
       })
       setNewAsset({ type: "CASH", description: "", valuePKR: "" })
+      setIsAssetDialogOpen(false)
       fetchData()
     } catch (error) {
       console.error(error)
@@ -104,6 +109,7 @@ export default function WealthPage() {
         amountPKR: Number(newLiability.amountPKR)
       })
       setNewLiability({ description: "", amountPKR: "" })
+      setIsLiabilityDialogOpen(false)
       fetchData()
     } catch (error) {
       console.error(error)
@@ -119,181 +125,296 @@ export default function WealthPage() {
     }
   }
 
-  const formatCurrency = (val: number | string) => {
-    return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(Number(val))
+  const formatCurrency = (val: number | string | undefined) => {
+    return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(Number(val || 0))
   }
 
-  if (loading) return <div className="p-8">Loading wealth data...</div>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+          <RefreshCw className="h-8 w-8 animate-spin" />
+          <p>Loading wealth data...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 max-w-6xl mx-auto pb-10 px-4 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mt-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Wealth Reconciliation</h1>
-          <p className="text-muted-foreground mt-1">Declare your assets and verify they match your reported income.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Wealth Management</h1>
+          <p className="text-muted-foreground mt-1">Manage your assets, liabilities, and reconcile your wealth for FBR compliance.</p>
         </div>
-        <Select value={taxYear} onValueChange={setTaxYear}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select Tax Year" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="2024">Tax Year 2024</SelectItem>
-            <SelectItem value="2025">Tax Year 2025</SelectItem>
-            <SelectItem value="2026">Tax Year 2026</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="w-full sm:w-[200px]">
+          <Label className="mb-2 block text-sm">Tax Year</Label>
+          <Select value={taxYear} onValueChange={setTaxYear}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select Tax Year" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="2024">Tax Year 2024</SelectItem>
+              <SelectItem value="2025">Tax Year 2025</SelectItem>
+              <SelectItem value="2026">Tax Year 2026</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
+      {/* Primary Summary Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Assets</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{formatCurrency(reconciliation?.declaredAssetsPKR)}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Liabilities</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-destructive">{formatCurrency(reconciliation?.declaredLiabilitiesPKR)}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-primary text-primary-foreground">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-primary-foreground/80">Net Declared Wealth</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{formatCurrency(reconciliation?.netDeclaredWealthPKR)}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Reconciliation Section */}
       {reconciliation && (
-        <Card className={`border-2 ${reconciliation.reconciled ? "border-emerald-500/50" : "border-destructive/50"}`}>
+        <Card className={`border-l-4 shadow-sm ${reconciliation.reconciled ? "border-l-emerald-500" : "border-l-destructive"}`}>
           <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-xl font-semibold flex items-center gap-2">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold flex items-center gap-2">
                   {reconciliation.reconciled ? (
                     <><CheckCircle2 className="text-emerald-500 h-6 w-6" /> Wealth Reconciled</>
                   ) : (
                     <><XCircle className="text-destructive h-6 w-6" /> Wealth Mismatch</>
                   )}
                 </h3>
-                <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
+                <p className="text-sm text-muted-foreground max-w-xl">
                   {reconciliation.reconciled 
                     ? "Your declared assets perfectly align with your reported income and expenses for this tax year."
                     : `Your declared net wealth is off by ${formatCurrency(Math.abs(reconciliation.differencePKR))} compared to what your income minus expenses implies. FBR allows a variance of up to ${formatCurrency(reconciliation.toleranceThresholdPKR)}.`
                   }
                 </p>
               </div>
-              <div className="text-right">
-                <div className="text-sm text-muted-foreground">Expected Closing Wealth</div>
-                <div className="text-2xl font-bold font-mono">{formatCurrency(reconciliation.expectedClosingWealthPKR)}</div>
-                <div className="text-sm text-muted-foreground mt-2">Declared Net Wealth</div>
-                <div className="text-2xl font-bold font-mono">{formatCurrency(reconciliation.netDeclaredWealthPKR)}</div>
+
+              <div className="flex gap-4 sm:gap-8 bg-muted/30 p-4 rounded-xl border items-center justify-center min-w-[300px]">
+                <div className="text-center">
+                  <div className="text-xs uppercase font-semibold text-muted-foreground mb-1">Expected</div>
+                  <div className="text-xl font-bold font-mono">{formatCurrency(reconciliation.expectedClosingWealthPKR)}</div>
+                </div>
+                <div className="text-xl text-muted-foreground font-light">=</div>
+                <div className="text-center">
+                  <div className="text-xs uppercase font-semibold text-muted-foreground mb-1">Declared</div>
+                  <div className="text-xl font-bold font-mono">{formatCurrency(reconciliation.netDeclaredWealthPKR)}</div>
+                </div>
               </div>
             </div>
             
-            <div className="mt-8 pt-6 border-t border-border flex justify-between text-sm text-muted-foreground">
-              <div>Opening: {formatCurrency(reconciliation.openingWealthPKR)}</div>
-              <div className="text-emerald-600">+ Income: {formatCurrency(reconciliation.totalIncomePKR)}</div>
-              <div className="text-rose-600">- Expenses: {formatCurrency(reconciliation.totalExpensesPKR)}</div>
-              <div>= Expected: {formatCurrency(reconciliation.expectedClosingWealthPKR)}</div>
+            <div className="mt-6 pt-4 border-t flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Formula:</span>
+              <span>Opening: <strong className="text-foreground">{formatCurrency(reconciliation.openingWealthPKR)}</strong></span>
+              <span className="text-emerald-600 font-medium">+ Income: {formatCurrency(reconciliation.totalIncomePKR)}</span>
+              <span className="text-rose-600 font-medium">- Expenses: {formatCurrency(reconciliation.totalExpensesPKR)}</span>
+              <span>= Expected: <strong className="text-foreground">{formatCurrency(reconciliation.expectedClosingWealthPKR)}</strong></span>
             </div>
           </CardContent>
         </Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Opening Wealth</CardTitle>
-              <CardDescription>Net wealth carried forward from the previous tax year.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-end gap-4">
-                <div className="space-y-2 flex-1">
-                  <Label>Opening Balance (PKR)</Label>
-                  <Input 
-                    type="number" 
-                    value={openingWealth} 
-                    onChange={e => setOpeningWealth(e.target.value)} 
-                    onBlur={updateOpeningWealth}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Opening Wealth Input */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Opening Wealth</CardTitle>
+          <CardDescription>Net wealth carried forward from the previous tax year.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex max-w-sm flex-col gap-2">
+            <Label htmlFor="opening-wealth">Opening Balance (PKR)</Label>
+            <Input 
+              id="opening-wealth"
+              type="number" 
+              value={openingWealth} 
+              onChange={e => setOpeningWealth(e.target.value)} 
+              onBlur={updateOpeningWealth}
+              placeholder="e.g. 500000"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Assets ({formatCurrency(reconciliation?.declaredAssetsPKR || 0)})</CardTitle>
-              <CardDescription>What you own (Cash, Property, Vehicles, etc.)</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {assets.map(asset => (
-                  <div key={asset.id} className="flex items-center justify-between p-3 rounded-lg border">
-                    <div>
-                      <div className="font-medium text-sm">{asset.description}</div>
-                      <div className="text-xs text-muted-foreground">{asset.type}</div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className="font-mono text-sm">{formatCurrency(asset.valuePKR)}</span>
-                      <Button variant="ghost" size="icon" onClick={() => deleteAsset(asset.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
+      {/* Assets and Liabilities Tables */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* Assets Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold tracking-tight">Assets</h2>
+              <p className="text-sm text-muted-foreground">What you own</p>
+            </div>
+            <Dialog open={isAssetDialogOpen} onOpenChange={setIsAssetDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm"><Plus className="h-4 w-4 mr-2" /> Add Asset</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Asset</DialogTitle>
+                  <DialogDescription>
+                    Declare a new asset to include in your wealth statement.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={addAsset} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="asset-type">Asset Type</Label>
+                    <Select value={newAsset.type} onValueChange={(val) => setNewAsset({...newAsset, type: val})}>
+                      <SelectTrigger id="asset-type">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="CASH">Cash / Bank</SelectItem>
+                        <SelectItem value="PROPERTY">Property</SelectItem>
+                        <SelectItem value="VEHICLE">Vehicle</SelectItem>
+                        <SelectItem value="INVESTMENT">Investment</SelectItem>
+                        <SelectItem value="OTHER">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                ))}
-                
-                {assets.length === 0 && <p className="text-sm text-muted-foreground">No assets declared yet.</p>}
-              </div>
-            </CardContent>
-            <CardFooter className="bg-muted/30 pt-6">
-              <form onSubmit={addAsset} className="w-full flex items-end gap-3">
-                <div className="w-[120px]">
-                  <Label className="mb-2 block text-xs">Type</Label>
-                  <Select value={newAsset.type} onValueChange={(val) => setNewAsset({...newAsset, type: val})}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CASH">Cash / Bank</SelectItem>
-                      <SelectItem value="PROPERTY">Property</SelectItem>
-                      <SelectItem value="VEHICLE">Vehicle</SelectItem>
-                      <SelectItem value="INVESTMENT">Investment</SelectItem>
-                      <SelectItem value="OTHER">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex-1">
-                  <Label className="mb-2 block text-xs">Description</Label>
-                  <Input required value={newAsset.description} onChange={e => setNewAsset({...newAsset, description: e.target.value})} placeholder="e.g. Meezan Bank" />
-                </div>
-                <div className="w-[130px]">
-                  <Label className="mb-2 block text-xs">Value (PKR)</Label>
-                  <Input required type="number" value={newAsset.valuePKR} onChange={e => setNewAsset({...newAsset, valuePKR: e.target.value})} />
-                </div>
-                <Button type="submit" size="icon"><Plus className="h-4 w-4" /></Button>
-              </form>
-            </CardFooter>
+                  <div className="space-y-2">
+                    <Label htmlFor="asset-desc">Description</Label>
+                    <Input id="asset-desc" required value={newAsset.description} onChange={e => setNewAsset({...newAsset, description: e.target.value})} placeholder="e.g. Meezan Bank Account" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="asset-val">Value (PKR)</Label>
+                    <Input id="asset-val" required type="number" value={newAsset.valuePKR} onChange={e => setNewAsset({...newAsset, valuePKR: e.target.value})} placeholder="0" />
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit">Save Asset</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Card className="overflow-hidden">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead className="text-right">Value</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {assets.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                      No assets declared yet.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  assets.map(asset => (
+                    <TableRow key={asset.id}>
+                      <TableCell className="font-medium">{asset.description}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs">{asset.type}</TableCell>
+                      <TableCell className="text-right font-mono">{formatCurrency(asset.valuePKR)}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => deleteAsset(asset.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </Card>
         </div>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Liabilities ({formatCurrency(reconciliation?.declaredLiabilitiesPKR || 0)})</CardTitle>
-              <CardDescription>What you owe (Loans, Mortgages, etc.)</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {liabilities.map(liab => (
-                  <div key={liab.id} className="flex items-center justify-between p-3 rounded-lg border border-destructive/20 bg-destructive/5">
-                    <div className="font-medium text-sm">{liab.description}</div>
-                    <div className="flex items-center gap-4">
-                      <span className="font-mono text-sm text-destructive">{formatCurrency(liab.amountPKR)}</span>
-                      <Button variant="ghost" size="icon" onClick={() => deleteLiability(liab.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
+        {/* Liabilities Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold tracking-tight">Liabilities</h2>
+              <p className="text-sm text-muted-foreground">What you owe</p>
+            </div>
+            <Dialog open={isLiabilityDialogOpen} onOpenChange={setIsLiabilityDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline"><Plus className="h-4 w-4 mr-2" /> Add Liability</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Liability</DialogTitle>
+                  <DialogDescription>
+                    Declare a new liability or loan.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={addLiability} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="liab-desc">Description</Label>
+                    <Input id="liab-desc" required value={newLiability.description} onChange={e => setNewLiability({...newLiability, description: e.target.value})} placeholder="e.g. Car Loan" />
                   </div>
-                ))}
-                {liabilities.length === 0 && <p className="text-sm text-muted-foreground">No liabilities declared yet.</p>}
-              </div>
-            </CardContent>
-            <CardFooter className="bg-muted/30 pt-6">
-              <form onSubmit={addLiability} className="w-full flex items-end gap-3">
-                <div className="flex-1">
-                  <Label className="mb-2 block text-xs">Description</Label>
-                  <Input required value={newLiability.description} onChange={e => setNewLiability({...newLiability, description: e.target.value})} placeholder="e.g. Car Loan" />
-                </div>
-                <div className="w-[150px]">
-                  <Label className="mb-2 block text-xs">Amount (PKR)</Label>
-                  <Input required type="number" value={newLiability.amountPKR} onChange={e => setNewLiability({...newLiability, amountPKR: e.target.value})} />
-                </div>
-                <Button type="submit" size="icon"><Plus className="h-4 w-4" /></Button>
-              </form>
-            </CardFooter>
+                  <div className="space-y-2">
+                    <Label htmlFor="liab-val">Amount (PKR)</Label>
+                    <Input id="liab-val" required type="number" value={newLiability.amountPKR} onChange={e => setNewLiability({...newLiability, amountPKR: e.target.value})} placeholder="0" />
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit">Save Liability</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Card className="overflow-hidden">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead>Description</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {liabilities.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center h-24 text-muted-foreground">
+                      No liabilities declared yet.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  liabilities.map(liab => (
+                    <TableRow key={liab.id}>
+                      <TableCell className="font-medium">{liab.description}</TableCell>
+                      <TableCell className="text-right font-mono text-destructive">{formatCurrency(liab.amountPKR)}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => deleteLiability(liab.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </Card>
         </div>
+
       </div>
     </div>
   )
