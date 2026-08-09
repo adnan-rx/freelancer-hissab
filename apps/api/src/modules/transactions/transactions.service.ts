@@ -60,8 +60,9 @@ export class TransactionsService {
       id: exp.id,
       type: 'EXPENSE',
       date: exp.expenseDate, // this is a date string from DB
-      amount: parseFloat(exp.amount),
-      currency: exp.currency,
+      // Normalised to PKR like income, so the two sides of the ledger are comparable.
+      amount: parseFloat(exp.amountPKR ?? exp.amount),
+      currency: 'PKR',
       description: exp.description,
       category: exp.category,
       entity: exp.vendor || 'General',

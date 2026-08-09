@@ -1,5 +1,5 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import { eq, and, ilike } from 'drizzle-orm';
+import { Injectable, Inject, NotFoundException, ConflictException } from '@nestjs/common';
+import { eq, and, or, ilike } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.module';
 import { clients, income, invoices } from '../../database/schema';
 import { CreateClientDto, UpdateClientDto } from './dto/client.dto';
@@ -12,7 +12,13 @@ export class ClientsService {
     let whereClause: any = eq(clients.userId, userId);
 
     if (query?.search) {
-      whereClause = and(whereClause, ilike(clients.name, `%${query.search}%`));
+      // Search every field the UI claims to search, otherwise the client-side
+      // filter never sees rows the server already excluded.
+      const term = `%${query.search}%`;
+      whereClause = and(
+        whereClause,
+        or(ilike(clients.name, term), ilike(clients.email, term), ilike(clients.company, term)),
+      );
     }
     if (query?.status) {
       whereClause = and(whereClause, eq(clients.status, query.status as any));
@@ -94,7 +100,36 @@ export class ClientsService {
     return result[0];
   }
 
-  async delete(userId: string, id: string) {
+  /**
+   * Deleting a client cascades to their invoices (FK) and orphans their income rows.
+   * That is destructive and used to happen silently, so the first call reports what
+   * would be lost and refuses; the caller must repeat with `force` to proceed.
+   */
+  async delete(userId: string, id: string, force = false) {
+    const client = await this.findOne(userId, id);
+
+    const relatedInvoices = await this.db
+      .select({ id: invoices.id })
+      .from(invoices)
+      .where(and(eq(invoices.clientId, id), eq(invoices.userId, userId)));
+
+    const relatedIncome = await this.db
+      .select({ id: income.id })
+      .from(income)
+      .where(and(eq(income.clientId, id), eq(income.userId, userId)));
+
+    if (!force && (relatedInvoices.length > 0 || relatedIncome.length > 0)) {
+      throw new ConflictException({
+        message:
+          `"${client.name}" has ${relatedInvoices.length} invoice(s) and ${relatedIncome.length} income record(s). ` +
+          `Deleting the client will permanently delete those invoices; income records will be kept but unlinked.`,
+        code: 'CLIENT_HAS_RELATED_RECORDS',
+        invoiceCount: relatedInvoices.length,
+        incomeCount: relatedIncome.length,
+        requiresForce: true,
+      });
+    }
+
     const result = await this.db
       .delete(clients)
       .where(and(eq(clients.id, id), eq(clients.userId, userId)))
@@ -103,6 +138,6 @@ export class ClientsService {
     if (!result.length) {
       throw new NotFoundException('Client not found');
     }
-    return result[0];
+    return { ...result[0], deletedInvoiceCount: relatedInvoices.length, unlinkedIncomeCount: relatedIncome.length };
   }
 }

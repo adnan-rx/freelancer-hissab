@@ -125,6 +125,11 @@ export class AuthService {
         name: user.name,
         businessName: user.businessName || '',
         defaultCurrency: user.defaultCurrency || 'PKR',
+        psebId: user.psebId || null,
+        // Drives the "Personal Information" step of the filing wizard.
+        hasPseb: !!user.psebId,
+        isFiler: user.isFiler ?? true,
+        isAdmin: user.isAdmin ?? false,
       },
     };
   }

@@ -3,6 +3,7 @@ import { eq, and } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.module';
 import { assets, liabilities, wealthStatements, income, expenses } from '../../database/schema';
 import { CreateAssetDto, UpdateAssetDto, CreateLiabilityDto, UpdateLiabilityDto, UpdateWealthStatementDto } from './dto/wealth.dto';
+import { taxYearRange, incomeInTaxYear, expensesInTaxYear } from '../../common/tax-year';
 
 @Injectable()
 export class WealthService {
@@ -106,14 +107,18 @@ export class WealthService {
     const statement = await this.getWealthStatement(userId, taxYear);
     const userAssets = await this.getAssets(userId, taxYear);
     const userLiabilities = await this.getLiabilities(userId, taxYear);
-    
-    // For income and expenses, we ideally filter by year, but standard FreelancerHissab currently has simple date ranges.
-    // For reconciliation simplicity, let's grab all or filter by year prefix. (MVP logic)
-    const userIncome = await this.db.select().from(income).where(eq(income.userId, userId));
-    const userExpenses = await this.db.select().from(expenses).where(eq(expenses.userId, userId));
+
+    // Income and expenses must be scoped to the same Pakistani tax year (1 Jul – 30 Jun)
+    // as the declared assets, otherwise the reconciliation compares different periods.
+    const range = taxYearRange(taxYear);
+    const allIncome = await this.db.select().from(income).where(eq(income.userId, userId));
+    const allExpenses = await this.db.select().from(expenses).where(eq(expenses.userId, userId));
+
+    const userIncome = incomeInTaxYear(allIncome, range);
+    const userExpenses = expensesInTaxYear(allExpenses, range);
 
     const totalIncomePKR = userIncome.reduce((sum: number, inc: any) => sum + Number(inc.amountPKR || 0), 0);
-    const totalExpensesPKR = userExpenses.reduce((sum: number, exp: any) => sum + Number(exp.amount || 0), 0);
+    const totalExpensesPKR = userExpenses.reduce((sum: number, exp: any) => sum + Number(exp.amountPKR || 0), 0);
 
     const openingWealthPKR = Number(statement.openingWealthPKR || 0);
     const otherAdjustmentsPKR = Number(statement.otherAdjustmentsPKR || 0);
@@ -130,6 +135,10 @@ export class WealthService {
     const reconciled = Math.abs(differencePKR) <= toleranceThresholdPKR;
 
     return {
+      taxYear: range.taxYear,
+      taxYearLabel: range.label,
+      periodStart: range.start.toISOString().split('T')[0],
+      periodEnd: new Date(range.end.getTime() - 86400000).toISOString().split('T')[0],
       openingWealthPKR,
       totalIncomePKR,
       totalExpensesPKR,

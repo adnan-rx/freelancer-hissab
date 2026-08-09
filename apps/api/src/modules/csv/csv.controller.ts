@@ -40,7 +40,8 @@ export class CsvController {
       throw new BadRequestException('No CSV file or csvText body provided.');
     }
 
-    const exchangeRate = dto?.exchangeRate ? parseFloat(dto.exchangeRate) : 280.50;
+    // Only override the live rate when the caller explicitly supplies one.
+    const exchangeRate = dto?.exchangeRate ? parseFloat(dto.exchangeRate) : undefined;
     return this.csvService.parseAndImport(userId, buffer, exchangeRate);
   }
 }

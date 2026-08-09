@@ -2,7 +2,7 @@ import { Controller, Get, Patch, Body, UseGuards, BadRequestException } from '@n
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UsersService } from './users.service';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateProfileDto, ChangePasswordDto } from './dto/update-profile.dto';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -39,5 +39,14 @@ export class UsersController {
       message: 'User settings profile updated successfully.',
       data: safeProfile,
     };
+  }
+
+  @Patch('password')
+  async changePassword(@CurrentUser() user: any, @Body() dto: ChangePasswordDto) {
+    const userId = typeof user === 'string' ? user : user?.id || user;
+    if (!userId || typeof userId !== 'string') {
+      throw new BadRequestException('Invalid user identification token.');
+    }
+    return this.usersService.changePassword(userId, dto.currentPassword, dto.newPassword);
   }
 }

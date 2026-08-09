@@ -143,9 +143,9 @@ export default function InvoicesPage() {
                   <TableCell className="text-foreground font-medium">
                     {inv.client?.name || inv.clientName || "Direct Client"}
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-xs font-mono">{inv.dueDate || "2026-08-30"}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs font-mono">{inv.dueDate || "—"}</TableCell>
                   <TableCell className="font-medium text-foreground">
-                    {inv.currency === "USD" ? formatUSD(inv.total) : `${inv.currency || 'USD'} ${inv.total}`}
+                    {inv.currency === "USD" ? formatUSD(inv.total) : `${inv.currency || 'USD'} ${Number(inv.total || 0).toFixed(2)}`}
                   </TableCell>
                   <TableCell className="font-bold text-primary font-mono">
                     {formatPKR(inv.totalPKR || 0)}

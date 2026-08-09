@@ -72,13 +72,15 @@ export function useUpdateClient() {
 export function useDeleteClient() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await apiClient.delete(`/clients/${id}`);
+    mutationFn: async ({ id, force }: { id: string; force?: boolean }) => {
+      const res = await apiClient.delete(`/clients/${id}`, { params: force ? { force: "true" } : undefined });
       const resData = res.data;
       return resData?.data?.data || resData?.data || resData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["income"] });
     },
   });
 }

@@ -30,7 +30,7 @@ export class ClientsController {
   }
 
   @Delete(':id')
-  delete(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.clientsService.delete(user.id, id);
+  delete(@CurrentUser() user: any, @Param('id') id: string, @Query('force') force?: string) {
+    return this.clientsService.delete(user.id, id, force === 'true');
   }
 }

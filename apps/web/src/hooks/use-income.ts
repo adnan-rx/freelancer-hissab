@@ -33,6 +33,25 @@ export function useCreateIncome() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["income"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["filing-readiness"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    },
+  });
+}
+
+export function useUpdateIncome() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: { id: string; [key: string]: any }) => {
+      const res = await apiClient.patch(`/income/${id}`, payload);
+      const resData = res.data;
+      return resData?.data?.data || resData?.data || resData;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["income"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["filing-readiness"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 }
@@ -48,6 +67,8 @@ export function useDeleteIncome() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["income"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["filing-readiness"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 }

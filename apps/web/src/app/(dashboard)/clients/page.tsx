@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Search, Plus, Users, DollarSign, Building, Mail, Phone, Edit, Trash2, FilePlus, X, Check, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '@/hooks/use-clients';
-import { formatPKR, formatUSD } from '@/lib/utils';
+import { formatPKR, formatUSD, apiErrorMessage } from '@/lib/utils';
 import { CSVImportModal } from '@/components/features/csv-import-modal';
 import { Toast } from '@/components/ui/toast';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
@@ -20,7 +20,8 @@ export default function ClientsPage() {
 
   // Toast & Confirm Modal States
   const [toast, setToast] = useState<{ type: 'error' | 'success'; title?: string; message: string } | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  // `warning` carries the server's "this will also delete N invoices" message on the second (forced) confirm.
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; warning?: string } | null>(null);
 
   // Modal States
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -35,6 +36,7 @@ export default function ClientsPage() {
   const [platform, setPlatform] = useState("upwork");
   const [currency, setCurrency] = useState("USD");
   const [notes, setNotes] = useState("");
+  const [status, setStatus] = useState("active");
 
   const { data: clientsList = [], isLoading } = useClients(search);
   const createClientMutation = useCreateClient();
@@ -64,6 +66,7 @@ export default function ClientsPage() {
     setPlatform("upwork");
     setCurrency("USD");
     setNotes("");
+    setStatus("active");
     setEditingClient(null);
     setIsAddOpen(true);
   };
@@ -77,20 +80,22 @@ export default function ClientsPage() {
     setPlatform(client.platform || "direct");
     setCurrency(client.currency || "USD");
     setNotes(client.notes || "");
+    setStatus(client.status || "active");
     setIsAddOpen(true);
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setToast(null);
-    const payload = { 
-      name, 
-      company: company || undefined, 
-      email: email || undefined, 
-      phone: phone || undefined, 
-      platform, 
-      currency, 
-      notes: notes || undefined 
+    const payload = {
+      name,
+      company: company || undefined,
+      email: email || undefined,
+      phone: phone || undefined,
+      platform,
+      currency,
+      notes: notes || undefined,
+      status,
     };
 
     try {
@@ -101,33 +106,32 @@ export default function ClientsPage() {
       }
       setIsAddOpen(false);
     } catch (err: any) {
-      console.warn("Client save error:", err);
-      const apiErr = err?.response?.data?.error;
-      const detailMsg = Array.isArray(apiErr?.details) 
-        ? apiErr.details.join(", ") 
-        : (apiErr?.message || err?.message || "Failed to save client profile.");
-      
       setToast({
         type: "error",
-        title: `Client Save Failed (${apiErr?.code || 400})`,
-        message: detailMsg,
+        title: "Client Save Failed",
+        message: apiErrorMessage(err, "Failed to save client profile."),
       });
     }
   };
 
+  // First click: attempt a plain delete. If the client has invoices or income
+  // attached, the API refuses and returns what would be affected — show that
+  // and ask the user to confirm the destructive version explicitly.
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
+    const alreadyWarned = !!deleteTarget.warning;
+
     try {
-      await deleteClientMutation.mutateAsync(deleteTarget.id);
+      await deleteClientMutation.mutateAsync({ id: deleteTarget.id, force: alreadyWarned });
       setDeleteTarget(null);
+      setToast({ type: "success", title: "Client Deleted", message: `"${deleteTarget.name}" has been removed.` });
     } catch (err: any) {
-      console.warn("Delete client error:", err);
       const apiErr = err?.response?.data?.error;
-      setToast({
-        type: "error",
-        title: "Delete Client Failed",
-        message: apiErr?.message || "Could not delete client from database.",
-      });
+      if (apiErr?.details?.requiresForce) {
+        setDeleteTarget({ ...deleteTarget, warning: apiErrorMessage(err) });
+        return;
+      }
+      setToast({ type: "error", title: "Delete Client Failed", message: apiErrorMessage(err) });
       setDeleteTarget(null);
     }
   };
@@ -193,7 +197,7 @@ export default function ClientsPage() {
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         {/* Platform Tabs */}
         <div className="flex items-center gap-1.5 p-1 bg-card border border-border rounded-xl overflow-x-auto shadow-sm">
-          {["all", "upwork", "fiverr", "direct", "freelancer"].map((pl) => (
+          {["all", "upwork", "fiverr", "direct", "freelancer", "other"].map((pl) => (
             <button
               key={pl}
               onClick={() => setPlatformFilter(pl)}
@@ -273,7 +277,14 @@ export default function ClientsPage() {
                     </TableCell>
 
                     <TableCell>
-                      <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10 font-medium">
+                      <Badge
+                        variant="outline"
+                        className={
+                          client.status === "archived"
+                            ? "border-muted-foreground/30 text-muted-foreground bg-muted font-medium"
+                            : "border-primary/30 text-primary bg-primary/10 font-medium"
+                        }
+                      >
                         {client.status || "active"}
                       </Badge>
                     </TableCell>
@@ -379,9 +390,9 @@ export default function ClientsPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-foreground">Billing Currency</label>
-                  <select 
-                    value={currency} 
-                    onChange={(e) => setCurrency(e.target.value)} 
+                  <select
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
                     className="w-full h-10 px-3 rounded-md bg-background border border-input text-foreground text-sm focus:border-primary focus:outline-none"
                   >
                     <option value="USD">USD ($)</option>
@@ -390,6 +401,18 @@ export default function ClientsPage() {
                     <option value="PKR">PKR (Rs.)</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">Status</label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="w-full h-10 px-3 rounded-md bg-background border border-input text-foreground text-sm focus:border-primary focus:outline-none"
+                >
+                  <option value="active">Active</option>
+                  <option value="archived">Archived</option>
+                </select>
               </div>
 
               <div className="space-y-1.5">
@@ -422,9 +445,15 @@ export default function ClientsPage() {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleConfirmDelete}
-        title="Delete Client Profile?"
-        description={deleteTarget ? `Are you sure you want to delete "${deleteTarget.name}"? This action cannot be undone and will remove client records.` : ""}
-        confirmText="Delete Client"
+        title={deleteTarget?.warning ? "This will delete related records too" : "Delete Client Profile?"}
+        description={
+          deleteTarget?.warning
+            ? deleteTarget.warning
+            : deleteTarget
+              ? `Delete "${deleteTarget.name}"? This cannot be undone.`
+              : ""
+        }
+        confirmText={deleteTarget?.warning ? "Delete Anyway" : "Delete Client"}
         isLoading={deleteClientMutation.isPending}
       />
 

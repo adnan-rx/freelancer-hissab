@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Sparkles, Trash2, DollarSign } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Sparkles, Trash2, DollarSign, Pencil } from 'lucide-react';
 import { formatPKR, formatUSD } from '@/lib/utils';
 import { useIncome, useDeleteIncome } from '@/hooks/use-income';
 import { CSVImportModal } from '@/components/features/csv-import-modal';
@@ -19,13 +20,21 @@ export default function IncomePage() {
 
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [editingIncome, setEditingIncome] = useState<any | null>(null);
   const [evidenceTarget, setEvidenceTarget] = useState<{ id: string; title: string } | null>(null);
 
   // Modal & Toast States
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; description: string } | null>(null);
   const [toast, setToast] = useState<{ type: 'error' | 'success'; title?: string; message: string } | null>(null);
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
 
-  const displayIncome = incomeList;
+  const displayIncome = incomeList.filter((inc: any) => {
+    if (sourceFilter === "all") return true;
+    const isForeign = !!inc.prcReferenceNumber || (inc.platform && inc.platform !== "direct");
+    if (sourceFilter === "foreign") return isForeign;
+    if (sourceFilter === "local") return !isForeign;
+    return true;
+  });
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
@@ -57,16 +66,26 @@ export default function IncomePage() {
           <p className="text-sm text-muted-foreground mt-1">Track foreign remittances and local earnings with automated PKR conversion.</p>
         </div>
         <div className="flex items-center gap-3">
+          <Select value={sourceFilter} onValueChange={setSourceFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Sources" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sources</SelectItem>
+              <SelectItem value="foreign">Foreign / Remittance</SelectItem>
+              <SelectItem value="local">Local Income</SelectItem>
+            </SelectContent>
+          </Select>
           <Button 
             onClick={() => setIsImportOpen(true)}
             variant="outline" 
           >
-            <Sparkles className="mr-2 h-4 w-4 text-primary" /> Auto-Import Upwork/Fiverr CSV
+            <Sparkles className="mr-2 h-4 w-4 text-primary" /> Auto-Import CSV
           </Button>
           <Button 
-            onClick={() => setIsAddOpen(true)}
+            onClick={() => { setEditingIncome(null); setIsAddOpen(true); }}
           >
-            <Plus className="mr-2 h-4 w-4" /> Log Income Manually
+            <Plus className="mr-2 h-4 w-4" /> Log Income
           </Button>
         </div>
       </div>
@@ -113,6 +132,15 @@ export default function IncomePage() {
                   </TableCell>
                   <TableCell className="font-bold text-primary font-mono">{formatPKR(inc.amountPKR || 0)}</TableCell>
                   <TableCell className="text-right flex items-center justify-end gap-1">
+                    <Button
+                      onClick={() => { setEditingIncome(inc); setIsAddOpen(true); }}
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                      title="Edit Income Entry"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
                     <Button 
                       onClick={() => setEvidenceTarget({ id: inc.id, title: inc.description || "Income Entry" })} 
                       size="sm" 
@@ -139,7 +167,11 @@ export default function IncomePage() {
       </div>
 
       <CSVImportModal isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} />
-      <AddIncomeModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} />
+      <AddIncomeModal
+        isOpen={isAddOpen}
+        onClose={() => { setIsAddOpen(false); setEditingIncome(null); }}
+        income={editingIncome}
+      />
       
       <EvidenceVaultModal 
         isOpen={!!evidenceTarget} 

@@ -1,14 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { User, Landmark, Shield, FileText, CheckCircle2, Save, Loader2 } from "lucide-react";
+import { User, Landmark, Shield, FileText, CheckCircle2, Save, Loader2, AlertCircle } from "lucide-react";
 import { useAuthStore } from "@/stores/auth.store";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
+import { apiClient } from "@/lib/api-client";
+import { apiErrorMessage } from "@/lib/utils";
+
+const IBAN_PATTERN = /^[A-Za-z]{2}[0-9]{2}[A-Za-z0-9]{11,30}$/;
 
 export default function SettingsPage() {
   const user = useAuthStore((state) => state.user);
@@ -34,11 +39,17 @@ export default function SettingsPage() {
   const [paymentTerms, setPaymentTerms] = useState("Due on Receipt");
   const [invoiceNotes, setInvoiceNotes] = useState("");
 
-  // Save Banner
-  const [savedSuccess, setSavedSuccess] = useState(false);
+  // Security tab state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+
+  const [savedSuccess, setSavedSuccess] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [ibanError, setIbanError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Safely unwrap double/single nested data if present
     const pObj = profile?.data?.id ? profile.data : (profile?.id ? profile : (profile?.data || profile));
 
     if (pObj) {
@@ -79,13 +90,22 @@ export default function SettingsPage() {
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaveError(null);
+    setIbanError(null);
+    setSavedSuccess(null);
+
+    if (iban.trim() && !IBAN_PATTERN.test(iban.trim())) {
+      setIbanError("Enter a valid IBAN, e.g. PK36MEZN0001020304050607.");
+      return;
+    }
+
     const payload = {
       name,
       businessName,
       phone,
       bankName,
       accountTitle,
-      iban,
+      iban: iban.trim() || undefined,
       psebId,
       isFiler,
       invoicePrefix,
@@ -96,13 +116,40 @@ export default function SettingsPage() {
     try {
       await updateProfileMutation.mutateAsync(payload);
       if (user) {
-        setUser({ ...user, name, businessName });
+        setUser({ ...user, name, businessName, psebId: psebId || null, hasPseb: !!psebId });
       }
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 3000);
+      setSavedSuccess("Settings updated & saved to database!");
+      setTimeout(() => setSavedSuccess(null), 3000);
     } catch (err) {
-      console.warn("Failed to update profile", err);
+      setSaveError(apiErrorMessage(err, "Failed to save your settings."));
     }
+  };
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiClient.patch("/users/password", { currentPassword, newPassword });
+      return res.data;
+    },
+    onSuccess: () => {
+      setPasswordSuccess(true);
+      setPasswordError(null);
+      setCurrentPassword("");
+      setNewPassword("");
+      setTimeout(() => setPasswordSuccess(false), 4000);
+    },
+    onError: (err) => {
+      setPasswordError(apiErrorMessage(err, "Failed to change your password."));
+    },
+  });
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(null);
+    if (!currentPassword || !newPassword) {
+      setPasswordError("Enter your current and new password.");
+      return;
+    }
+    changePasswordMutation.mutate();
   };
 
   return (
@@ -117,10 +164,16 @@ export default function SettingsPage() {
 
         {savedSuccess && (
           <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border border-primary/30 text-primary text-sm font-medium animate-in fade-in">
-            <CheckCircle2 className="h-4 w-4" /> Settings updated & saved to database!
+            <CheckCircle2 className="h-4 w-4" /> {savedSuccess}
           </div>
         )}
       </div>
+
+      {saveError && (
+        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+          <AlertCircle className="h-4 w-4 shrink-0" /> {saveError}
+        </div>
+      )}
 
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList className="bg-muted border border-border p-1 rounded-xl">
@@ -149,19 +202,21 @@ export default function SettingsPage() {
               <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Full Name</label>
-                  <Input 
-                    value={name} 
-                    onChange={(e) => setName(e.target.value)} 
-                    required 
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={255}
+                    required
                     className="bg-background border-input text-foreground"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Business / Brand Name</label>
-                  <Input 
-                    value={businessName} 
-                    onChange={(e) => setBusinessName(e.target.value)} 
+                  <Input
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                    maxLength={255}
                     className="bg-background border-input text-foreground"
                   />
                 </div>
@@ -169,18 +224,19 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">Email Address</label>
-                    <Input 
-                      value={email} 
-                      disabled 
+                    <Input
+                      value={email}
+                      disabled
                       className="bg-muted border-input text-muted-foreground cursor-not-allowed"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">Phone Number</label>
-                    <Input 
-                      value={phone} 
-                      onChange={(e) => setPhone(e.target.value)} 
+                    <Input
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      maxLength={50}
                       className="bg-background border-input text-foreground"
                     />
                   </div>
@@ -217,29 +273,34 @@ export default function SettingsPage() {
               <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Primary Bank Name</label>
-                  <Input 
-                    value={bankName} 
-                    onChange={(e) => setBankName(e.target.value)} 
+                  <Input
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    maxLength={255}
                     className="bg-background border-input text-foreground"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Account Title</label>
-                  <Input 
-                    value={accountTitle} 
-                    onChange={(e) => setAccountTitle(e.target.value)} 
+                  <Input
+                    value={accountTitle}
+                    onChange={(e) => setAccountTitle(e.target.value)}
+                    maxLength={255}
                     className="bg-background border-input text-foreground"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">IBAN (International Bank Account Number)</label>
-                  <Input 
-                    value={iban} 
-                    onChange={(e) => setIban(e.target.value)} 
+                  <Input
+                    value={iban}
+                    onChange={(e) => { setIban(e.target.value.toUpperCase()); setIbanError(null); }}
+                    placeholder="PK36MEZN0001020304050607"
+                    maxLength={34}
                     className="bg-background border-input text-foreground font-mono"
                   />
+                  {ibanError && <p className="text-xs text-destructive">{ibanError}</p>}
                 </div>
 
                 <div className="p-4 rounded-xl border border-border bg-muted/50 space-y-4">
@@ -247,19 +308,25 @@ export default function SettingsPage() {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-foreground">Active Tax Filer Status</p>
-                      <p className="text-xs text-muted-foreground">Active Filer on FBR ATL List</p>
+                      <p className="text-sm font-medium text-foreground">PSEB Registration</p>
+                      <p className="text-xs text-muted-foreground">
+                        {psebId ? "Applies the 0.25% reduced export tax rate." : "Add a PSEB ID to unlock the reduced 0.25% export rate."}
+                      </p>
                     </div>
-                    <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10">
-                      Active Filer (0.25% Tax)
+                    <Badge
+                      variant="outline"
+                      className={psebId ? "border-primary/30 text-primary bg-primary/10" : "border-amber-500/30 text-amber-600 bg-amber-500/10"}
+                    >
+                      {psebId ? "PSEB Registered (0.25% Tax)" : "Not Registered (1% Tax)"}
                     </Badge>
                   </div>
 
                   <div className="space-y-2 pt-2">
                     <label className="text-xs font-medium text-foreground">PSEB Registration Number</label>
-                    <Input 
-                      value={psebId} 
-                      onChange={(e) => setPsebId(e.target.value)} 
+                    <Input
+                      value={psebId}
+                      onChange={(e) => setPsebId(e.target.value)}
+                      maxLength={100}
                       className="bg-background border-input text-foreground text-xs font-mono"
                     />
                   </div>
@@ -278,25 +345,29 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg font-bold text-foreground">Invoice Customization & Terms</CardTitle>
-              <CardDescription>Configure default invoice numbering and notes for your clients.</CardDescription>
+              <CardDescription>
+                Used as the default invoice number prefix, payment terms, and footer text the next time you create an invoice.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">Invoice Number Prefix</label>
-                    <Input 
-                      value={invoicePrefix} 
-                      onChange={(e) => setInvoicePrefix(e.target.value)} 
+                    <Input
+                      value={invoicePrefix}
+                      onChange={(e) => setInvoicePrefix(e.target.value)}
+                      maxLength={50}
                       className="bg-background border-input text-foreground font-mono"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">Default Payment Terms</label>
-                    <Input 
-                      value={paymentTerms} 
-                      onChange={(e) => setPaymentTerms(e.target.value)} 
+                    <Input
+                      value={paymentTerms}
+                      onChange={(e) => setPaymentTerms(e.target.value)}
+                      maxLength={100}
                       className="bg-background border-input text-foreground"
                     />
                   </div>
@@ -304,10 +375,11 @@ export default function SettingsPage() {
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Default Invoice Footer / Wire Instructions</label>
-                  <textarea 
-                    value={invoiceNotes} 
-                    onChange={(e) => setInvoiceNotes(e.target.value)} 
+                  <textarea
+                    value={invoiceNotes}
+                    onChange={(e) => setInvoiceNotes(e.target.value)}
                     rows={4}
+                    maxLength={1000}
                     className="w-full rounded-md border border-input bg-background p-3 text-sm text-foreground focus:border-primary focus:outline-none"
                   />
                 </div>
@@ -328,18 +400,42 @@ export default function SettingsPage() {
               <CardDescription>Change your password and inspect active session tokens.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 max-w-xl">
-              <form onSubmit={handleSaveProfile} className="space-y-4">
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                {passwordError && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs">
+                    <AlertCircle className="h-4 w-4 shrink-0" /> {passwordError}
+                  </div>
+                )}
+                {passwordSuccess && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" /> Password updated. Your other sessions have been signed out.
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Current Password</label>
-                  <Input type="password" placeholder="••••••••" className="bg-background border-input text-foreground" />
+                  <Input
+                    type="password"
+                    placeholder="••••••••"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="bg-background border-input text-foreground"
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">New Password</label>
-                  <Input type="password" placeholder="••••••••" className="bg-background border-input text-foreground" />
+                  <Input
+                    type="password"
+                    placeholder="At least 8 characters, with a letter and a number"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="bg-background border-input text-foreground"
+                  />
                 </div>
 
-                <Button type="submit" variant="outline">
+                <Button type="submit" variant="outline" disabled={changePasswordMutation.isPending}>
+                  {changePasswordMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Update Password
                 </Button>
               </form>
@@ -348,7 +444,7 @@ export default function SettingsPage() {
                 <p className="text-xs font-semibold text-foreground">Active Authentication Session</p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10">JWT Bearer Token Active</Badge>
-                  <span>Expires in 15 mins (Auto-refresh enabled)</span>
+                  <span>Expires in 2 minutes (auto-refreshed while you're active)</span>
                 </div>
               </div>
             </CardContent>

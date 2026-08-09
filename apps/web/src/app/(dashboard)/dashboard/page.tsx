@@ -23,6 +23,9 @@ export default function DashboardPage() {
   const totalExpenses = summary?.totalExpenses ?? 0;
   const netProfit = summary?.netProfit ?? (totalIncome - totalExpenses);
   const pendingInvoices = summary?.pendingInvoices ?? 0;
+  // Derived from this month vs last month; null when there's no prior-month data to compare against.
+  const incomeGrowth: number | null = summary?.monthlyGrowth ?? null;
+  const expenseGrowth: number | null = summary?.expenseGrowth ?? null;
 
   // Grab the first 5 transactions for the recent activity table
   const recentTransactions = transactions?.slice(0, 5) || [];
@@ -90,9 +93,12 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center mt-3 gap-2">
               <span className="text-xs text-muted-foreground">Since Last Month</span>
-              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
-                <ArrowUpRight className="h-3 w-3 mr-0.5" /> +12.5%
-              </span>
+              {incomeGrowth !== null && (
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${incomeGrowth >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"}`}>
+                  {incomeGrowth >= 0 ? <ArrowUpRight className="h-3 w-3 mr-0.5" /> : <ArrowDownRight className="h-3 w-3 mr-0.5" />}
+                  {incomeGrowth >= 0 ? "+" : ""}{incomeGrowth}%
+                </span>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -111,9 +117,12 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center mt-3 gap-2">
               <span className="text-xs text-muted-foreground">Since Last Month</span>
-              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
-                <ArrowDownRight className="h-3 w-3 mr-0.5" /> -3.2%
-              </span>
+              {expenseGrowth !== null && (
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${expenseGrowth <= 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"}`}>
+                  {expenseGrowth <= 0 ? <ArrowDownRight className="h-3 w-3 mr-0.5" /> : <ArrowUpRight className="h-3 w-3 mr-0.5" />}
+                  {expenseGrowth >= 0 ? "+" : ""}{expenseGrowth}%
+                </span>
+              )}
             </div>
           </CardContent>
         </Card>

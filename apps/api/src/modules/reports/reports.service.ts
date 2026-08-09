@@ -2,36 +2,49 @@ import { Injectable, Inject } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.module';
 import { income, expenses, clients } from '../../database/schema';
+import { taxYearRange, incomeInTaxYear } from '../../common/tax-year';
 
 @Injectable()
 export class ReportsService {
   constructor(@Inject(DRIZZLE) private readonly db: any) {}
 
-  async getIncomeVsExpenses(userId: string, period?: string) {
+  /**
+   * Monthly trend across a Pakistani tax year (July → June), not the calendar year.
+   * Pass `year` to look at a past tax year; defaults to the current one.
+   */
+  async getIncomeVsExpenses(userId: string, year?: string) {
+    const range = taxYearRange(year);
     const userIncome = await this.db.select().from(income).where(eq(income.userId, userId));
     const userExpenses = await this.db.select().from(expenses).where(eq(expenses.userId, userId));
 
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
-    // Simplistic aggregation by month for the current year
-    const currentYear = new Date().getFullYear();
-    
-    const monthlyData = monthNames.map((month, index) => {
-      const inc = userIncome.filter((i: any) => new Date(i.receivedAt || i.createdAt).getMonth() === index && new Date(i.receivedAt || i.createdAt).getFullYear() === currentYear)
+
+    // 12 buckets starting at July of the opening calendar year.
+    return Array.from({ length: 12 }, (_, offset) => {
+      const bucketStart = new Date(Date.UTC(range.taxYear - 1, 6 + offset, 1));
+      const bucketEnd = new Date(Date.UTC(range.taxYear - 1, 7 + offset, 1));
+
+      const within = (value: any) => {
+        const date = new Date(value);
+        return !Number.isNaN(date.getTime()) && date >= bucketStart && date < bucketEnd;
+      };
+
+      const inc = userIncome
+        .filter((i: any) => within(i.receivedAt || i.createdAt))
         .reduce((sum: number, i: any) => sum + Number(i.amountPKR || 0), 0);
-      
-      const exp = userExpenses.filter((e: any) => new Date(e.expenseDate || e.createdAt).getMonth() === index && new Date(e.expenseDate || e.createdAt).getFullYear() === currentYear)
-        .reduce((sum: number, e: any) => sum + Number(e.amount || 0), 0);
-      
+
+      const exp = userExpenses
+        .filter((e: any) => within(e.expenseDate || e.createdAt))
+        .reduce((sum: number, e: any) => sum + Number(e.amountPKR || 0), 0);
+
       return {
-        month,
-        income: inc,
-        expenses: exp,
-        profit: inc - exp,
+        month: monthNames[bucketStart.getUTCMonth()],
+        year: bucketStart.getUTCFullYear(),
+        income: Math.round(inc * 100) / 100,
+        expenses: Math.round(exp * 100) / 100,
+        profit: Math.round((inc - exp) * 100) / 100,
       };
     });
-
-    return monthlyData;
   }
 
   async getClientBreakdown(userId: string) {
@@ -67,22 +80,9 @@ export class ReportsService {
   }
 
   async getIncomeConsolidation(userId: string, year?: string) {
-    // Optional: filter by year if provided (e.g., '2025' or '2025-26')
-    let userIncome = await this.db.select().from(income).where(eq(income.userId, userId));
-    
-    if (year) {
-      const yearStart = parseInt(year.substring(0, 4));
-      // Very simplistic yearly filter - assuming tax year July-June for PK
-      userIncome = userIncome.filter((inc: any) => {
-        const date = new Date(inc.receivedAt || inc.createdAt);
-        if (year.length > 4) {
-          // e.g. 2025-26
-          return (date.getFullYear() === yearStart && date.getMonth() >= 6) || 
-                 (date.getFullYear() === yearStart + 1 && date.getMonth() < 6);
-        }
-        return date.getFullYear() === yearStart;
-      });
-    }
+    const range = taxYearRange(year);
+    const allIncome = await this.db.select().from(income).where(eq(income.userId, userId));
+    const userIncome = incomeInTaxYear(allIncome, range);
 
     let totalPKR = 0;
     let unmatchedPKR = 0;
@@ -111,7 +111,9 @@ export class ReportsService {
     const trackedPercentage = totalPKR > 0 ? Number((100 - unmatchedPercentage).toFixed(1)) : 0;
 
     return {
-      totalPKR,
+      taxYear: range.taxYear,
+      taxYearLabel: range.label,
+      totalPKR: Math.round(totalPKR * 100) / 100,
       byPlatform,
       trackedPercentage,
       unmatchedPercentage,

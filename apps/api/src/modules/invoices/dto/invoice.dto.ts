@@ -1,14 +1,17 @@
-import { IsArray, IsEnum, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsEnum, IsNumber, IsOptional, IsString, ValidateNested, ArrayMinSize, Min, Max, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateInvoiceItemDto {
   @IsString()
+  @MaxLength(500)
   description!: string;
 
   @IsNumber()
+  @Min(0)
   quantity!: number;
 
   @IsNumber()
+  @Min(0)
   rate!: number;
 }
 
@@ -69,6 +72,7 @@ export class CreateInvoiceDto {
   notes?: string;
 
   @IsArray()
+  @ArrayMinSize(1, { message: 'An invoice must contain at least one line item' })
   @ValidateNested({ each: true })
   @Type(() => CreateInvoiceItemDto)
   items!: CreateInvoiceItemDto[];

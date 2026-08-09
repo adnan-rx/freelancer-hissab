@@ -6,6 +6,7 @@ import { DatabaseModule } from '../../database/database.module';
 @Module({
   imports: [DatabaseModule],
   controllers: [WealthController],
-  providers: [WealthService]
+  providers: [WealthService],
+  exports: [WealthService],
 })
 export class WealthModule {}

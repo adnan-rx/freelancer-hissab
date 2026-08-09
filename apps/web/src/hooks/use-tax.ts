@@ -32,7 +32,7 @@ export function useSimulateTax() {
   const accessToken = useAuthStore((state) => state.accessToken);
 
   return useMutation({
-    mutationFn: async (data: { incomePKR: number; expensesPKR?: number; year?: number; pseb?: boolean }) => {
+    mutationFn: async (data: { incomePKR: number; localIncomePKR?: number; expensesPKR?: number; year?: number; pseb?: boolean }) => {
       const res = await apiClient.post("/tax/simulate", data);
       return res.data?.data || res.data;
     },

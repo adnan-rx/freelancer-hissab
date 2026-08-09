@@ -24,6 +24,29 @@ export function formatUSD(amount: number | string) {
   }).format(valid);
 }
 
+/**
+ * Turns an axios/API failure into a message worth showing a user.
+ * The API wraps errors as { error: { code, message, details } }; validation
+ * failures put the useful text in `details`.
+ */
+export function apiErrorMessage(err: any, fallback = "Something went wrong. Please try again."): string {
+  const apiError = err?.response?.data?.error;
+
+  if (Array.isArray(apiError?.details) && apiError.details.length > 0) {
+    return apiError.details.join(", ");
+  }
+  if (typeof apiError?.message === "string" && apiError.message) {
+    return apiError.message;
+  }
+  if (err?.response?.status === 429) {
+    return "Too many requests. Please wait a moment and try again.";
+  }
+  if (err?.code === "ERR_NETWORK" || err?.message === "Network Error") {
+    return "Cannot reach the server. Check that the API is running and try again.";
+  }
+  return err?.message || fallback;
+}
+
 export function formatDate(date: string | Date) {
   if (!date) return "N/A";
   try {
