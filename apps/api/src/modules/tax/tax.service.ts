@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.module';
-import { income, expenses } from '../../database/schema';
+import { income, expenses, taxRules } from '../../database/schema';
 
 export interface TaxEstimateResult {
   taxYear: number;
@@ -46,9 +46,10 @@ export class TaxService {
     const totalExpensesPKR = userExpenses.reduce((sum: number, exp: any) => sum + Number(exp.amount || 0), 0);
     const netProfitPKR = Math.max(0, totalGrossIncomePKR - totalExpensesPKR);
 
-    // Section 154A final tax rate on export proceeds
-    const exportTaxRatePercentage = isPsebRegistered ? 0.25 : 1.0;
-    const exportTaxLiabilityPKR = Math.round((exportIncomePKR * (exportTaxRatePercentage / 100)) * 100) / 100;
+    // Section 154A final tax rate on export proceeds from DB Rule Engine
+    const exportTaxRatePercentage = await this.getExportTaxRate(isPsebRegistered, taxYear);
+    const exportTaxRateDecimal = exportTaxRatePercentage / 100;
+    const exportTaxLiabilityPKR = Math.round((exportIncomePKR * exportTaxRateDecimal) * 100) / 100;
 
     // Standard FBR individual tax slabs on local income
     const localTaxLiabilityPKR = this.calculateLocalTaxSlabs(localIncomePKR);
@@ -93,5 +94,50 @@ export class TaxService {
     } else {
       return 435000 + (incomePKR - 3600000) * 0.35;
     }
+  }
+
+  private async getExportTaxRate(isPsebRegistered: boolean, taxYear: number): Promise<number> {
+    const yearStr = `${taxYear-1}-${taxYear.toString().substring(2)}`;
+    const incomeType = isPsebRegistered ? 'IT_EXPORT_PSEB' : 'IT_EXPORT_STANDARD';
+    
+    let [rule] = await this.db.select().from(taxRules).where(and(eq(taxRules.taxYear, yearStr), eq(taxRules.incomeType, incomeType))).limit(1);
+    
+    if (!rule) {
+      const rate = isPsebRegistered ? 0.0025 : 0.01;
+      [rule] = await this.db.insert(taxRules).values({
+        taxYear: yearStr,
+        incomeType,
+        rate: rate.toString(),
+        effectiveFrom: `${taxYear-1}-07-01`,
+      }).returning();
+    }
+    
+    return Number(rule.rate) * 100;
+  }
+
+  async simulateTaxScenario(userId: string, hypotheticalIncomePKR: number, hypotheticalExpensesPKR: number = 0, taxYear = 2026, isPsebRegistered = true) {
+    const current = await this.calculateTaxEstimate(userId, isPsebRegistered, taxYear);
+    
+    const exportTaxRatePercentage = await this.getExportTaxRate(isPsebRegistered, taxYear);
+    const exportTaxRateDecimal = exportTaxRatePercentage / 100;
+
+    // For simulator, assuming all income is export for simplicity in v1
+    const exportTaxLiabilityPKR = Math.round((hypotheticalIncomePKR * exportTaxRateDecimal) * 100) / 100;
+    
+    const scenario = {
+      incomePKR: hypotheticalIncomePKR,
+      expensesPKR: hypotheticalExpensesPKR,
+      taxPKR: exportTaxLiabilityPKR,
+    };
+
+    return {
+      current: {
+        incomePKR: current.totalGrossIncomePKR,
+        expensesPKR: current.totalExpensesPKR,
+        taxPKR: current.totalTaxLiabilityPKR
+      },
+      scenario,
+      differencePKR: scenario.taxPKR - current.totalTaxLiabilityPKR,
+    };
   }
 }

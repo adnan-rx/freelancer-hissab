@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Home, Users, FileText, DollarSign, PieChart, Settings, LogOut, Wallet, ArrowRightLeft, HelpCircle, X } from 'lucide-react';
+import { Home, Users, FileText, DollarSign, PieChart, Settings, LogOut, Wallet, ArrowRightLeft, HelpCircle, X, ShieldCheck, Calculator, Landmark } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { useEffect } from 'react';
 
@@ -15,6 +15,9 @@ const navItems = [
   { name: 'Income', href: '/income', icon: DollarSign },
   { name: 'Expenses', href: '/expenses', icon: Wallet },
   { name: 'Reports', href: '/reports', icon: PieChart },
+  { name: 'Wealth', href: '/wealth', icon: Landmark },
+  { name: 'Tax Simulator', href: '/tax-simulator', icon: Calculator },
+  { name: 'Filing Simulator', href: '/filing', icon: ShieldCheck },
   { name: 'User Guide', href: '/guide', icon: HelpCircle },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];

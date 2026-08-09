@@ -62,6 +62,26 @@ export function usePlatformBreakdownReport() {
   });
 }
 
+export function useIncomeConsolidation(year?: string) {
+  const accessToken = useAuthStore((state) => state.accessToken);
+
+  return useQuery({
+    queryKey: ["report-income-consolidation", year, accessToken],
+    queryFn: async () => {
+      if (!accessToken) return null;
+      try {
+        const url = year ? `/reports/income-consolidation?year=${year}` : "/reports/income-consolidation";
+        const res = await apiClient.get(url);
+        const resData = res.data;
+        return resData?.data?.data || resData?.data || resData || null;
+      } catch (e) {
+        return null;
+      }
+    },
+    enabled: !!accessToken,
+  });
+}
+
 export function useTaxEstimate(isPseb = true) {
   const accessToken = useAuthStore((state) => state.accessToken);
 

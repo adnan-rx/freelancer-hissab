@@ -22,4 +22,9 @@ export class ReportsController {
   getPlatformBreakdown(@CurrentUser() user: any) {
     return this.reportsService.getPlatformBreakdown(user.id);
   }
+
+  @Get('income-consolidation')
+  getIncomeConsolidation(@CurrentUser() user: any, @Query('year') year?: string) {
+    return this.reportsService.getIncomeConsolidation(user.id, year);
+  }
 }

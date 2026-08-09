@@ -8,10 +8,12 @@ import { Plus } from 'lucide-react';
 import { formatPKR } from '@/lib/utils';
 import { useExpenses } from '@/hooks/use-expenses';
 import { AddExpenseModal } from '@/components/features/add-expense-modal';
+import { EvidenceVaultModal } from '@/components/features/evidence-vault-modal';
 
 export default function ExpensesPage() {
   const { data: expensesList = [], isLoading } = useExpenses();
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [evidenceTarget, setEvidenceTarget] = useState<{ id: string; title: string } | null>(null);
 
   const displayExpenses = expensesList;
 
@@ -35,6 +37,7 @@ export default function ExpensesPage() {
               <TableHead className="text-muted-foreground font-medium">Description / Vendor</TableHead>
               <TableHead className="text-muted-foreground font-medium">Category</TableHead>
               <TableHead className="text-muted-foreground font-medium text-right">Amount (PKR)</TableHead>
+              <TableHead className="text-muted-foreground font-medium text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -55,6 +58,16 @@ export default function ExpensesPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="font-bold text-destructive text-right">{formatPKR(exp.amount || 0)}</TableCell>
+                  <TableCell className="text-right flex items-center justify-end gap-1">
+                    <Button 
+                      onClick={() => setEvidenceTarget({ id: exp.id, title: exp.description || "Expense Entry" })} 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-8 text-xs font-semibold rounded-lg hover:text-primary transition-colors"
+                    >
+                      Evidence
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -63,6 +76,14 @@ export default function ExpensesPage() {
       </div>
 
       <AddExpenseModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} />
+      
+      <EvidenceVaultModal 
+        isOpen={!!evidenceTarget} 
+        onClose={() => setEvidenceTarget(null)} 
+        recordId={evidenceTarget?.id || null} 
+        recordType="expense"
+        recordTitle={evidenceTarget?.title}
+      />
     </div>
   );
 }

@@ -7,3 +7,6 @@ export * from './income';
 export * from './expenses';
 export * from './categories';
 export * from './refresh-tokens';
+export * from './tax-rules';
+export * from './evidence';
+export * from './wealth';

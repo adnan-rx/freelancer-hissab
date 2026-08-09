@@ -65,4 +65,56 @@ export class ReportsService {
 
     return Object.keys(platformBreakdown).map((name) => ({ name, value: platformBreakdown[name] }));
   }
+
+  async getIncomeConsolidation(userId: string, year?: string) {
+    // Optional: filter by year if provided (e.g., '2025' or '2025-26')
+    let userIncome = await this.db.select().from(income).where(eq(income.userId, userId));
+    
+    if (year) {
+      const yearStart = parseInt(year.substring(0, 4));
+      // Very simplistic yearly filter - assuming tax year July-June for PK
+      userIncome = userIncome.filter((inc: any) => {
+        const date = new Date(inc.receivedAt || inc.createdAt);
+        if (year.length > 4) {
+          // e.g. 2025-26
+          return (date.getFullYear() === yearStart && date.getMonth() >= 6) || 
+                 (date.getFullYear() === yearStart + 1 && date.getMonth() < 6);
+        }
+        return date.getFullYear() === yearStart;
+      });
+    }
+
+    let totalPKR = 0;
+    let unmatchedPKR = 0;
+    const platformBreakdown: Record<string, number> = {};
+
+    userIncome.forEach((inc: any) => {
+      const amount = Number(inc.amountPKR || 0);
+      totalPKR += amount;
+
+      if (!inc.platform && !inc.clientId) {
+        unmatchedPKR += amount;
+      }
+
+      if (inc.platform) {
+        platformBreakdown[inc.platform] = (platformBreakdown[inc.platform] || 0) + amount;
+      }
+    });
+
+    const byPlatform = Object.keys(platformBreakdown).map((platform) => ({
+      platform,
+      amountPKR: platformBreakdown[platform],
+      percentage: totalPKR > 0 ? Number(((platformBreakdown[platform] / totalPKR) * 100).toFixed(1)) : 0,
+    })).sort((a, b) => b.amountPKR - a.amountPKR);
+
+    const unmatchedPercentage = totalPKR > 0 ? Number(((unmatchedPKR / totalPKR) * 100).toFixed(1)) : 0;
+    const trackedPercentage = totalPKR > 0 ? Number((100 - unmatchedPercentage).toFixed(1)) : 0;
+
+    return {
+      totalPKR,
+      byPlatform,
+      trackedPercentage,
+      unmatchedPercentage,
+    };
+  }
 }

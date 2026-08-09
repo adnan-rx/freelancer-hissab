@@ -7,6 +7,7 @@ export interface UserProfile {
   name: string;
   businessName?: string;
   defaultCurrency?: string;
+  hasPseb?: boolean;
 }
 
 interface AuthState {

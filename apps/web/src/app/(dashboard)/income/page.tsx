@@ -9,6 +9,7 @@ import { formatPKR, formatUSD } from '@/lib/utils';
 import { useIncome, useDeleteIncome } from '@/hooks/use-income';
 import { CSVImportModal } from '@/components/features/csv-import-modal';
 import { AddIncomeModal } from '@/components/features/add-income-modal';
+import { EvidenceVaultModal } from '@/components/features/evidence-vault-modal';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { Toast } from '@/components/ui/toast';
 
@@ -18,6 +19,7 @@ export default function IncomePage() {
 
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [evidenceTarget, setEvidenceTarget] = useState<{ id: string; title: string } | null>(null);
 
   // Modal & Toast States
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; description: string } | null>(null);
@@ -110,7 +112,15 @@ export default function IncomePage() {
                     {inc.currency === "USD" ? formatUSD(inc.amount) : `${inc.currency || 'USD'} ${inc.amount}`}
                   </TableCell>
                   <TableCell className="font-bold text-primary font-mono">{formatPKR(inc.amountPKR || 0)}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right flex items-center justify-end gap-1">
+                    <Button 
+                      onClick={() => setEvidenceTarget({ id: inc.id, title: inc.description || "Income Entry" })} 
+                      size="sm" 
+                      variant="outline" 
+                      className="h-8 text-xs font-semibold rounded-lg hover:text-primary transition-colors"
+                    >
+                      Evidence
+                    </Button>
                     <Button 
                       onClick={() => setDeleteTarget({ id: inc.id, description: inc.description || "Income Entry" })} 
                       size="icon" 
@@ -130,6 +140,14 @@ export default function IncomePage() {
 
       <CSVImportModal isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} />
       <AddIncomeModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} />
+      
+      <EvidenceVaultModal 
+        isOpen={!!evidenceTarget} 
+        onClose={() => setEvidenceTarget(null)} 
+        recordId={evidenceTarget?.id || null} 
+        recordType="income"
+        recordTitle={evidenceTarget?.title}
+      />
 
       <ConfirmModal
         isOpen={!!deleteTarget}
