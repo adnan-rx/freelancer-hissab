@@ -14,7 +14,7 @@ import Link from 'next/link';
 
 export default function DashboardPage() {
   const { data: summary, isLoading: isSummaryLoading } = useDashboardSummary();
-  const { data: transactions, isLoading: isTxLoading } = useTransactions();
+  const { data: transactions, isLoading: isTxLoading } = useTransactions({ pageSize: 5 });
   const { data: invoices } = useInvoices();
   const { data: incomeConsolidation } = useIncomeConsolidation();
   const { data: readiness } = useReadinessScore();
@@ -27,8 +27,8 @@ export default function DashboardPage() {
   const incomeGrowth: number | null = summary?.monthlyGrowth ?? null;
   const expenseGrowth: number | null = summary?.expenseGrowth ?? null;
 
-  // Grab the first 5 transactions for the recent activity table
-  const recentTransactions = transactions?.slice(0, 5) || [];
+  // Server already returns the 5 most recent transactions (newest-first, page size 5)
+  const recentTransactions = transactions?.data || [];
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-2 md:px-0">

@@ -14,11 +14,23 @@ export class TransactionsController {
     @CurrentUser() user: any,
     @Query('search') search?: string,
     @Query('type') type?: TransactionType,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('page') pageStr?: string,
+    @Query('pageSize') pageSizeStr?: string,
   ) {
-    const transactions = await this.transactionsService.findAll(user.id, { search, type });
+    const result = await this.transactionsService.findAll(user.id, {
+      search,
+      type,
+      startDate,
+      endDate,
+      page: pageStr ? parseInt(pageStr, 10) : undefined,
+      pageSize: pageSizeStr ? parseInt(pageSizeStr, 10) : undefined,
+    });
+
     return {
       success: true,
-      data: transactions,
+      ...result,
     };
   }
 }
