@@ -297,6 +297,16 @@ export default function NewInvoicePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
+              {/* Header Row for Line Items - Hidden on mobile, visible on md+ screens */}
+              <div className="hidden md:flex flex-row gap-3 items-center px-1 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <div className="flex-1">Description</div>
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                  <div className="w-20 text-center">Qty</div>
+                  <div className="w-28 text-right">Rate</div>
+                  <div className="w-28 text-right">Amount</div>
+                  <div className="w-9"></div>
+                </div>
+              </div>
               {items.map((item, index) => {
                 const itemAmount = Number(item.quantity || 0) * Number(item.rate || 0);
                 return (

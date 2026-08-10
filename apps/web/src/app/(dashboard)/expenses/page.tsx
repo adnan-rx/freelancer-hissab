@@ -81,6 +81,7 @@ export default function ExpensesPage() {
               <TableHead className="text-muted-foreground font-medium">Date</TableHead>
               <TableHead className="text-muted-foreground font-medium">Description / Vendor</TableHead>
               <TableHead className="text-muted-foreground font-medium">Category</TableHead>
+              <TableHead className="text-muted-foreground font-medium">Payment Method</TableHead>
               <TableHead className="text-muted-foreground font-medium text-right">Amount (PKR)</TableHead>
               <TableHead className="text-muted-foreground font-medium text-right">Action</TableHead>
             </TableRow>
@@ -88,11 +89,11 @@ export default function ExpensesPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading expenses...</TableCell>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading expenses...</TableCell>
               </TableRow>
             ) : displayExpenses.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <Wallet className="h-8 w-8 text-muted-foreground/60" />
                     <p className="font-semibold text-foreground">
@@ -122,6 +123,9 @@ export default function ExpensesPage() {
                       <Badge variant="secondary" className="capitalize">
                         {exp.category || "other"}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="capitalize text-muted-foreground text-xs">
+                      {(exp.paymentMethod || "bank_transfer").replace("_", " ")}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="font-bold text-destructive">{formatPKR(amountPKR)}</div>
@@ -169,7 +173,7 @@ export default function ExpensesPage() {
           {displayExpenses.length > 0 && (
             <tfoot className="bg-muted/30 border-t border-border">
               <tr>
-                <td colSpan={3} className="px-4 py-3 text-sm font-semibold text-foreground">Total</td>
+                <td colSpan={4} className="px-4 py-3 text-sm font-semibold text-foreground">Total</td>
                 <td className="px-4 py-3 text-right font-bold text-destructive font-mono">{formatPKR(totalPKR)}</td>
                 <td />
               </tr>

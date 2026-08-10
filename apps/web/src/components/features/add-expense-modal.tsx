@@ -25,6 +25,7 @@ export function AddExpenseModal({ isOpen, onClose, expense }: AddExpenseModalPro
   const [category, setCategory] = useState("software");
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("PKR");
+  const [paymentMethod, setPaymentMethod] = useState("bank_transfer");
   const [error, setError] = useState<string | null>(null);
 
   // Reload the form whenever the modal opens, so a previous edit never leaks into a new entry.
@@ -37,6 +38,7 @@ export function AddExpenseModal({ isOpen, onClose, expense }: AddExpenseModalPro
     setCategory(expense?.category || "software");
     setAmount(expense?.amount ? String(expense.amount) : "");
     setCurrency(expense?.currency || "PKR");
+    setPaymentMethod(expense?.paymentMethod || "bank_transfer");
   }, [isOpen, expense]);
 
   if (!isOpen) return null;
@@ -60,6 +62,7 @@ export function AddExpenseModal({ isOpen, onClose, expense }: AddExpenseModalPro
       category,
       amount: parsedAmount,
       currency,
+      paymentMethod,
     };
 
     try {
@@ -149,33 +152,49 @@ export function AddExpenseModal({ isOpen, onClose, expense }: AddExpenseModalPro
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Amount *</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  placeholder="4500"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  required
-                  className="bg-background border-input text-foreground font-mono"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Currency</label>
-                <select
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                  className="w-full h-10 px-2 rounded-md bg-background border border-input text-foreground text-sm focus:border-destructive focus:outline-none"
-                >
-                  <option value="PKR">PKR (Rs.)</option>
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="GBP">GBP (£)</option>
-                </select>
-              </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">Payment Method</label>
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="w-full h-10 px-3 rounded-md bg-background border border-input text-foreground text-sm focus:border-destructive focus:outline-none"
+              >
+                <option value="bank_transfer">Bank Transfer</option>
+                <option value="credit_card">Credit Card</option>
+                <option value="cash">Cash</option>
+                <option value="e_wallet">E-Wallet</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">Amount *</label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0.01"
+                placeholder="4500"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+                className="bg-background border-input text-foreground font-mono"
+              />
+            </div>
+            
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">Currency</label>
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="w-full h-10 px-3 rounded-md bg-background border border-input text-foreground text-sm focus:border-destructive focus:outline-none"
+              >
+                <option value="PKR">PKR (Rs.)</option>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GBP">GBP (£)</option>
+              </select>
             </div>
           </div>
 

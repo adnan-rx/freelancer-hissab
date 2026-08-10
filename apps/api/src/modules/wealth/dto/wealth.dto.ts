@@ -18,6 +18,19 @@ export class CreateAssetDto {
   @IsString()
   description: string;
 
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  balance?: number;
+
   @IsNumber()
   @Min(0)
   valuePKR: number;
@@ -31,6 +44,19 @@ export class UpdateAssetDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  balance?: number;
 
   @IsNumber()
   @Min(0)

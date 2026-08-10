@@ -11,6 +11,7 @@ export const expenses = pgTable('expenses', {
   exchangeRate: decimal('exchange_rate', { precision: 10, scale: 4 }).default('1').notNull(),
   amountPKR: decimal('amount_pkr', { precision: 12, scale: 2 }).notNull().default('0'),
   category: expenseCategoryEnum('category').default('other').notNull(),
+  paymentMethod: varchar('payment_method', { length: 50 }).default('bank_transfer').notNull(),
   description: varchar('description', { length: 500 }).notNull(),
   vendor: varchar('vendor', { length: 255 }),
   receiptUrl: varchar('receipt_url', { length: 1000 }),

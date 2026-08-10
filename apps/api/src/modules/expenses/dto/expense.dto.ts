@@ -45,6 +45,11 @@ export class CreateExpenseDto {
   @IsOptional()
   vendor?: string;
 
+  @IsString()
+  @MaxLength(50)
+  @IsOptional()
+  paymentMethod?: string;
+
   @Type(() => Date)
   @IsOptional()
   expenseDate?: Date;

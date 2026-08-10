@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { User, Landmark, Shield, FileText, CheckCircle2, Save, Loader2, AlertCircle } from "lucide-react";
+import { User, Landmark, Shield, FileText, Save, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth.store";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import { apiClient } from "@/lib/api-client";
 import { apiErrorMessage } from "@/lib/utils";
+import { Toast } from "@/components/ui/toast";
 
 const IBAN_PATTERN = /^[A-Za-z]{2}[0-9]{2}[A-Za-z0-9]{11,30}$/;
 
@@ -119,7 +120,6 @@ export default function SettingsPage() {
         setUser({ ...user, name, businessName, psebId: psebId || null, hasPseb: !!psebId });
       }
       setSavedSuccess("Settings updated & saved to database!");
-      setTimeout(() => setSavedSuccess(null), 3000);
     } catch (err) {
       setSaveError(apiErrorMessage(err, "Failed to save your settings."));
     }
@@ -135,7 +135,6 @@ export default function SettingsPage() {
       setPasswordError(null);
       setCurrentPassword("");
       setNewPassword("");
-      setTimeout(() => setPasswordSuccess(false), 4000);
     },
     onError: (err) => {
       setPasswordError(apiErrorMessage(err, "Failed to change your password."));
@@ -161,18 +160,13 @@ export default function SettingsPage() {
             Manage your freelancer profile, bank remittance details, invoicing settings, and security.
           </p>
         </div>
-
-        {savedSuccess && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border border-primary/30 text-primary text-sm font-medium animate-in fade-in">
-            <CheckCircle2 className="h-4 w-4" /> {savedSuccess}
-          </div>
-        )}
       </div>
 
+      {savedSuccess && (
+        <Toast type="success" title="Saved" message={savedSuccess} onClose={() => setSavedSuccess(null)} />
+      )}
       {saveError && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-sm">
-          <AlertCircle className="h-4 w-4 shrink-0" /> {saveError}
-        </div>
+        <Toast type="error" title="Save Failed" message={saveError} onClose={() => setSaveError(null)} />
       )}
 
       <Tabs defaultValue="profile" className="space-y-6">
@@ -400,18 +394,19 @@ export default function SettingsPage() {
               <CardDescription>Change your password and inspect active session tokens.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 max-w-xl">
-              <form onSubmit={handleChangePassword} className="space-y-4">
-                {passwordError && (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs">
-                    <AlertCircle className="h-4 w-4 shrink-0" /> {passwordError}
-                  </div>
-                )}
-                {passwordSuccess && (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary text-xs">
-                    <CheckCircle2 className="h-4 w-4 shrink-0" /> Password updated. Your other sessions have been signed out.
-                  </div>
-                )}
+              {passwordError && (
+                <Toast type="error" title="Password Not Updated" message={passwordError} onClose={() => setPasswordError(null)} />
+              )}
+              {passwordSuccess && (
+                <Toast
+                  type="success"
+                  title="Password Updated"
+                  message="Your other sessions have been signed out."
+                  onClose={() => setPasswordSuccess(false)}
+                />
+              )}
 
+              <form onSubmit={handleChangePassword} className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Current Password</label>
                   <Input

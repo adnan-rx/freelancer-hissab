@@ -27,7 +27,7 @@ export default function WealthPage() {
   const [isAssetDialogOpen, setIsAssetDialogOpen] = useState(false)
   const [isLiabilityDialogOpen, setIsLiabilityDialogOpen] = useState(false)
   
-  const [newAsset, setNewAsset] = useState({ type: "CASH", description: "", valuePKR: "" })
+  const [newAsset, setNewAsset] = useState({ type: "CASH", description: "", valuePKR: "", name: "", currency: "PKR", balance: "" })
   const [newLiability, setNewLiability] = useState({ description: "", amountPKR: "" })
 
   const fetchData = async () => {
@@ -80,10 +80,13 @@ export default function WealthPage() {
       await apiClient.post(`/wealth/assets`, {
         taxYear,
         type: newAsset.type,
+        name: newAsset.name,
+        currency: newAsset.currency,
+        balance: Number(newAsset.balance),
         description: newAsset.description,
         valuePKR: Number(newAsset.valuePKR)
       })
-      setNewAsset({ type: "CASH", description: "", valuePKR: "" })
+      setNewAsset({ type: "CASH", description: "", valuePKR: "", name: "", currency: "PKR", balance: "" })
       setIsAssetDialogOpen(false)
       fetchData()
     } catch (error) {
@@ -280,6 +283,10 @@ export default function WealthPage() {
                 </DialogHeader>
                 <form onSubmit={addAsset} className="space-y-4">
                   <div className="space-y-2">
+                    <Label htmlFor="asset-name">Asset Name *</Label>
+                    <Input id="asset-name" required value={newAsset.name} onChange={e => setNewAsset({...newAsset, name: e.target.value})} placeholder="e.g. Meezan Bank Current Acc" />
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="asset-type">Asset Type</Label>
                     <Select value={newAsset.type} onValueChange={(val) => setNewAsset({...newAsset, type: val})}>
                       <SelectTrigger id="asset-type">
@@ -294,13 +301,37 @@ export default function WealthPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="asset-desc">Description</Label>
-                    <Input id="asset-desc" required value={newAsset.description} onChange={e => setNewAsset({...newAsset, description: e.target.value})} placeholder="e.g. Meezan Bank Account" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="asset-balance">Current Balance *</Label>
+                      <Input id="asset-balance" required type="number" value={newAsset.balance} onChange={e => setNewAsset({...newAsset, balance: e.target.value})} placeholder="0" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="asset-currency">Currency</Label>
+                      <Select value={newAsset.currency} onValueChange={(val) => setNewAsset({...newAsset, currency: val})}>
+                        <SelectTrigger id="asset-currency">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="PKR">PKR (Rs.)</SelectItem>
+                          <SelectItem value="USD">USD ($)</SelectItem>
+                          <SelectItem value="USDT">USDT</SelectItem>
+                          <SelectItem value="EUR">EUR (€)</SelectItem>
+                          <SelectItem value="GBP">GBP (£)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="asset-val">Value (PKR)</Label>
+                    <Label htmlFor="asset-val">Value (PKR) *</Label>
                     <Input id="asset-val" required type="number" value={newAsset.valuePKR} onChange={e => setNewAsset({...newAsset, valuePKR: e.target.value})} placeholder="0" />
+                    {newAsset.currency !== 'PKR' && (
+                      <p className="text-[11px] text-muted-foreground">Enter the equivalent PKR value for FBR reconciliation.</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="asset-desc">Notes</Label>
+                    <Input id="asset-desc" value={newAsset.description} onChange={e => setNewAsset({...newAsset, description: e.target.value})} placeholder="Optional notes (e.g. Primary checking account)" />
                   </div>
                   <DialogFooter>
                     <Button type="submit">Save Asset</Button>
@@ -314,25 +345,31 @@ export default function WealthPage() {
             <Table>
               <TableHeader className="bg-muted/50">
                 <TableRow>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Value</TableHead>
+                  <TableHead>Asset Name</TableHead>
+                  <TableHead>Asset Type</TableHead>
+                  <TableHead className="text-right">Current Balance</TableHead>
+                  <TableHead>Currency</TableHead>
+                  <TableHead>Notes</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {assets.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
                       No assets declared yet.
                     </TableCell>
                   </TableRow>
                 ) : (
                   assets.map(asset => (
                     <TableRow key={asset.id}>
-                      <TableCell className="font-medium">{asset.description}</TableCell>
-                      <TableCell className="text-muted-foreground text-xs">{asset.type}</TableCell>
-                      <TableCell className="text-right font-mono">{formatCurrency(asset.valuePKR)}</TableCell>
+                      <TableCell className="font-medium">{asset.name || asset.description}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs capitalize">{(asset.type || "").toLowerCase()}</TableCell>
+                      <TableCell className="text-right font-mono">
+                        {asset.currency === 'PKR' ? formatCurrency(asset.balance || asset.valuePKR) : new Intl.NumberFormat('en-US').format(Number(asset.balance || 0))}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">{asset.currency || "PKR"}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs">{asset.description}</TableCell>
                       <TableCell>
                         <Button variant="ghost" size="icon" onClick={() => deleteAsset(asset.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
