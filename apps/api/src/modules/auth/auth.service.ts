@@ -102,8 +102,8 @@ export class AuthService {
     const refreshSecret = process.env.JWT_REFRESH_SECRET || 'fh_dev_refresh_secret_key_2026_pk';
     
     const [accessToken, refreshTokenStr] = await Promise.all([
-      this.jwtService.signAsync(payload, { expiresIn: '15m' }),
-      this.jwtService.signAsync(payload, { expiresIn: '7d', secret: refreshSecret }),
+      this.jwtService.signAsync(payload, { expiresIn: (process.env.JWT_EXPIRATION || '15m') as any }),
+      this.jwtService.signAsync(payload, { expiresIn: (process.env.JWT_REFRESH_EXPIRATION || '7d') as any, secret: refreshSecret }),
     ]);
 
     const hashedToken = this.hashToken(refreshTokenStr);

@@ -9,6 +9,7 @@ import { useSimulateTax, useTaxEstimate } from "@/hooks/use-tax";
 import { formatPKR, apiErrorMessage } from "@/lib/utils";
 import { Calculator, TrendingUp, TrendingDown, Activity, Percent, AlertCircle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { getCurrentTaxYear } from "@/lib/tax-year";
 
 export default function TaxSimulatorPage() {
   const [exportIncomePKR, setExportIncomePKR] = useState("");
@@ -17,7 +18,7 @@ export default function TaxSimulatorPage() {
   const [isPseb, setIsPseb] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: currentTax, isLoading: isCurrentLoading } = useTaxEstimate(2026, isPseb);
+  const { data: currentTax, isLoading: isCurrentLoading } = useTaxEstimate(getCurrentTaxYear(), isPseb);
   const simulateMutation = useSimulateTax();
 
   const handleSimulate = () => {
@@ -32,7 +33,7 @@ export default function TaxSimulatorPage() {
     }
 
     simulateMutation.mutate(
-      { incomePKR: income, localIncomePKR: local, expensesPKR: expenses, year: 2026, pseb: isPseb },
+      { incomePKR: income, localIncomePKR: local, expensesPKR: expenses, year: getCurrentTaxYear(), pseb: isPseb },
       { onError: (err) => setError(apiErrorMessage(err, "Could not run the simulation.")) },
     );
   };

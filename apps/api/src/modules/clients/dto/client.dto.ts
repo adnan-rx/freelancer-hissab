@@ -1,10 +1,11 @@
-import { IsString, IsEmail, IsOptional, IsEnum, ValidateIf, MaxLength } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsEnum, IsNotEmpty, ValidateIf, MaxLength } from 'class-validator';
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 
 export class CreateClientDto {
   @ApiProperty({ example: 'TechFlow Inc.' })
-  @IsString()
   @MaxLength(255)
+  @IsString()
+  @IsNotEmpty({ message: 'name is required' })
   name!: string;
 
   @ApiProperty({ example: 'billing@techflow.com', required: false })

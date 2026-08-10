@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString, IsPositive, MaxLength, IsIn } from 'class-validator';
+import { IsNumber, IsOptional, IsString, IsPositive, IsNotEmpty, MaxLength, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/swagger';
 
@@ -36,8 +36,9 @@ export class CreateExpenseDto {
   })
   category!: string;
 
-  @IsString()
   @MaxLength(500)
+  @IsString()
+  @IsNotEmpty({ message: 'description is required' })
   description!: string;
 
   @IsString()

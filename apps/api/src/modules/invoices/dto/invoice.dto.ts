@@ -78,7 +78,9 @@ export class CreateInvoiceDto {
   items!: CreateInvoiceItemDto[];
 }
 
+const INVOICE_STATUSES = ['draft', 'sent', 'viewed', 'paid', 'overdue', 'cancelled'] as const;
+
 export class UpdateInvoiceStatusDto {
-  @IsEnum(['draft', 'sent', 'viewed', 'paid', 'overdue', 'cancelled'])
+  @IsEnum(INVOICE_STATUSES, { message: `status must be one of: ${INVOICE_STATUSES.join(', ')}` })
   status!: string;
 }

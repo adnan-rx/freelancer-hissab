@@ -159,9 +159,14 @@ export class InvoicesService {
   }
 
   async updateStatus(userId: string, id: string, status: string) {
+    const updateData: Record<string, any> = { status: status as any, updatedAt: new Date() };
+    if (status === 'paid') {
+      updateData.paidAt = new Date();
+    }
+
     const result = await this.db
       .update(invoices)
-      .set({ status: status as any, updatedAt: new Date() })
+      .set(updateData)
       .where(and(eq(invoices.id, id), eq(invoices.userId, userId)))
       .returning();
 

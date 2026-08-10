@@ -68,7 +68,7 @@ export class IncomeService {
       platform: dto.platform as any,
       description: dto.description,
       category: dto.category,
-      sbpPurposeCode: dto.sbpPurposeCode || '9100',
+      sbpPurposeCode: dto.sbpPurposeCode || (currency !== 'PKR' ? '9100' : null),
       prcReferenceNumber: dto.prcReferenceNumber,
       receivedAt: dto.receivedAt ? new Date(dto.receivedAt) : new Date(),
     }).returning();

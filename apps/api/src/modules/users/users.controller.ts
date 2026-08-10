@@ -20,10 +20,7 @@ export class UsersController {
       throw new BadRequestException('User profile not found.');
     }
     const { passwordHash, ...safeProfile } = profile;
-    return {
-      success: true,
-      data: safeProfile,
-    };
+    return safeProfile;
   }
 
   @Patch('profile')
@@ -34,11 +31,7 @@ export class UsersController {
     }
     const updated = await this.usersService.updateProfile(userId, dto);
     const { passwordHash, ...safeProfile } = updated;
-    return {
-      success: true,
-      message: 'User settings profile updated successfully.',
-      data: safeProfile,
-    };
+    return safeProfile;
   }
 
   @Patch('password')
