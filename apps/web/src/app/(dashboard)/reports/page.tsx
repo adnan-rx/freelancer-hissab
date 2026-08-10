@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { PaginationBar } from "@/components/ui/pagination-bar";
 import {
   TrendingUp,
   DollarSign,
@@ -14,8 +15,6 @@ import {
   PieChart as PieIcon,
   BarChart3,
   Calculator,
-  ChevronLeft,
-  ChevronRight,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -390,31 +389,8 @@ export default function ReportsPage() {
                 )}
               </TableBody>
             </Table>
+            <PaginationBar page={currentPage} pageSize={PAGE_SIZE} total={plRows.length} onPageChange={setPage} />
           </div>
-
-          {plRows.length > 0 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4">
-              <p className="text-xs text-muted-foreground">
-                Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, plRows.length)} of {plRows.length}
-              </p>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                  <ChevronLeft className="h-4 w-4 mr-1" /> Prev
-                </Button>
-                <span className="text-xs text-muted-foreground font-medium px-2">
-                  Page {currentPage} of {totalPlPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage >= totalPlPages}
-                  onClick={() => setPage((p) => Math.min(totalPlPages, p + 1))}
-                >
-                  Next <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Search, Loader2, ArrowUpRight, ArrowDownRight, Filter, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Search, Loader2, ArrowUpRight, ArrowDownRight, Filter, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -15,9 +15,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useTransactions, TransactionType } from "@/hooks/use-transactions";
+import { Checkbox } from "@/components/ui/checkbox";
+import { SortableTableHead, SortState } from "@/components/ui/sortable-table-head";
+import { PaginationBar } from "@/components/ui/pagination-bar";
+import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { Toast } from "@/components/ui/toast";
+import { useTransactions, TransactionType, UnifiedTransaction } from "@/hooks/use-transactions";
+import { useDeleteIncome } from "@/hooks/use-income";
+import { useDeleteExpense } from "@/hooks/use-expenses";
 
 const PAGE_SIZE = 20;
+
+/** Selection key: a transaction's id is only unique within its own (income/expense) table. */
+const txKey = (tx: UnifiedTransaction) => `${tx.type}:${tx.id}`;
 
 export default function TransactionsPage() {
   const [search, setSearch] = useState("");
@@ -25,6 +36,14 @@ export default function TransactionsPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [page, setPage] = useState(1);
+  const [sort, setSort] = useState<SortState | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [toast, setToast] = useState<{ type: "error" | "success"; title?: string; message: string } | null>(null);
+
+  const deleteIncomeMutation = useDeleteIncome();
+  const deleteExpenseMutation = useDeleteExpense();
 
   // Any filter change invalidates the current page — starting over on page 1
   // avoids landing on a now-empty page (e.g. filtering to a date range with fewer rows).
@@ -41,11 +60,83 @@ export default function TransactionsPage() {
     pageSize: PAGE_SIZE,
   });
 
-  const transactions = data?.data ?? [];
   const total = data?.total ?? 0;
-  const totalPages = data?.totalPages ?? 1;
   const hasDateFilter = !!(startDate || endDate);
   const dateRangeInvalid = !!(startDate && endDate && startDate > endDate);
+
+  // Sorting only reorders the current page — the data itself is paginated server-side.
+  const transactions = useMemo(() => {
+    const rows = data?.data ?? [];
+    if (!sort) return rows;
+    const accessors: Record<string, (tx: UnifiedTransaction) => string | number> = {
+      date: (tx) => tx.date,
+      entity: (tx) => (tx.entity || "").toLowerCase(),
+      category: (tx) => (tx.category || "").toLowerCase(),
+      amount: (tx) => Number(tx.amount || 0),
+    };
+    const accessor = accessors[sort.key];
+    if (!accessor) return rows;
+    const copy = [...rows];
+    copy.sort((a, b) => {
+      const av = accessor(a);
+      const bv = accessor(b);
+      const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+      return sort.direction === "asc" ? cmp : -cmp;
+    });
+    return copy;
+  }, [data, sort]);
+
+  function toggleSort(key: string) {
+    setSort((prev) => {
+      if (!prev || prev.key !== key) return { key, direction: "asc" };
+      if (prev.direction === "asc") return { key, direction: "desc" };
+      return null;
+    });
+  }
+
+  const pageKeys = transactions.map(txKey);
+  const allSelectedOnPage = pageKeys.length > 0 && pageKeys.every((k) => selected.has(k));
+  const someSelectedOnPage = pageKeys.some((k) => selected.has(k));
+
+  function toggleSelectAll() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allSelectedOnPage) pageKeys.forEach((k) => next.delete(k));
+      else pageKeys.forEach((k) => next.add(k));
+      return next;
+    });
+  }
+
+  function toggleSelect(key: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  const handleBulkDelete = async () => {
+    const keys = Array.from(selected);
+    setIsBulkDeleting(true);
+    const results = await Promise.allSettled(
+      keys.map((key) => {
+        const [type, id] = key.split(":");
+        return type === "INCOME" ? deleteIncomeMutation.mutateAsync(id) : deleteExpenseMutation.mutateAsync(id);
+      })
+    );
+    setIsBulkDeleting(false);
+    setBulkConfirmOpen(false);
+    setSelected(new Set());
+
+    const failed = results.filter((r) => r.status === "rejected").length;
+    const deleted = keys.length - failed;
+    setToast(
+      failed === 0
+        ? { type: "success", title: "Transactions Deleted", message: `${deleted} transaction(s) removed.` }
+        : { type: "error", title: "Some Deletes Failed", message: `${deleted} deleted, ${failed} failed.` }
+    );
+  };
 
   const clearDateFilter = () => {
     setStartDate("");
@@ -125,28 +216,43 @@ export default function TransactionsPage() {
         </CardHeader>
 
         <CardContent className="p-0">
+          <BulkActionsBar
+            count={selected.size}
+            onDelete={() => setBulkConfirmOpen(true)}
+            onClear={() => setSelected(new Set())}
+            isDeleting={isBulkDeleting}
+            label="transaction"
+          />
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-muted/50">
                 <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="text-muted-foreground font-medium py-4 pl-6">Date</TableHead>
-                  <TableHead className="text-muted-foreground font-medium py-4">Entity</TableHead>
+                  <TableHead className="w-10 pl-6">
+                    <Checkbox
+                      checked={allSelectedOnPage}
+                      indeterminate={someSelectedOnPage && !allSelectedOnPage}
+                      onChange={toggleSelectAll}
+                      aria-label="Select all transactions on this page"
+                    />
+                  </TableHead>
+                  <SortableTableHead sortKey="date" sort={sort} onSort={toggleSort} className="text-muted-foreground font-medium py-4">Date</SortableTableHead>
+                  <SortableTableHead sortKey="entity" sort={sort} onSort={toggleSort} className="text-muted-foreground font-medium py-4">Entity</SortableTableHead>
                   <TableHead className="text-muted-foreground font-medium py-4">Description</TableHead>
-                  <TableHead className="text-muted-foreground font-medium py-4">Category</TableHead>
-                  <TableHead className="text-muted-foreground font-medium py-4 text-right pr-6">Amount</TableHead>
+                  <SortableTableHead sortKey="category" sort={sort} onSort={toggleSort} className="text-muted-foreground font-medium py-4">Category</SortableTableHead>
+                  <SortableTableHead sortKey="amount" sort={sort} onSort={toggleSort} className="text-muted-foreground font-medium py-4 text-right pr-6">Amount</SortableTableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-32 text-center">
+                    <TableCell colSpan={6} className="h-32 text-center">
                       <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
                       <p className="text-sm text-muted-foreground mt-2">Loading transactions...</p>
                     </TableCell>
                   </TableRow>
                 ) : dateRangeInvalid || transactions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-32 text-center">
+                    <TableCell colSpan={6} className="h-32 text-center">
                       <p className="text-sm text-muted-foreground">
                         {dateRangeInvalid
                           ? "Fix the date range above to see results."
@@ -157,9 +263,17 @@ export default function TransactionsPage() {
                 ) : (
                   transactions.map((tx) => {
                     const isIncome = tx.type === "INCOME";
+                    const key = txKey(tx);
                     return (
-                      <TableRow key={tx.id} className="transition-colors">
-                        <TableCell className="text-foreground whitespace-nowrap pl-6">
+                      <TableRow key={key} className="transition-colors" data-state={selected.has(key) ? "selected" : undefined}>
+                        <TableCell className="pl-6">
+                          <Checkbox
+                            checked={selected.has(key)}
+                            onChange={() => toggleSelect(key)}
+                            aria-label={`Select ${tx.entity || "transaction"}`}
+                          />
+                        </TableCell>
+                        <TableCell className="text-foreground whitespace-nowrap">
                           {format(new Date(tx.date), "MMM dd, yyyy")}
                         </TableCell>
                         <TableCell className="font-medium text-foreground">{tx.entity}</TableCell>
@@ -188,36 +302,23 @@ export default function TransactionsPage() {
             </Table>
           </div>
 
-          {total > 0 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-border">
-              <p className="text-xs text-muted-foreground">
-                Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total.toLocaleString()}
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1 || isFetching}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" /> Prev
-                </Button>
-                <span className="text-xs text-muted-foreground font-medium px-2">
-                  Page {page} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages || isFetching}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                >
-                  Next <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-            </div>
-          )}
+          <PaginationBar page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} isFetching={isFetching} />
         </CardContent>
       </Card>
+
+      <ConfirmModal
+        isOpen={bulkConfirmOpen}
+        onClose={() => setBulkConfirmOpen(false)}
+        onConfirm={handleBulkDelete}
+        title={`Delete ${selected.size} Transaction(s)?`}
+        description="Each selected row is removed from its underlying income or expense log. This cannot be undone."
+        confirmText="Delete Selected"
+        isLoading={isBulkDeleting}
+      />
+
+      {toast && (
+        <Toast type={toast.type} title={toast.title} message={toast.message} onClose={() => setToast(null)} />
+      )}
     </div>
   );
 }

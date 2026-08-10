@@ -6,13 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { SortableTableHead } from '@/components/ui/sortable-table-head';
+import { PaginationBar } from '@/components/ui/pagination-bar';
+import { BulkActionsBar } from '@/components/ui/bulk-actions-bar';
 import { Search, Plus, Users, DollarSign, Building, Mail, Phone, Edit, Trash2, FilePlus, X, Check, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '@/hooks/use-clients';
+import { useDataTable } from '@/hooks/use-data-table';
 import { formatPKR, formatUSD, apiErrorMessage } from '@/lib/utils';
 import { CSVImportModal } from '@/components/features/csv-import-modal';
 import { Toast } from '@/components/ui/toast';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
+
+const PAGE_SIZE = 10;
 
 export default function ClientsPage() {
   const [search, setSearch] = useState("");
@@ -22,6 +29,8 @@ export default function ClientsPage() {
   const [toast, setToast] = useState<{ type: 'error' | 'success'; title?: string; message: string } | null>(null);
   // `warning` carries the server's "this will also delete N invoices" message on the second (forced) confirm.
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; warning?: string } | null>(null);
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   // Modal States
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -52,6 +61,17 @@ export default function ClientsPage() {
                           (client.email && client.email.toLowerCase().includes(search.toLowerCase())) ||
                           (client.company && client.company.toLowerCase().includes(search.toLowerCase()));
     return matchesPlatform && matchesSearch;
+  });
+
+  const table = useDataTable(displayClients, {
+    getId: (c: any) => c.id,
+    pageSize: PAGE_SIZE,
+    sortAccessors: {
+      name: (c: any) => (c.name || "").toLowerCase(),
+      platform: (c: any) => (c.platform || "").toLowerCase(),
+      total: (c: any) => Number(c.totalEarnings || c.totalIncome || 0),
+      status: (c: any) => (c.status || "").toLowerCase(),
+    },
   });
 
   const totalClientsCount = rawList.length;
@@ -133,6 +153,31 @@ export default function ClientsPage() {
       }
       setToast({ type: "error", title: "Delete Client Failed", message: apiErrorMessage(err) });
       setDeleteTarget(null);
+    }
+  };
+
+  // Bulk delete forces the cascade straight away (unlike the single-row flow's two-step
+  // confirm) since the warning below already tells the user upfront what gets removed.
+  const handleBulkDelete = async () => {
+    const ids = Array.from(table.selected);
+    setIsBulkDeleting(true);
+    const results = await Promise.allSettled(
+      ids.map((id) => deleteClientMutation.mutateAsync({ id, force: true }))
+    );
+    setIsBulkDeleting(false);
+    setBulkConfirmOpen(false);
+    table.clearSelection();
+
+    const failed = results.filter((r) => r.status === "rejected").length;
+    const deleted = ids.length - failed;
+    if (failed === 0) {
+      setToast({ type: "success", title: "Clients Deleted", message: `${deleted} client(s) removed.` });
+    } else {
+      setToast({
+        type: "error",
+        title: "Some Deletes Failed",
+        message: `${deleted} client(s) deleted, ${failed} failed.`,
+      });
     }
   };
 
@@ -226,40 +271,70 @@ export default function ClientsPage() {
 
       {/* Clients Table */}
       <div className="border border-border rounded-xl overflow-hidden bg-card shadow-sm">
+        <BulkActionsBar
+          count={table.selected.size}
+          onDelete={() => setBulkConfirmOpen(true)}
+          onClear={table.clearSelection}
+          isDeleting={isBulkDeleting}
+          label="client"
+        />
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow className="border-border">
-              <TableHead className="text-muted-foreground font-medium">Client / Company Name</TableHead>
-              <TableHead className="text-muted-foreground font-medium">Platform</TableHead>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={table.allSelectedOnPage}
+                  indeterminate={table.someSelectedOnPage && !table.allSelectedOnPage}
+                  onChange={table.toggleSelectAll}
+                  aria-label="Select all clients on this page"
+                />
+              </TableHead>
+              <SortableTableHead sortKey="name" sort={table.sort} onSort={table.toggleSort} className="text-muted-foreground font-medium">
+                Client / Company Name
+              </SortableTableHead>
+              <SortableTableHead sortKey="platform" sort={table.sort} onSort={table.toggleSort} className="text-muted-foreground font-medium">
+                Platform
+              </SortableTableHead>
               <TableHead className="text-muted-foreground font-medium">Email & Contact</TableHead>
-              <TableHead className="text-muted-foreground font-medium">Total Billed</TableHead>
-              <TableHead className="text-muted-foreground font-medium">Status</TableHead>
+              <SortableTableHead sortKey="total" sort={table.sort} onSort={table.toggleSort} className="text-muted-foreground font-medium">
+                Total Billed
+              </SortableTableHead>
+              <SortableTableHead sortKey="status" sort={table.sort} onSort={table.toggleSort} className="text-muted-foreground font-medium">
+                Status
+              </SortableTableHead>
               <TableHead className="text-right text-muted-foreground font-medium">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading client directory...</TableCell>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading client directory...</TableCell>
               </TableRow>
             ) : displayClients.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No clients found matching your search.</TableCell>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No clients found matching your search.</TableCell>
               </TableRow>
             ) : (
-              displayClients.map((client: any) => {
+              table.paged.map((client: any) => {
                 const lifetimeUSD = Number(client.totalEarnings || client.totalIncome || 0);
                 const lifetimePKR = Number(client.totalEarningsPKR || (lifetimeUSD * 280.50));
                 return (
-                  <TableRow key={client.id} className="transition-colors">
+                  <TableRow key={client.id} className="transition-colors" data-state={table.selected.has(client.id) ? "selected" : undefined}>
+                    <TableCell>
+                      <Checkbox
+                        checked={table.selected.has(client.id)}
+                        onChange={() => table.toggleSelect(client.id)}
+                        aria-label={`Select ${client.name}`}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="font-semibold text-foreground">{client.name}</div>
                       {client.company && <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"><Building className="h-3 w-3" /> {client.company}</div>}
                     </TableCell>
 
                     <TableCell>
-                      <Badge 
-                        variant="secondary" 
+                      <Badge
+                        variant="secondary"
                         className="capitalize font-medium"
                       >
                         {client.platform || "direct"}
@@ -310,6 +385,7 @@ export default function ClientsPage() {
             )}
           </TableBody>
         </Table>
+        <PaginationBar page={table.page} pageSize={PAGE_SIZE} total={table.total} onPageChange={table.setPage} />
       </div>
 
       {/* Add / Edit Client Modal Overlay */}
@@ -455,6 +531,16 @@ export default function ClientsPage() {
         }
         confirmText={deleteTarget?.warning ? "Delete Anyway" : "Delete Client"}
         isLoading={deleteClientMutation.isPending}
+      />
+
+      <ConfirmModal
+        isOpen={bulkConfirmOpen}
+        onClose={() => setBulkConfirmOpen(false)}
+        onConfirm={handleBulkDelete}
+        title={`Delete ${table.selected.size} Client(s)?`}
+        description="This also permanently deletes any invoices or income records linked to these clients. This cannot be undone."
+        confirmText="Delete Selected"
+        isLoading={isBulkDeleting}
       />
 
       {toast && (

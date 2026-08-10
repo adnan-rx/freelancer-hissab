@@ -9,8 +9,17 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
+import { SortableTableHead } from "@/components/ui/sortable-table-head"
+import { PaginationBar } from "@/components/ui/pagination-bar"
+import { BulkActionsBar } from "@/components/ui/bulk-actions-bar"
+import { ConfirmModal } from "@/components/ui/confirm-modal"
+import { Toast } from "@/components/ui/toast"
 import { useAuthStore } from "@/stores/auth.store"
 import { apiClient } from "@/lib/api-client"
+import { useDataTable } from "@/hooks/use-data-table"
+
+const PAGE_SIZE = 10
 
 export default function WealthPage() {
   const token = useAuthStore((state) => state.accessToken)
@@ -29,6 +38,12 @@ export default function WealthPage() {
   
   const [newAsset, setNewAsset] = useState({ type: "CASH", description: "", valuePKR: "", name: "", currency: "PKR", balance: "" })
   const [newLiability, setNewLiability] = useState({ description: "", amountPKR: "" })
+
+  const [toast, setToast] = useState<{ type: "error" | "success"; title?: string; message: string } | null>(null)
+  const [bulkAssetConfirmOpen, setBulkAssetConfirmOpen] = useState(false)
+  const [isBulkDeletingAssets, setIsBulkDeletingAssets] = useState(false)
+  const [bulkLiabilityConfirmOpen, setBulkLiabilityConfirmOpen] = useState(false)
+  const [isBulkDeletingLiabilities, setIsBulkDeletingLiabilities] = useState(false)
 
   const fetchData = async () => {
     if (!token) return
@@ -103,6 +118,35 @@ export default function WealthPage() {
     }
   }
 
+  const assetsTable = useDataTable(assets, {
+    getId: (a: any) => a.id,
+    pageSize: PAGE_SIZE,
+    sortAccessors: {
+      name: (a: any) => (a.name || a.description || "").toLowerCase(),
+      type: (a: any) => (a.type || "").toLowerCase(),
+      balance: (a: any) => Number(a.balance || a.valuePKR || 0),
+      currency: (a: any) => (a.currency || "").toLowerCase(),
+    },
+  })
+
+  const handleBulkDeleteAssets = async () => {
+    const ids = Array.from(assetsTable.selected)
+    setIsBulkDeletingAssets(true)
+    const results = await Promise.allSettled(ids.map((id) => apiClient.delete(`/wealth/assets/${id}`)))
+    setIsBulkDeletingAssets(false)
+    setBulkAssetConfirmOpen(false)
+    assetsTable.clearSelection()
+    await fetchData()
+
+    const failed = results.filter((r) => r.status === "rejected").length
+    const deleted = ids.length - failed
+    setToast(
+      failed === 0
+        ? { type: "success", title: "Assets Deleted", message: `${deleted} asset(s) removed.` }
+        : { type: "error", title: "Some Deletes Failed", message: `${deleted} deleted, ${failed} failed.` }
+    )
+  }
+
   const addLiability = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -126,6 +170,33 @@ export default function WealthPage() {
     } catch (error) {
       console.error(error)
     }
+  }
+
+  const liabilitiesTable = useDataTable(liabilities, {
+    getId: (l: any) => l.id,
+    pageSize: PAGE_SIZE,
+    sortAccessors: {
+      description: (l: any) => (l.description || "").toLowerCase(),
+      amount: (l: any) => Number(l.amountPKR || 0),
+    },
+  })
+
+  const handleBulkDeleteLiabilities = async () => {
+    const ids = Array.from(liabilitiesTable.selected)
+    setIsBulkDeletingLiabilities(true)
+    const results = await Promise.allSettled(ids.map((id) => apiClient.delete(`/wealth/liabilities/${id}`)))
+    setIsBulkDeletingLiabilities(false)
+    setBulkLiabilityConfirmOpen(false)
+    liabilitiesTable.clearSelection()
+    await fetchData()
+
+    const failed = results.filter((r) => r.status === "rejected").length
+    const deleted = ids.length - failed
+    setToast(
+      failed === 0
+        ? { type: "success", title: "Liabilities Deleted", message: `${deleted} liability(ies) removed.` }
+        : { type: "error", title: "Some Deletes Failed", message: `${deleted} deleted, ${failed} failed.` }
+    )
   }
 
   const formatCurrency = (val: number | string | undefined) => {
@@ -342,13 +413,28 @@ export default function WealthPage() {
           </div>
 
           <Card className="overflow-hidden">
+            <BulkActionsBar
+              count={assetsTable.selected.size}
+              onDelete={() => setBulkAssetConfirmOpen(true)}
+              onClear={assetsTable.clearSelection}
+              isDeleting={isBulkDeletingAssets}
+              label="asset"
+            />
             <Table>
               <TableHeader className="bg-muted/50">
                 <TableRow>
-                  <TableHead>Asset Name</TableHead>
-                  <TableHead>Asset Type</TableHead>
-                  <TableHead className="text-right">Current Balance</TableHead>
-                  <TableHead>Currency</TableHead>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={assetsTable.allSelectedOnPage}
+                      indeterminate={assetsTable.someSelectedOnPage && !assetsTable.allSelectedOnPage}
+                      onChange={assetsTable.toggleSelectAll}
+                      aria-label="Select all assets on this page"
+                    />
+                  </TableHead>
+                  <SortableTableHead sortKey="name" sort={assetsTable.sort} onSort={assetsTable.toggleSort}>Asset Name</SortableTableHead>
+                  <SortableTableHead sortKey="type" sort={assetsTable.sort} onSort={assetsTable.toggleSort}>Asset Type</SortableTableHead>
+                  <SortableTableHead sortKey="balance" sort={assetsTable.sort} onSort={assetsTable.toggleSort} className="text-right">Current Balance</SortableTableHead>
+                  <SortableTableHead sortKey="currency" sort={assetsTable.sort} onSort={assetsTable.toggleSort}>Currency</SortableTableHead>
                   <TableHead>Notes</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
@@ -356,13 +442,20 @@ export default function WealthPage() {
               <TableBody>
                 {assets.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
                       No assets declared yet.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  assets.map(asset => (
-                    <TableRow key={asset.id}>
+                  assetsTable.paged.map(asset => (
+                    <TableRow key={asset.id} data-state={assetsTable.selected.has(asset.id) ? "selected" : undefined}>
+                      <TableCell>
+                        <Checkbox
+                          checked={assetsTable.selected.has(asset.id)}
+                          onChange={() => assetsTable.toggleSelect(asset.id)}
+                          aria-label={`Select ${asset.name || asset.description || "asset"}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{asset.name || asset.description}</TableCell>
                       <TableCell className="text-muted-foreground text-xs capitalize">{(asset.type || "").toLowerCase()}</TableCell>
                       <TableCell className="text-right font-mono">
@@ -380,6 +473,7 @@ export default function WealthPage() {
                 )}
               </TableBody>
             </Table>
+            <PaginationBar page={assetsTable.page} pageSize={PAGE_SIZE} total={assetsTable.total} onPageChange={assetsTable.setPage} />
           </Card>
         </div>
 
@@ -419,24 +513,46 @@ export default function WealthPage() {
           </div>
 
           <Card className="overflow-hidden">
+            <BulkActionsBar
+              count={liabilitiesTable.selected.size}
+              onDelete={() => setBulkLiabilityConfirmOpen(true)}
+              onClear={liabilitiesTable.clearSelection}
+              isDeleting={isBulkDeletingLiabilities}
+              label="liability"
+            />
             <Table>
               <TableHeader className="bg-muted/50">
                 <TableRow>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={liabilitiesTable.allSelectedOnPage}
+                      indeterminate={liabilitiesTable.someSelectedOnPage && !liabilitiesTable.allSelectedOnPage}
+                      onChange={liabilitiesTable.toggleSelectAll}
+                      aria-label="Select all liabilities on this page"
+                    />
+                  </TableHead>
+                  <SortableTableHead sortKey="description" sort={liabilitiesTable.sort} onSort={liabilitiesTable.toggleSort}>Description</SortableTableHead>
+                  <SortableTableHead sortKey="amount" sort={liabilitiesTable.sort} onSort={liabilitiesTable.toggleSort} className="text-right">Amount</SortableTableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {liabilities.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center h-24 text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
                       No liabilities declared yet.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  liabilities.map(liab => (
-                    <TableRow key={liab.id}>
+                  liabilitiesTable.paged.map(liab => (
+                    <TableRow key={liab.id} data-state={liabilitiesTable.selected.has(liab.id) ? "selected" : undefined}>
+                      <TableCell>
+                        <Checkbox
+                          checked={liabilitiesTable.selected.has(liab.id)}
+                          onChange={() => liabilitiesTable.toggleSelect(liab.id)}
+                          aria-label={`Select ${liab.description || "liability"}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{liab.description}</TableCell>
                       <TableCell className="text-right font-mono text-destructive">{formatCurrency(liab.amountPKR)}</TableCell>
                       <TableCell>
@@ -449,10 +565,35 @@ export default function WealthPage() {
                 )}
               </TableBody>
             </Table>
+            <PaginationBar page={liabilitiesTable.page} pageSize={PAGE_SIZE} total={liabilitiesTable.total} onPageChange={liabilitiesTable.setPage} />
           </Card>
         </div>
 
       </div>
+
+      <ConfirmModal
+        isOpen={bulkAssetConfirmOpen}
+        onClose={() => setBulkAssetConfirmOpen(false)}
+        onConfirm={handleBulkDeleteAssets}
+        title={`Delete ${assetsTable.selected.size} Asset(s)?`}
+        description="This cannot be undone."
+        confirmText="Delete Selected"
+        isLoading={isBulkDeletingAssets}
+      />
+
+      <ConfirmModal
+        isOpen={bulkLiabilityConfirmOpen}
+        onClose={() => setBulkLiabilityConfirmOpen(false)}
+        onConfirm={handleBulkDeleteLiabilities}
+        title={`Delete ${liabilitiesTable.selected.size} Liability(ies)?`}
+        description="This cannot be undone."
+        confirmText="Delete Selected"
+        isLoading={isBulkDeletingLiabilities}
+      />
+
+      {toast && (
+        <Toast type={toast.type} title={toast.title} message={toast.message} onClose={() => setToast(null)} />
+      )}
     </div>
   )
 }
