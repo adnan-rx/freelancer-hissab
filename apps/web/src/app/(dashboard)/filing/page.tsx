@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { apiClient } from "@/lib/api-client"
 import { apiErrorMessage } from "@/lib/utils"
 import { getCurrentTaxYear, taxYearOptions } from "@/lib/tax-year"
+import { Skeleton } from "@/components/ui/skeleton"
 
 type Step = {
   id: string
@@ -61,8 +62,51 @@ export default function FilingSimulatorPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh] text-muted-foreground gap-2">
-        <RefreshCcw className="h-5 w-5 animate-spin" /> Loading simulator...
+      <div id="simulator-dashboard" className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Filing Simulator</h1>
+            <p className="text-muted-foreground mt-1">
+              A guided walkthrough of your FBR tax return preparation.
+            </p>
+          </div>
+          <div className="flex gap-4 items-center">
+            <Skeleton className="h-10 w-[150px]" />
+            <Skeleton className="h-10 w-24" />
+          </div>
+        </div>
+
+        <Card className="border-2 border-border">
+          <CardContent className="p-8">
+            <div className="flex items-end justify-between mb-4">
+              <div className="space-y-1">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-9 w-20" />
+              </div>
+              <Skeleton className="h-6 w-36" />
+            </div>
+            <Skeleton className="h-3 w-full" />
+          </CardContent>
+        </Card>
+
+        <div className="space-y-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i} className="border-l-4 border-l-border">
+              <CardContent className="p-6">
+                <div className="flex gap-4 items-start">
+                  <Skeleton className="h-6 w-6 rounded-full shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="h-5 w-44" />
+                      <Skeleton className="h-4 w-16" />
+                    </div>
+                    <Skeleton className="h-4 w-80" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     )
   }
@@ -134,7 +178,7 @@ export default function FilingSimulatorPage() {
   const totalWarnings = steps.reduce((sum, step) => sum + step.warnings.length, 0)
 
   return (
-    <div id="simulator-dashboard" className="max-w-4xl mx-auto space-y-8 pb-12">
+    <div id="simulator-dashboard" className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Filing Simulator</h1>

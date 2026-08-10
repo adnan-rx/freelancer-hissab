@@ -25,6 +25,7 @@ import { useClients } from "@/hooks/use-clients";
 import { useInvoice, useUpdateInvoice } from "@/hooks/use-invoices";
 import { useExchangeRate } from "@/hooks/use-exchange-rate";
 import { Toast } from "@/components/ui/toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function EditInvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -89,8 +90,32 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh] text-muted-foreground gap-2">
-        <Loader2 className="h-5 w-5 animate-spin" /> Loading invoice details...
+      <div className="space-y-6 max-w-4xl mx-auto pb-12">
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-56" />
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

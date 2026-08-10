@@ -11,6 +11,8 @@ import { useInvoice, useUpdateInvoiceStatus } from "@/hooks/use-invoices";
 import { useProfile } from "@/hooks/use-profile";
 import { useAuthStore } from "@/stores/auth.store";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const user = useAuthStore((state) => state.user);
@@ -29,8 +31,36 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh] text-muted-foreground gap-2">
-        <Loader2 className="h-5 w-5 animate-spin" /> Loading invoice...
+      <div className="space-y-6 max-w-4xl mx-auto pb-12">
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-40" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-28" />
+            <Skeleton className="h-10 w-36" />
+          </div>
+        </div>
+        <Card className="border-border shadow-md rounded-2xl">
+          <CardContent className="p-8 md:p-12 space-y-8">
+            <div className="flex justify-between items-start border-b border-border pb-8">
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+              <div className="space-y-2 text-right">
+                <Skeleton className="h-8 w-32 ml-auto" />
+                <Skeleton className="h-4 w-24 ml-auto" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-8 py-2">
+              <Skeleton className="h-24 w-full rounded-xl" />
+              <Skeleton className="h-24 w-full rounded-xl" />
+            </div>
+            <Skeleton className="h-40 w-full rounded-xl" />
+          </CardContent>
+        </Card>
       </div>
     );
   }

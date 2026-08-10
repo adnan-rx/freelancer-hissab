@@ -41,7 +41,7 @@ export default function TaxSimulatorPage() {
   const simulationResult = simulateMutation.data;
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto px-4 md:px-0 pb-12">
+    <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
