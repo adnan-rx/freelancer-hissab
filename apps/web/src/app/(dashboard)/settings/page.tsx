@@ -13,6 +13,7 @@ import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import { apiClient } from "@/lib/api-client";
 import { apiErrorMessage } from "@/lib/utils";
 import { Toast } from "@/components/ui/toast";
+import { TaxRulesTab } from "@/components/features/tax-rules-tab";
 
 const IBAN_PATTERN = /^[A-Za-z]{2}[0-9]{2}[A-Za-z0-9]{11,30}$/;
 
@@ -183,6 +184,11 @@ export default function SettingsPage() {
           <TabsTrigger value="security" className="data-[state=active]:bg-background data-[state=active]:text-foreground font-medium">
             <Shield className="mr-2 h-4 w-4" /> Security
           </TabsTrigger>
+          {user?.isAdmin && (
+            <TabsTrigger value="tax-rules" className="data-[state=active]:bg-background data-[state=active]:text-foreground font-medium text-primary">
+              <Shield className="mr-2 h-4 w-4" /> Admin: Tax Rules
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Tab 1: Profile */}
@@ -445,6 +451,13 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Tab 5: Admin Tax Rules */}
+        {user?.isAdmin && (
+          <TabsContent value="tax-rules">
+            <TaxRulesTab />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

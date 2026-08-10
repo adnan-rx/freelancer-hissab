@@ -10,7 +10,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: [
+      process.env.CORS_ORIGIN || 'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:3002',
+    ],
     credentials: true,
   });
   app.setGlobalPrefix('api/v1');
@@ -35,9 +39,23 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.PORT || 3001;
-  await app.listen(port);
-  console.log(`🚀 FreelancerHisab API server running on http://localhost:${port}/api/v1`);
-  console.log(`📚 Swagger API Docs available at http://localhost:${port}/api/docs`);
+  let port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
+  const maxPort = port + 10;
+  
+  while (port <= maxPort) {
+    try {
+      await app.listen(port);
+      console.log(`🚀 FreelancerHisab API server running on http://localhost:${port}/api/v1`);
+      console.log(`📚 Swagger API Docs available at http://localhost:${port}/api/docs`);
+      break;
+    } catch (error: any) {
+      if (error.code === 'EADDRINUSE') {
+        console.warn(`⚠️  Port ${port} is in use, trying ${port + 1}...`);
+        port++;
+      } else {
+        throw error;
+      }
+    }
+  }
 }
 bootstrap();

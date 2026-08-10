@@ -18,13 +18,14 @@ import { Toast } from "@/components/ui/toast"
 import { useAuthStore } from "@/stores/auth.store"
 import { apiClient } from "@/lib/api-client"
 import { useDataTable } from "@/hooks/use-data-table"
+import { getCurrentTaxYear, taxYearOptions } from "@/lib/tax-year"
 
 const PAGE_SIZE = 10
 
 export default function WealthPage() {
   const token = useAuthStore((state) => state.accessToken)
   const [loading, setLoading] = useState(true)
-  const [taxYear, setTaxYear] = useState("2026")
+  const [taxYear, setTaxYear] = useState(() => String(getCurrentTaxYear()))
   
   const [statement, setStatement] = useState<any>(null)
   const [assets, setAssets] = useState<any[]>([])
@@ -229,9 +230,9 @@ export default function WealthPage() {
               <SelectValue placeholder="Select Tax Year" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="2024">Tax Year 2024</SelectItem>
-              <SelectItem value="2025">Tax Year 2025</SelectItem>
-              <SelectItem value="2026">Tax Year 2026</SelectItem>
+              {taxYearOptions().map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

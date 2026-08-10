@@ -38,3 +38,53 @@ export function useSimulateTax() {
     },
   });
 }
+
+export function useTaxRules(yearLabel?: string) {
+  const accessToken = useAuthStore((state) => state.accessToken);
+
+  return useQuery({
+    queryKey: ["tax-rules", yearLabel, accessToken],
+    queryFn: async () => {
+      if (!accessToken) return [];
+      try {
+        let url = "/tax/rules";
+        if (yearLabel) url += `?year=${encodeURIComponent(yearLabel)}`;
+        const res = await apiClient.get(url);
+        const resData = res.data;
+        return resData?.data || resData || [];
+      } catch (e) {
+        return [];
+      }
+    },
+    enabled: !!accessToken,
+  });
+}
+
+export function useCreateTaxRule() {
+  const { refetch } = useTaxRules();
+  
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiClient.post("/tax/rules", data);
+      return res.data;
+    },
+  });
+}
+
+export function useUpdateTaxRule() {
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const res = await apiClient.patch(`/tax/rules/${id}`, data);
+      return res.data;
+    },
+  });
+}
+
+export function useDeleteTaxRule() {
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiClient.delete(`/tax/rules/${id}`);
+      return res.data;
+    },
+  });
+}

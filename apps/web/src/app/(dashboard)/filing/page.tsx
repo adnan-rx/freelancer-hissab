@@ -12,6 +12,7 @@ import { useGeneratePackage } from "@/hooks/use-generate-package"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { apiClient } from "@/lib/api-client"
 import { apiErrorMessage } from "@/lib/utils"
+import { getCurrentTaxYear, taxYearOptions } from "@/lib/tax-year"
 
 type Step = {
   id: string
@@ -27,7 +28,7 @@ export default function FilingSimulatorPage() {
   const { data: profile } = useProfile()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [taxYear, setTaxYear] = useState("2026")
+  const [taxYear, setTaxYear] = useState(() => String(getCurrentTaxYear()))
 
   const [readiness, setReadiness] = useState<any>(null)
   const [wealth, setWealth] = useState<any>(null)
@@ -148,9 +149,9 @@ export default function FilingSimulatorPage() {
               <SelectValue placeholder="Tax Year" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="2024">Tax Year 2024</SelectItem>
-              <SelectItem value="2025">Tax Year 2025</SelectItem>
-              <SelectItem value="2026">Tax Year 2026</SelectItem>
+              {taxYearOptions().map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Button variant="outline" onClick={fetchData}>
