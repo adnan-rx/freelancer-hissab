@@ -9,8 +9,8 @@ export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   @Get('income-vs-expenses')
-  getIncomeVsExpenses(@CurrentUser() user: any, @Query('period') period?: string) {
-    return this.reportsService.getIncomeVsExpenses(user.id, period);
+  getIncomeVsExpenses(@CurrentUser() user: any, @Query('year') year?: string) {
+    return this.reportsService.getIncomeVsExpenses(user.id, year);
   }
 
   @Get('client-breakdown')
@@ -21,5 +21,10 @@ export class ReportsController {
   @Get('platform-breakdown')
   getPlatformBreakdown(@CurrentUser() user: any) {
     return this.reportsService.getPlatformBreakdown(user.id);
+  }
+
+  @Get('income-consolidation')
+  getIncomeConsolidation(@CurrentUser() user: any, @Query('year') year?: string) {
+    return this.reportsService.getIncomeConsolidation(user.id, year);
   }
 }

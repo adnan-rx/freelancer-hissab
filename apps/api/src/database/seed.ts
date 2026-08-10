@@ -29,6 +29,7 @@ async function seed() {
       invoiceNotes: 'Payment instructions: Wire foreign remittance directly to Meezan Bank IBAN under SBP Purpose Code 9100 for tax exemption.',
       defaultCurrency: 'PKR',
       timezone: 'Asia/Karachi',
+      isAdmin: true,
     }).returning();
     targetUsers = [newUser];
   }
@@ -214,6 +215,8 @@ async function seed() {
         userId: user.id,
         amount: '5500.00',
         currency: 'PKR',
+        exchangeRate: '1.00',
+        amountPKR: '5500.00',
         category: 'internet',
         description: 'Nayatel Fiber Broadband Monthly Bill',
         vendor: 'Nayatel',
@@ -223,6 +226,8 @@ async function seed() {
         userId: user.id,
         amount: '18500.00',
         currency: 'PKR',
+        exchangeRate: '1.00',
+        amountPKR: '18500.00',
         category: 'software',
         description: 'Adobe Creative Cloud All Apps Subscription',
         vendor: 'Adobe Systems',
@@ -232,6 +237,8 @@ async function seed() {
         userId: user.id,
         amount: '8200.00',
         currency: 'PKR',
+        exchangeRate: '1.00',
+        amountPKR: '8200.00',
         category: 'software',
         description: 'GitHub Copilot & Vercel Pro Workspace Plan',
         vendor: 'GitHub Inc.',
@@ -241,6 +248,8 @@ async function seed() {
         userId: user.id,
         amount: '25000.00',
         currency: 'PKR',
+        exchangeRate: '1.00',
+        amountPKR: '25000.00',
         category: 'office',
         description: 'Kickstart Co-Working Dedicated Desk Monthly Rent',
         vendor: 'Kickstart Co-working',

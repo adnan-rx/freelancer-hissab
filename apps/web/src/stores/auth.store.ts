@@ -7,6 +7,10 @@ export interface UserProfile {
   name: string;
   businessName?: string;
   defaultCurrency?: string;
+  hasPseb?: boolean;
+  psebId?: string | null;
+  isFiler?: boolean;
+  isAdmin?: boolean;
 }
 
 interface AuthState {

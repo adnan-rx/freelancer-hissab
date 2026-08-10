@@ -15,6 +15,9 @@ import { TaxModule } from './modules/tax/tax.module';
 import { ExchangeRateModule } from './modules/exchange-rate/exchange-rate.module';
 
 import { TransactionsModule } from './modules/transactions/transactions.module';
+import { FilingModule } from './modules/filing/filing.module';
+import { EvidenceModule } from './modules/evidence/evidence.module';
+import { WealthModule } from './modules/wealth/wealth.module';
 
 @Module({
   imports: [
@@ -37,6 +40,9 @@ import { TransactionsModule } from './modules/transactions/transactions.module';
     TaxModule,
     ExchangeRateModule,
     TransactionsModule,
+    FilingModule,
+    EvidenceModule,
+    WealthModule,
   ],
   providers: [
     {

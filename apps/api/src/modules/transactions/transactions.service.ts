@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, desc } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.module';
 import { income, expenses, clients } from '../../database/schema';
 
@@ -17,11 +17,32 @@ export interface UnifiedTransaction {
   createdAt: string;
 }
 
+export interface FindTransactionsQuery {
+  search?: string;
+  type?: TransactionType;
+  /** Inclusive, 'YYYY-MM-DD'. Filters on the transaction's own date, not createdAt. */
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PaginatedTransactions {
+  data: UnifiedTransaction[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+const DEFAULT_PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 200;
+
 @Injectable()
 export class TransactionsService {
   constructor(@Inject(DRIZZLE) private readonly db: any) {}
 
-  async findAll(userId: string, query: { search?: string; type?: TransactionType }) {
+  async findAll(userId: string, query: FindTransactionsQuery): Promise<PaginatedTransactions> {
     // 1. Fetch Income
     const incomeRecords = await this.db
       .select({
@@ -38,7 +59,7 @@ export class TransactionsService {
       .leftJoin(clients, eq(income.clientId, clients.id))
       .where(eq(income.userId, userId));
 
-    const mappedIncome: UnifiedTransaction[] = incomeRecords.map((inc) => ({
+    const mappedIncome: UnifiedTransaction[] = incomeRecords.map((inc: any) => ({
       id: inc.id,
       type: 'INCOME',
       date: inc.date.toISOString(),
@@ -51,17 +72,15 @@ export class TransactionsService {
     }));
 
     // 2. Fetch Expenses
-    const expenseRecords = await this.db
-      .select()
-      .from(expenses)
-      .where(eq(expenses.userId, userId));
+    const expenseRecords = await this.db.select().from(expenses).where(eq(expenses.userId, userId));
 
-    const mappedExpenses: UnifiedTransaction[] = expenseRecords.map((exp) => ({
+    const mappedExpenses: UnifiedTransaction[] = expenseRecords.map((exp: any) => ({
       id: exp.id,
       type: 'EXPENSE',
       date: exp.expenseDate, // this is a date string from DB
-      amount: parseFloat(exp.amount),
-      currency: exp.currency,
+      // Normalised to PKR like income, so the two sides of the ledger are comparable.
+      amount: parseFloat(exp.amountPKR ?? exp.amount),
+      currency: 'PKR',
       description: exp.description,
       category: exp.category,
       entity: exp.vendor || 'General',
@@ -73,22 +92,47 @@ export class TransactionsService {
 
     // 4. Filter by Type
     if (query.type) {
-      allTransactions = allTransactions.filter(t => t.type === query.type);
+      allTransactions = allTransactions.filter((t) => t.type === query.type);
     }
 
     // 5. Filter by Search (description, entity, category)
     if (query.search) {
       const s = query.search.toLowerCase();
-      allTransactions = allTransactions.filter(t => 
-        t.description.toLowerCase().includes(s) ||
-        t.entity.toLowerCase().includes(s) ||
-        t.category.toLowerCase().includes(s)
+      allTransactions = allTransactions.filter(
+        (t) =>
+          t.description.toLowerCase().includes(s) ||
+          t.entity.toLowerCase().includes(s) ||
+          t.category.toLowerCase().includes(s),
       );
     }
 
-    // 6. Sort by Date Descending
+    // 6. Filter by date range — inclusive on both ends, comparing calendar days so a
+    // start/end of the same day never excludes same-day transactions on a timezone quirk.
+    if (query.startDate) {
+      const start = new Date(`${query.startDate}T00:00:00.000Z`).getTime();
+      allTransactions = allTransactions.filter((t) => new Date(t.date).getTime() >= start);
+    }
+    if (query.endDate) {
+      const end = new Date(`${query.endDate}T23:59:59.999Z`).getTime();
+      allTransactions = allTransactions.filter((t) => new Date(t.date).getTime() <= end);
+    }
+
+    // 7. Sort by Date Descending
     allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    return allTransactions;
+    // 8. Paginate
+    const total = allTransactions.length;
+    const pageSize = Math.min(Math.max(1, query.pageSize || DEFAULT_PAGE_SIZE), MAX_PAGE_SIZE);
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const page = Math.min(Math.max(1, query.page || 1), totalPages);
+    const offset = (page - 1) * pageSize;
+
+    return {
+      data: allTransactions.slice(offset, offset + pageSize),
+      total,
+      page,
+      pageSize,
+      totalPages,
+    };
   }
 }

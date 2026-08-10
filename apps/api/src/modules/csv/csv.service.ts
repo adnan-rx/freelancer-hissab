@@ -2,6 +2,7 @@ import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.module';
 import { income, expenses, clients } from '../../database/schema';
+import { ExchangeRateService } from '../exchange-rate/exchange-rate.service';
 
 export interface CSVImportResult {
   success: boolean;
@@ -9,34 +10,57 @@ export interface CSVImportResult {
   incomeCount: number;
   expenseCount: number;
   clientsCreated: number;
+  skippedRows: number;
   message: string;
 }
 
+/** Header aliases -> the logical column we need. Lower-cased, punctuation-insensitive. */
+const COLUMN_ALIASES: Record<string, string[]> = {
+  date: ['date', 'transaction date', 'created date', 'posted date'],
+  description: ['description', 'memo', 'details', 'narrative', 'note'],
+  amount: ['amount', 'net amount', 'value', 'total'],
+  type: ['type', 'transaction type', 'category'],
+  currency: ['currency', 'ccy'],
+  refId: ['ref id', 'reference id', 'ref', 'reference'],
+};
+
 @Injectable()
 export class CsvService {
-  constructor(@Inject(DRIZZLE) private readonly db: any) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: any,
+    private readonly exchangeRateService: ExchangeRateService,
+  ) {}
 
-  async parseAndImport(userId: string, fileBuffer: Buffer, defaultExchangeRate = 280.50): Promise<CSVImportResult> {
+  async parseAndImport(userId: string, fileBuffer: Buffer, overrideRate?: number): Promise<CSVImportResult> {
     if (!fileBuffer || fileBuffer.length === 0) {
       throw new BadRequestException('CSV file content is empty');
     }
 
     const content = fileBuffer.toString('utf-8');
-    const lines = content.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+    const lines = content.split(/\r?\n/).map((line) => line.trim()).filter((line) => line.length > 0);
 
     if (lines.length < 2) {
       throw new BadRequestException('CSV file must contain a header and at least one data row');
     }
 
-    const header = lines[0].toLowerCase();
+    const headerCells = this.parseCSVLine(lines[0]).map((h) => this.normalizeHeader(h));
+    const columns = this.mapColumns(headerCells);
+
+    if (columns.date === -1 || columns.amount === -1) {
+      throw new BadRequestException(
+        'Could not find the required "Date" and "Amount" columns in the CSV header. ' +
+          `Found: ${headerCells.filter(Boolean).join(', ')}`,
+      );
+    }
+
     const rows = lines.slice(1);
 
     let totalParsed = 0;
     let incomeCount = 0;
     let expenseCount = 0;
     let clientsCreated = 0;
+    let skippedRows = 0;
 
-    // Fetch existing user clients for name matching
     const existingClients = await this.db.select().from(clients).where(eq(clients.userId, userId));
     const clientMap = new Map<string, string>();
     existingClients.forEach((c: any) => clientMap.set(c.name.toLowerCase(), c.id));
@@ -44,15 +68,13 @@ export class CsvService {
     const getOrCreateClient = async (clientName: string, currency = 'USD'): Promise<string | null> => {
       if (!clientName || clientName.trim() === '') return null;
       const normalized = clientName.trim().toLowerCase();
-      if (clientMap.has(normalized)) {
-        return clientMap.get(normalized)!;
-      }
+      if (clientMap.has(normalized)) return clientMap.get(normalized)!;
 
       const [newClient] = await this.db
         .insert(clients)
         .values({
           userId,
-          name: clientName.trim(),
+          name: clientName.trim().slice(0, 255),
           currency,
           platform: 'other',
           status: 'active',
@@ -64,111 +86,83 @@ export class CsvService {
       return newClient.id;
     };
 
+    // Cache rates per currency so a 1000-row import does not re-resolve on every line.
+    const rateCache = new Map<string, number>();
+    const rateFor = async (currency: string): Promise<number> => {
+      if (overrideRate && overrideRate > 0 && currency !== 'PKR') return overrideRate;
+      if (currency === 'PKR') return 1;
+      if (!rateCache.has(currency)) {
+        rateCache.set(currency, await this.exchangeRateService.getRate(currency, 'PKR'));
+      }
+      return rateCache.get(currency)!;
+    };
+
+    const isUpworkStatement = columns.refId !== -1;
+
     for (const row of rows) {
-      const columns = this.parseCSVLine(row);
-      if (columns.length === 0) continue;
+      const cells = this.parseCSVLine(row);
+      if (cells.length === 0) continue;
 
-      // Handle Upwork CSV format (Date, Ref ID, Type, Description, Agency, Amount, Account)
-      if (header.includes('ref id') || header.includes('type')) {
-        const dateStr = columns[0] || new Date().toISOString();
-        const typeStr = (columns[2] || '').toLowerCase();
-        const description = columns[3] || 'Upwork Transaction';
-        const rawAmount = parseFloat((columns[5] || '0').replace(/[$,]/g, '')) || 0;
+      const rawAmount = this.parseAmount(cells[columns.amount]);
+      if (!rawAmount) {
+        skippedRows++;
+        continue;
+      }
 
-        if (rawAmount === 0) continue;
+      const dateStr = cells[columns.date] || '';
+      const parsedDate = new Date(dateStr);
+      const validDate = isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
 
-        totalParsed++;
-        const parsedDate = new Date(dateStr);
-        const validDate = isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
-        const formattedDateString = validDate.toISOString().split('T')[0];
+      const description = (columns.description !== -1 ? cells[columns.description] : '') || 'Imported transaction';
+      const typeValue = (columns.type !== -1 ? cells[columns.type] : '').toLowerCase();
+      const currency = ((columns.currency !== -1 ? cells[columns.currency] : '') || 'USD').toUpperCase();
 
-        // Try extracting client name from description (e.g. "Invoice for TechFlow Inc")
-        let clientName = 'Upwork Client';
-        const clientMatch = description.match(/(?:for|from)\s+([A-Za-z0-9\s]+?)(?:-|$|\()/i);
-        if (clientMatch && clientMatch[1]) {
-          clientName = clientMatch[1].trim();
-        }
+      // A row is an expense when its type says so, or when the amount is negative.
+      const isExpense =
+        rawAmount < 0 || typeValue.includes('fee') || typeValue.includes('expense') || typeValue.includes('withdrawal');
 
-        if (rawAmount > 0 && !typeStr.includes('fee')) {
-          // Income
-          const clientId = await getOrCreateClient(clientName, 'USD');
-          const amountPKR = Math.round(rawAmount * defaultExchangeRate * 100) / 100;
+      totalParsed++;
 
-          await this.db.insert(income).values({
-            userId,
-            clientId,
-            amount: rawAmount.toFixed(2),
-            currency: 'USD',
-            exchangeRate: defaultExchangeRate.toFixed(4),
-            amountPKR: amountPKR.toFixed(2),
-            platform: 'upwork',
-            description,
-            category: 'freelance_service',
-            receivedAt: validDate,
-          });
-          incomeCount++;
-        } else {
-          // Platform Fee / Expense
-          const absAmount = Math.abs(rawAmount);
-          await this.db.insert(expenses).values({
-            userId,
-            amount: absAmount.toFixed(2),
-            currency: 'USD',
-            category: 'software',
-            description: `Upwork Fee: ${description}`,
-            vendor: 'Upwork Global Inc.',
-            expenseDate: formattedDateString,
-          });
-          expenseCount++;
-        }
+      if (isExpense) {
+        const absAmount = Math.abs(rawAmount);
+        const rate = await rateFor(currency);
+        const amountPKR = Math.round(absAmount * rate * 100) / 100;
+
+        await this.db.insert(expenses).values({
+          userId,
+          amount: absAmount.toFixed(2),
+          currency,
+          exchangeRate: rate.toFixed(4),
+          amountPKR: amountPKR.toFixed(2),
+          category: isUpworkStatement ? 'other' : 'other',
+          description: (isUpworkStatement ? `Platform fee: ${description}` : description).slice(0, 500),
+          vendor: isUpworkStatement ? 'Upwork Global Inc.' : 'CSV Import',
+          expenseDate: validDate.toISOString().split('T')[0],
+        });
+        expenseCount++;
       } else {
-        // Generic CSV Format (Date, Description, Amount, Category/Type, Currency)
-        const dateStr = columns[0] || new Date().toISOString();
-        const description = columns[1] || 'CSV Transaction';
-        const rawAmount = parseFloat((columns[2] || '0').replace(/[$,]/g, '')) || 0;
-        const typeOrCat = (columns[3] || 'income').toLowerCase();
-        const currency = (columns[4] || 'USD').toUpperCase();
+        const clientName = this.extractClientName(description, isUpworkStatement);
+        const clientId = await getOrCreateClient(clientName, currency);
+        const rate = await rateFor(currency);
+        const amountPKR = Math.round(rawAmount * rate * 100) / 100;
 
-        if (rawAmount === 0) continue;
-
-        totalParsed++;
-        const parsedDate = new Date(dateStr);
-        const validDate = isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
-        const formattedDateString = validDate.toISOString().split('T')[0];
-        const rate = currency === 'PKR' ? 1.0 : defaultExchangeRate;
-
-        if (rawAmount > 0 && !typeOrCat.includes('expense')) {
-          const clientId = await getOrCreateClient('Direct Client', currency);
-          const amountPKR = Math.round(rawAmount * rate * 100) / 100;
-
-          await this.db.insert(income).values({
-            userId,
-            clientId,
-            amount: rawAmount.toFixed(2),
-            currency,
-            exchangeRate: rate.toFixed(4),
-            amountPKR: amountPKR.toFixed(2),
-            platform: 'direct',
-            description,
-            category: 'service_fee',
-            receivedAt: validDate,
-          });
-          incomeCount++;
-        } else {
-          const absAmount = Math.abs(rawAmount);
-          await this.db.insert(expenses).values({
-            userId,
-            amount: absAmount.toFixed(2),
-            currency,
-            category: 'other',
-            description,
-            vendor: 'CSV Import',
-            expenseDate: formattedDateString,
-          });
-          expenseCount++;
-        }
+        await this.db.insert(income).values({
+          userId,
+          clientId,
+          amount: rawAmount.toFixed(2),
+          currency,
+          exchangeRate: rate.toFixed(4),
+          amountPKR: amountPKR.toFixed(2),
+          platform: isUpworkStatement ? 'upwork' : 'direct',
+          description: description.slice(0, 500),
+          category: 'freelance_service',
+          receivedAt: validDate,
+        });
+        incomeCount++;
       }
     }
+
+    const skippedNote = skippedRows > 0 ? ` ${skippedRows} row(s) were skipped (no usable amount).` : '';
 
     return {
       success: true,
@@ -176,8 +170,41 @@ export class CsvService {
       incomeCount,
       expenseCount,
       clientsCreated,
-      message: `Successfully imported ${totalParsed} transactions (${incomeCount} income, ${expenseCount} expenses).`,
+      skippedRows,
+      message: `Successfully imported ${totalParsed} transactions (${incomeCount} income, ${expenseCount} expenses).${skippedNote}`,
     };
+  }
+
+  private normalizeHeader(value: string): string {
+    return value.trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
+  }
+
+  private mapColumns(headerCells: string[]) {
+    const find = (aliases: string[]) => headerCells.findIndex((cell) => aliases.includes(cell));
+    return {
+      date: find(COLUMN_ALIASES.date),
+      description: find(COLUMN_ALIASES.description),
+      amount: find(COLUMN_ALIASES.amount),
+      type: find(COLUMN_ALIASES.type),
+      currency: find(COLUMN_ALIASES.currency),
+      refId: find(COLUMN_ALIASES.refId),
+    };
+  }
+
+  private parseAmount(raw?: string): number {
+    if (!raw) return 0;
+    // Strip currency symbols/separators; keep the sign and decimal point.
+    const cleaned = raw.replace(/[^0-9.-]/g, '');
+    const value = parseFloat(cleaned);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  private extractClientName(description: string, isUpworkStatement: boolean): string {
+    const match = description.match(/(?:for|from)\s+([A-Za-z0-9&.,'\s]+?)(?:\s+-|$|\()/i);
+    if (match && match[1] && match[1].trim().length > 1) {
+      return match[1].trim();
+    }
+    return isUpworkStatement ? 'Upwork Client' : 'Direct Client';
   }
 
   private parseCSVLine(text: string): string[] {
@@ -188,7 +215,13 @@ export class CsvService {
     for (let i = 0; i < text.length; i++) {
       const c = text[i];
       if (c === '"') {
-        inQuotes = !inQuotes;
+        // A doubled quote inside a quoted field is a literal quote.
+        if (inQuotes && text[i + 1] === '"') {
+          cur += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
       } else if (c === ',' && !inQuotes) {
         result.push(cur.trim());
         cur = '';

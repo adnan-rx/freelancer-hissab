@@ -1,86 +1,95 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { use, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Printer, Download, CheckCircle2, ArrowLeft, Building2, ShieldCheck, Landmark } from "lucide-react";
+import { Printer, CheckCircle2, ArrowLeft, Landmark, AlertTriangle, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { formatPKR, formatUSD } from "@/lib/utils";
-import { useInvoice } from "@/hooks/use-invoices";
+import { formatPKR, formatUSD, apiErrorMessage } from "@/lib/utils";
+import { useInvoice, useUpdateInvoiceStatus } from "@/hooks/use-invoices";
+import { useProfile } from "@/hooks/use-profile";
 import { useAuthStore } from "@/stores/auth.store";
-import { apiClient } from "@/lib/api-client";
 
 export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const { data: invoiceData, isLoading } = useInvoice(id);
+  const { data: rawObj, isLoading, isError, error } = useInvoice(id);
+  const { data: profile } = useProfile();
+  const updateStatusMutation = useUpdateInvoiceStatus();
 
-  const [paidStatus, setPaidStatus] = useState<string | null>(null);
-
-  // Real invoice record mapped dynamically from database response
-  const rawObj = invoiceData?.data || invoiceData;
-  const invoice = {
-    id: rawObj?.id || id,
-    invoiceNumber: rawObj?.invoiceNumber || rawObj?.invoice_number || id,
-    clientName: rawObj?.client?.name || rawObj?.clientName || "Direct Client",
-    clientEmail: rawObj?.client?.email || rawObj?.clientEmail || "",
-    clientPlatform: rawObj?.client?.platform || "Upwork / Direct",
-    dueDate: rawObj?.dueDate || rawObj?.due_date || new Date().toISOString().split("T")[0],
-    createdAt: rawObj?.createdAt ? new Date(rawObj.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
-    currency: rawObj?.currency || "USD",
-    exchangeRate: parseFloat(rawObj?.exchangeRate || rawObj?.exchange_rate || "280.50"),
-    subtotal: parseFloat(rawObj?.subtotal || "0"),
-    taxRate: parseFloat(rawObj?.taxRate || rawObj?.tax_rate || "0"),
-    taxAmount: parseFloat(rawObj?.taxAmount || rawObj?.tax_amount || "0"),
-    discountAmount: parseFloat(rawObj?.discountAmount || rawObj?.discount_amount || "0"),
-    total: parseFloat(rawObj?.total || "0"),
-    totalPKR: parseFloat(rawObj?.totalPKR || rawObj?.total_pkr || "0"),
-    status: paidStatus || rawObj?.status || "sent",
-    notes: rawObj?.notes || "Wire foreign remittance directly to Meezan Bank IBAN under SBP Purpose Code 9100 for tax exemption.",
-    items: Array.isArray(rawObj?.items) && rawObj.items.length > 0 
-      ? rawObj.items.map((it: any) => ({
-          description: it.description || "Service Item",
-          quantity: parseFloat(it.quantity || "1"),
-          rate: parseFloat(it.rate || "0"),
-          amount: parseFloat(it.amount || (parseFloat(it.quantity || "1") * parseFloat(it.rate || "0")).toString()),
-        }))
-      : [
-          { description: "Full Stack Web Application Development & API Integration", quantity: 1, rate: parseFloat(rawObj?.total || "1000"), amount: parseFloat(rawObj?.total || "1000") },
-        ],
-  };
-
-  // Automatically set document.title to invoice number so "Save as PDF" defaults to invoice number filename
   useEffect(() => {
-    const invNum = invoice?.invoiceNumber || id;
-    if (invNum) {
-      document.title = `${invNum}`;
+    if (rawObj?.invoiceNumber) {
+      document.title = rawObj.invoiceNumber;
     }
     return () => {
       document.title = "FreelancerHisab - Financial OS for Pakistani Freelancers";
     };
-  }, [invoice?.invoiceNumber, id]);
+  }, [rawObj?.invoiceNumber]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh] text-muted-foreground gap-2">
+        <Loader2 className="h-5 w-5 animate-spin" /> Loading invoice...
+      </div>
+    );
+  }
+
+  // A missing or foreign invoice must say so rather than render fabricated placeholder data.
+  if (isError || !rawObj) {
+    return (
+      <div className="max-w-lg mx-auto text-center py-20 space-y-4">
+        <AlertTriangle className="h-10 w-10 text-amber-500 mx-auto" />
+        <h1 className="text-xl font-bold text-foreground">Invoice not found</h1>
+        <p className="text-sm text-muted-foreground">
+          {apiErrorMessage(error, "This invoice does not exist, or you do not have access to it.")}
+        </p>
+        <Button asChild variant="outline">
+          <Link href="/invoices"><ArrowLeft className="h-4 w-4 mr-2" /> Back to Invoices</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const invoice = {
+    id: rawObj.id,
+    invoiceNumber: rawObj.invoiceNumber,
+    clientName: rawObj.client?.name || "Direct Client",
+    clientEmail: rawObj.client?.email || "",
+    clientPlatform: rawObj.client?.platform || "direct",
+    dueDate: rawObj.dueDate || null,
+    createdAt: rawObj.createdAt ? new Date(rawObj.createdAt).toISOString().split("T")[0] : null,
+    currency: rawObj.currency || "USD",
+    exchangeRate: parseFloat(rawObj.exchangeRate || "1"),
+    subtotal: parseFloat(rawObj.subtotal || "0"),
+    taxRate: parseFloat(rawObj.taxRate || "0"),
+    taxAmount: parseFloat(rawObj.taxAmount || "0"),
+    discountAmount: parseFloat(rawObj.discountAmount || "0"),
+    total: parseFloat(rawObj.total || "0"),
+    totalPKR: parseFloat(rawObj.totalPKR || "0"),
+    status: rawObj.status || "sent",
+    notes: rawObj.notes || "",
+    items: (Array.isArray(rawObj.items) ? rawObj.items : []).map((it: any) => ({
+      description: it.description || "Service Item",
+      quantity: parseFloat(it.quantity || "1"),
+      rate: parseFloat(it.rate || "0"),
+      amount: parseFloat(it.amount || (parseFloat(it.quantity || "1") * parseFloat(it.rate || "0")).toString()),
+    })),
+  };
 
   const handlePrint = () => {
-    const invNum = invoice?.invoiceNumber || id;
-    if (invNum) {
-      document.title = `${invNum}`;
-    }
+    document.title = invoice.invoiceNumber;
     window.print();
   };
 
-  const handleMarkAsPaid = async () => {
-    setPaidStatus("paid");
-    try {
-      await apiClient.patch(`/invoices/${invoice.id}/status`, { status: "paid" });
-    } catch (e) {
-      console.warn("API status update failed, set paid locally:", e);
-    }
+  const handleMarkAsPaid = () => {
+    updateStatusMutation.mutate({ id: invoice.id, status: "paid" });
   };
 
-  const currentStatus = paidStatus || invoice.status;
+  const currentStatus = invoice.status;
+  const bankName = profile?.bankName;
+  const iban = profile?.iban;
+  const businessName = profile?.businessName || user?.businessName;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12 print:p-0 print:m-0 print:max-w-none print:w-full">
@@ -93,25 +102,35 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold tracking-tight text-foreground font-mono">{invoice.invoiceNumber}</h1>
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className={`capitalize text-xs font-semibold ${
-                  currentStatus === "paid" 
-                    ? "border-primary/40 text-primary bg-primary/10" 
+                  currentStatus === "paid"
+                    ? "border-primary/40 text-primary bg-primary/10"
                     : "border-blue-500/40 text-blue-500 bg-blue-500/10"
                 }`}
               >
                 {currentStatus}
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Issued to {invoice.clientName || "Client"}</p>
+            <p className="text-xs text-muted-foreground mt-1">Issued to {invoice.clientName}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           {currentStatus !== "paid" && (
-            <Button onClick={handleMarkAsPaid} variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
-              <CheckCircle2 className="mr-2 h-4 w-4" /> Mark as Paid
+            <Button
+              onClick={handleMarkAsPaid}
+              variant="outline"
+              disabled={updateStatusMutation.isPending}
+              className="border-primary/30 text-primary hover:bg-primary/10"
+            >
+              {updateStatusMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+              )}
+              Mark as Paid
             </Button>
           )}
           <Button onClick={handlePrint}>
@@ -119,6 +138,12 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
           </Button>
         </div>
       </div>
+
+      {updateStatusMutation.isError && (
+        <div className="print:hidden p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+          {apiErrorMessage(updateStatusMutation.error, "Could not mark this invoice as paid.")}
+        </div>
+      )}
 
       {/* Printable Invoice Document Canvas */}
       <Card className="print:shadow-none print:border-none print:m-0 print:p-0 bg-background text-foreground border-border shadow-xl overflow-hidden rounded-2xl print:w-full">
@@ -134,19 +159,18 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                   Freelancer<span className="text-primary">Hisab</span>
                 </span>
               </div>
-              <p className="text-sm font-semibold text-foreground pt-2">{user?.name || "Ahmed Ali"}</p>
-              <p className="text-xs text-muted-foreground">{user?.businessName || "Ahmed Web Solutions"}</p>
-              <p className="text-xs text-muted-foreground">Lahore, Punjab, Pakistan 54000</p>
-              <p className="text-xs text-muted-foreground">{user?.email || "ahmed.dev@example.com"}</p>
+              <p className="text-sm font-semibold text-foreground pt-2">{user?.name}</p>
+              {businessName && <p className="text-xs text-muted-foreground">{businessName}</p>}
+              {user?.email && <p className="text-xs text-muted-foreground">{user.email}</p>}
             </div>
 
             <div className="text-right space-y-1">
               <span className="text-3xl font-black tracking-tight text-foreground uppercase">INVOICE</span>
               <p className="text-sm font-mono font-bold text-primary">{invoice.invoiceNumber}</p>
               <div className="pt-2 text-xs text-muted-foreground space-y-0.5">
-                <p><span className="font-semibold text-foreground">Date Issued:</span> {invoice.createdAt ? String(invoice.createdAt).substring(0, 10) : "2026-08-01"}</p>
-                <p><span className="font-semibold text-foreground">Due Date:</span> {invoice.dueDate || "2026-08-15"}</p>
-                <p><span className="font-semibold text-foreground">SBP Exchange Rate:</span> 1 {invoice.currency} = {invoice.exchangeRate || 280.50} PKR</p>
+                <p><span className="font-semibold text-foreground">Date Issued:</span> {invoice.createdAt || "—"}</p>
+                <p><span className="font-semibold text-foreground">Due Date:</span> {invoice.dueDate || "—"}</p>
+                <p><span className="font-semibold text-foreground">SBP Exchange Rate:</span> 1 {invoice.currency} = {invoice.exchangeRate} PKR</p>
               </div>
             </div>
           </div>
@@ -156,8 +180,8 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
             <div className="bg-muted/30 p-4 rounded-xl border border-border space-y-1">
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Billed To Client:</span>
               <p className="text-base font-bold text-foreground">{invoice.clientName}</p>
-              <p className="text-xs text-muted-foreground">{invoice.clientEmail}</p>
-              <p className="text-xs text-muted-foreground font-medium">Platform: {invoice.clientPlatform || "Upwork Escrow"}</p>
+              {invoice.clientEmail && <p className="text-xs text-muted-foreground">{invoice.clientEmail}</p>}
+              <p className="text-xs text-muted-foreground font-medium capitalize">Platform: {invoice.clientPlatform}</p>
             </div>
 
             <div className="bg-muted/30 p-4 rounded-xl border border-border flex flex-col justify-between">
@@ -191,14 +215,20 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                 </tr>
               </thead>
               <tbody className="divide-y divide-border text-foreground font-medium">
-                {invoice.items?.map((item: any, i: number) => (
-                  <tr key={i}>
-                    <td className="py-3.5 px-4 font-semibold text-foreground">{item.description}</td>
-                    <td className="py-3.5 px-4 text-center">{item.quantity}</td>
-                    <td className="py-3.5 px-4 text-right font-mono">{invoice.currency === "USD" ? formatUSD(item.rate) : item.rate}</td>
-                    <td className="py-3.5 px-4 text-right font-mono font-bold">{invoice.currency === "USD" ? formatUSD(item.amount || (item.quantity * item.rate)) : (item.quantity * item.rate).toFixed(2)}</td>
+                {invoice.items.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-6 px-4 text-center text-muted-foreground">No line items on this invoice.</td>
                   </tr>
-                ))}
+                ) : (
+                  invoice.items.map((item: (typeof invoice.items)[number], i: number) => (
+                    <tr key={i}>
+                      <td className="py-3.5 px-4 font-semibold text-foreground">{item.description}</td>
+                      <td className="py-3.5 px-4 text-center">{item.quantity}</td>
+                      <td className="py-3.5 px-4 text-right font-mono">{invoice.currency === "USD" ? formatUSD(item.rate) : item.rate.toFixed(2)}</td>
+                      <td className="py-3.5 px-4 text-right font-mono font-bold">{invoice.currency === "USD" ? formatUSD(item.amount) : item.amount.toFixed(2)}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -207,40 +237,45 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
           <div className="flex flex-col md:flex-row justify-between items-start pt-4 gap-6">
             <div className="flex-1 space-y-3 bg-muted/30 p-4 rounded-xl border border-border text-xs text-muted-foreground">
               <div className="font-bold text-foreground flex items-center gap-1.5">
-                <Landmark className="h-4 w-4 text-primary" /> SBP Inward Remittance Instructions
+                <Landmark className="h-4 w-4 text-primary" /> Remittance Instructions
               </div>
-              <p className="leading-relaxed">
-                {invoice.notes}
-              </p>
-              <div className="text-[11px] text-muted-foreground border-t border-border pt-2 font-mono">
-                Meezan Bank IBAN: PK36MEZN0001020304050607 | SWIFT: MEZNPKKA
-              </div>
+              {invoice.notes && <p className="leading-relaxed">{invoice.notes}</p>}
+              {bankName || iban ? (
+                <div className="text-[11px] text-muted-foreground border-t border-border pt-2 font-mono">
+                  {bankName && <span>{bankName}</span>}
+                  {bankName && iban && <span> · </span>}
+                  {iban && <span>IBAN: {iban}</span>}
+                </div>
+              ) : (
+                <p className="text-[11px] text-amber-600 border-t border-border pt-2">
+                  Add your bank name and IBAN in Settings → Bank & SBP Tax to show remittance details here.
+                </p>
+              )}
             </div>
 
             <div className="w-full md:w-72 space-y-2 text-xs">
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal:</span>
-                <span className="font-mono font-semibold text-foreground">{invoice.currency === "USD" ? formatUSD(invoice.subtotal) : invoice.subtotal}</span>
+                <span className="font-mono font-semibold text-foreground">{invoice.currency === "USD" ? formatUSD(invoice.subtotal) : invoice.subtotal.toFixed(2)}</span>
               </div>
-              {Number(invoice.taxAmount) > 0 && (
+              {invoice.taxAmount > 0 && (
                 <div className="flex justify-between text-muted-foreground">
                   <span>Tax ({invoice.taxRate}%):</span>
-                  <span className="font-mono text-foreground">{formatUSD(invoice.taxAmount)}</span>
+                  <span className="font-mono text-foreground">{invoice.currency === "USD" ? formatUSD(invoice.taxAmount) : invoice.taxAmount.toFixed(2)}</span>
                 </div>
               )}
-              {Number(invoice.discountAmount) > 0 && (
+              {invoice.discountAmount > 0 && (
                 <div className="flex justify-between text-muted-foreground">
                   <span>Discount:</span>
-                  <span className="font-mono text-foreground">-{formatUSD(invoice.discountAmount)}</span>
+                  <span className="font-mono text-foreground">-{invoice.currency === "USD" ? formatUSD(invoice.discountAmount) : invoice.discountAmount.toFixed(2)}</span>
                 </div>
               )}
 
               <div className="flex justify-between font-bold text-foreground text-sm pt-2 border-t border-border">
                 <span>Total Amount Due:</span>
-                <span className="font-mono text-primary text-base">{invoice.currency === "USD" ? formatUSD(invoice.total) : `${invoice.currency} ${invoice.total}`}</span>
+                <span className="font-mono text-primary text-base">{invoice.currency === "USD" ? formatUSD(invoice.total) : `${invoice.currency} ${invoice.total.toFixed(2)}`}</span>
               </div>
 
-              {/* PKR Conversion Highlight Box */}
               <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 flex justify-between items-center text-xs mt-3">
                 <span className="font-bold text-primary">Converted Home Income:</span>
                 <span className="font-extrabold text-primary font-mono text-base">{formatPKR(invoice.totalPKR)}</span>

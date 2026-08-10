@@ -20,6 +20,7 @@ export const users = pgTable('users', {
   iban: varchar('iban', { length: 100 }),
   psebId: varchar('pseb_id', { length: 100 }),
   isFiler: boolean('is_filer').default(true),
+  isAdmin: boolean('is_admin').default(false).notNull(),
   invoicePrefix: varchar('invoice_prefix', { length: 50 }).default('FH-2026-'),
   paymentTerms: varchar('payment_terms', { length: 100 }).default('Due on Receipt'),
   invoiceNotes: varchar('invoice_notes', { length: 1000 }),

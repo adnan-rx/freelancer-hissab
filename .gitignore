@@ -39,3 +39,5 @@ yarn-error.log*
 
 .agents/
 .claude/
+
+future-plan/

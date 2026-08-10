@@ -1,7 +1,8 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
+import * as bcrypt from 'bcrypt';
 import { DRIZZLE } from '../../database/database.module';
-import { users } from '../../database/schema';
+import { users, refreshTokens } from '../../database/schema';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
@@ -51,6 +52,36 @@ export class UsersService {
       .returning();
 
     return updated;
+  }
+
+  /**
+   * Verifies the current password before rotating the hash, then revokes every
+   * refresh token so any other signed-in session is forced back to the login screen.
+   */
+  async changePassword(id: string, currentPassword: string, newPassword: string) {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new NotFoundException('User account not found');
+    }
+    if (!user.passwordHash) {
+      throw new BadRequestException('This account does not use password authentication');
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    const isSame = await bcrypt.compare(newPassword, user.passwordHash);
+    if (isSame) {
+      throw new BadRequestException('New password must be different from the current password');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.db.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, id));
+    await this.db.update(refreshTokens).set({ isRevoked: true }).where(eq(refreshTokens.userId, id));
+
+    return { success: true, message: 'Password updated. Please sign in again on your other devices.' };
   }
 
   async create(data: { email: string; passwordHash: string; name: string; businessName?: string }) {

@@ -40,7 +40,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-background text-foreground print:h-auto print:overflow-visible print:bg-white">
+    <div className="flex h-full overflow-hidden bg-background text-foreground print:h-auto print:overflow-visible print:bg-white">
       <Sidebar 
         isOpen={isMobileMenuOpen} 
         onClose={() => setIsMobileMenuOpen(false)} 

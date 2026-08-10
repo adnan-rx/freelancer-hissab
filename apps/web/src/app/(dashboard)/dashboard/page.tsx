@@ -7,20 +7,28 @@ import { formatPKR } from '@/lib/utils';
 import { useDashboardSummary } from '@/hooks/use-dashboard';
 import { useTransactions } from '@/hooks/use-transactions';
 import { useInvoices } from '@/hooks/use-invoices';
+import { useIncomeConsolidation } from '@/hooks/use-reports';
+import { useReadinessScore } from '@/hooks/use-filing';
+import { PieChart as PieIcon, ShieldAlert, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DashboardPage() {
   const { data: summary, isLoading: isSummaryLoading } = useDashboardSummary();
-  const { data: transactions, isLoading: isTxLoading } = useTransactions();
+  const { data: transactions, isLoading: isTxLoading } = useTransactions({ pageSize: 5 });
   const { data: invoices } = useInvoices();
+  const { data: incomeConsolidation } = useIncomeConsolidation();
+  const { data: readiness } = useReadinessScore();
 
   const totalIncome = summary?.totalIncome ?? 0;
   const totalExpenses = summary?.totalExpenses ?? 0;
   const netProfit = summary?.netProfit ?? (totalIncome - totalExpenses);
   const pendingInvoices = summary?.pendingInvoices ?? 0;
+  // Derived from this month vs last month; null when there's no prior-month data to compare against.
+  const incomeGrowth: number | null = summary?.monthlyGrowth ?? null;
+  const expenseGrowth: number | null = summary?.expenseGrowth ?? null;
 
-  // Grab the first 5 transactions for the recent activity table
-  const recentTransactions = transactions?.slice(0, 5) || [];
+  // Server already returns the 5 most recent transactions (newest-first, page size 5)
+  const recentTransactions = transactions?.data || [];
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-2 md:px-0">
@@ -37,6 +45,37 @@ export default function DashboardPage() {
           </Button>
         </Link>
       </div>
+
+      {/* Readiness Score Banner */}
+      {readiness && (
+        <Card className={`rounded-3xl border-border/50 shadow-sm overflow-hidden ${readiness.score >= 100 ? 'bg-gradient-to-r from-emerald-500/10' : 'bg-gradient-to-r from-amber-500/10'}`}>
+          <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 ${readiness.score >= 100 ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                {readiness.score >= 100 ? <ShieldCheck className="h-6 w-6" /> : <ShieldAlert className="h-6 w-6" />}
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  "Can I File?" Readiness Score
+                  <span className={`text-sm font-mono px-2 py-0.5 rounded-full ${readiness.score >= 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {readiness.score}%
+                  </span>
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {readiness.score >= 100 
+                    ? "You are ready to generate your filing package!"
+                    : `You have ${readiness.issues?.length || 0} issues remaining before you can file taxes.`}
+                </p>
+              </div>
+            </div>
+            <Link href="/filing">
+              <Button variant={readiness.score >= 100 ? "default" : "outline"} className="rounded-xl font-semibold">
+                {readiness.score >= 100 ? "Generate Filing Package" : "Fix Issues"}
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
       
       {/* KPI Cards Section */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -54,9 +93,12 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center mt-3 gap-2">
               <span className="text-xs text-muted-foreground">Since Last Month</span>
-              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
-                <ArrowUpRight className="h-3 w-3 mr-0.5" /> +12.5%
-              </span>
+              {incomeGrowth !== null && (
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${incomeGrowth >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"}`}>
+                  {incomeGrowth >= 0 ? <ArrowUpRight className="h-3 w-3 mr-0.5" /> : <ArrowDownRight className="h-3 w-3 mr-0.5" />}
+                  {incomeGrowth >= 0 ? "+" : ""}{incomeGrowth}%
+                </span>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -75,9 +117,12 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center mt-3 gap-2">
               <span className="text-xs text-muted-foreground">Since Last Month</span>
-              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
-                <ArrowDownRight className="h-3 w-3 mr-0.5" /> -3.2%
-              </span>
+              {expenseGrowth !== null && (
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${expenseGrowth <= 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"}`}>
+                  {expenseGrowth <= 0 ? <ArrowDownRight className="h-3 w-3 mr-0.5" /> : <ArrowUpRight className="h-3 w-3 mr-0.5" />}
+                  {expenseGrowth >= 0 ? "+" : ""}{expenseGrowth}%
+                </span>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -223,6 +268,56 @@ export default function DashboardPage() {
                  </Link>
                </div>
              </CardContent>
+          </Card>
+
+          {/* Income Consolidation Card */}
+          <Card className="rounded-3xl border-border/50 shadow-sm overflow-hidden">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <PieIcon className="h-5 w-5 text-primary" />
+                <h3 className="text-sm font-bold text-foreground">Income Consolidation</h3>
+              </div>
+              
+              {!incomeConsolidation ? (
+                <div className="text-xs text-muted-foreground text-center py-4">Loading data...</div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="text-2xl font-bold font-mono tracking-tight text-foreground">
+                    {formatPKR(incomeConsolidation.totalPKR)}
+                  </div>
+                  <div className="flex items-center gap-4 text-xs font-medium">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+                      <span className="text-foreground">Tracked ({incomeConsolidation.trackedPercentage}%)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2 w-2 rounded-full bg-amber-500"></div>
+                      <span className="text-muted-foreground">Unmatched ({incomeConsolidation.unmatchedPercentage}%)</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3 mt-2">
+                    {(incomeConsolidation.byPlatform || []).map((plat: any) => {
+                      // pick a color based on platform
+                      const colorClass = plat.platform.toLowerCase() === 'upwork' ? 'bg-primary' : 
+                                         plat.platform.toLowerCase() === 'fiverr' ? 'bg-green-500' :
+                                         plat.platform.toLowerCase() === 'direct' ? 'bg-teal-500' : 'bg-blue-500';
+                      return (
+                        <div key={plat.platform}>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-foreground font-medium">{plat.platform}</span>
+                            <span className="font-bold font-mono text-primary">{plat.percentage}%</span>
+                          </div>
+                          <div className="w-full bg-secondary rounded-full h-1.5 overflow-hidden">
+                            <div className={`h-1.5 rounded-full ${colorClass}`} style={{ width: `${plat.percentage}%` }}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </CardContent>
           </Card>
         </div>
       </div>
