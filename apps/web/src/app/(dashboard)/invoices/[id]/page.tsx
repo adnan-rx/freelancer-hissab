@@ -10,6 +10,7 @@ import { formatPKR, formatUSD, apiErrorMessage } from "@/lib/utils";
 import { useInvoice, useUpdateInvoiceStatus } from "@/hooks/use-invoices";
 import { useProfile } from "@/hooks/use-profile";
 import { useAuthStore } from "@/stores/auth.store";
+import { useToast } from "@/providers/toast-provider";
 
 export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -17,6 +18,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
   const { data: rawObj, isLoading, isError, error } = useInvoice(id);
   const { data: profile } = useProfile();
   const updateStatusMutation = useUpdateInvoiceStatus();
+  const { showSuccess } = useToast();
 
   useEffect(() => {
     if (rawObj?.invoiceNumber) {
@@ -83,7 +85,13 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
   };
 
   const handleMarkAsPaid = () => {
-    updateStatusMutation.mutate({ id: invoice.id, status: "paid" });
+    // A failure is already surfaced by the global mutation error toast; this
+    // adds the success confirmation that was previously missing entirely —
+    // the button used to do this with zero feedback either way.
+    updateStatusMutation.mutate(
+      { id: invoice.id, status: "paid" },
+      { onSuccess: () => showSuccess(`Invoice ${invoice.invoiceNumber} marked as paid.`, "Invoice Paid") },
+    );
   };
 
   const currentStatus = invoice.status;

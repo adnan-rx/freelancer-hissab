@@ -11,7 +11,7 @@ import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { PaginationBar } from '@/components/ui/pagination-bar';
 import { BulkActionsBar } from '@/components/ui/bulk-actions-bar';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
-import { Toast } from '@/components/ui/toast';
+import { useToast } from '@/providers/toast-provider';
 import { Plus, Search, Eye, FileText, CheckCircle2, Clock, DollarSign, Trash2, Pencil, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { formatPKR, formatUSD, apiErrorMessage } from '@/lib/utils';
@@ -25,9 +25,9 @@ export default function InvoicesPage() {
   const [search, setSearch] = useState("");
   const { data: invoicesList = [], isLoading } = useInvoices(statusFilter === "all" ? undefined : statusFilter);
   const deleteInvoiceMutation = useDeleteInvoice();
+  const { showSuccess, showError } = useToast();
 
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; invoiceNumber: string } | null>(null);
-  const [toast, setToast] = useState<{ type: 'error' | 'success'; title?: string; message: string } | null>(null);
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
@@ -55,15 +55,22 @@ export default function InvoicesPage() {
 
   const totalBilledPKR = rawList.reduce((sum: number, inv: any) => sum + Number(inv.totalPKR || 0), 0);
   const totalPaidPKR = rawList.filter((inv: any) => inv.status === "paid").reduce((sum: number, inv: any) => sum + Number(inv.totalPKR || 0), 0);
-  const pendingAmountPKR = totalBilledPKR - totalPaidPKR;
+  // Same definition the dashboard uses: sent/viewed/overdue only. This used
+  // to be "everything not paid", which counted drafts (never sent to anyone)
+  // and cancelled invoices (never going to be paid) as money owed — and
+  // disagreed with the dashboard's "Pending Invoices" figure on identical data.
+  const PENDING_STATUSES = ["sent", "viewed", "overdue"];
+  const pendingAmountPKR = rawList
+    .filter((inv: any) => PENDING_STATUSES.includes(inv.status))
+    .reduce((sum: number, inv: any) => sum + Number(inv.totalPKR || 0), 0);
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     try {
       await deleteInvoiceMutation.mutateAsync(deleteTarget.id);
-      setToast({ type: "success", title: "Invoice Deleted", message: `"${deleteTarget.invoiceNumber}" has been removed.` });
+      showSuccess(`"${deleteTarget.invoiceNumber}" has been removed.`, "Invoice Deleted");
     } catch (err) {
-      setToast({ type: "error", title: "Delete Failed", message: apiErrorMessage(err) });
+      showError(apiErrorMessage(err), "Delete Failed");
     } finally {
       setDeleteTarget(null);
     }
@@ -79,11 +86,11 @@ export default function InvoicesPage() {
 
     const failed = results.filter((r) => r.status === "rejected").length;
     const deleted = ids.length - failed;
-    setToast(
-      failed === 0
-        ? { type: "success", title: "Invoices Deleted", message: `${deleted} invoice(s) removed.` }
-        : { type: "error", title: "Some Deletes Failed", message: `${deleted} deleted, ${failed} failed.` }
-    );
+    if (failed === 0) {
+      showSuccess(`${deleted} invoice(s) removed.`, "Invoices Deleted");
+    } else {
+      showError(`${deleted} deleted, ${failed} failed.`, "Some Deletes Failed");
+    }
   };
 
   return (
@@ -314,10 +321,6 @@ export default function InvoicesPage() {
         confirmText="Delete Selected"
         isLoading={isBulkDeleting}
       />
-
-      {toast && (
-        <Toast type={toast.type} title={toast.title} message={toast.message} onClose={() => setToast(null)} />
-      )}
     </div>
   );
 }

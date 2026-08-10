@@ -5,7 +5,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Home, Users, FileText, DollarSign, PieChart, Settings, LogOut, Wallet, ArrowRightLeft, HelpCircle, X, ShieldCheck, Calculator, Landmark } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { apiClient } from '@/lib/api-client';
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -32,22 +33,46 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      // Revokes the refresh token server-side. This used to be skipped
+      // entirely: the httpOnly cookie was never cleared by the browser
+      // either, so the session stayed valid until it naturally expired.
+      await apiClient.post('/auth/logout');
+    } catch {
+      // Best-effort: proceed with the local logout regardless — the user's
+      // own view of "am I logged in" must not depend on network conditions.
+    } finally {
+      logout();
+      router.push('/login');
+    }
   };
 
-  // Close sidebar on route change
+  // Close sidebar on route change only — isOpen/onClose are read via refs so
+  // this doesn't also re-fire on every re-render that hands in a fresh
+  // onClose closure (the parent doesn't memoize it).
+  const isOpenRef = useRef(isOpen);
+  isOpenRef.current = isOpen;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
-    if (isOpen && onClose) {
-      onClose();
+    if (isOpenRef.current) {
+      onCloseRef.current?.();
     }
   }, [pathname]);
 
-  const userName = user?.name || "Ahmed Ali";
-  const userEmail = user?.email || "ahmed.dev@example.com";
-  const userInitials = userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || "AA";
+  // No fabricated fallback identity: if the store hasn't hydrated yet this
+  // briefly shows a neutral placeholder rather than a fake person's name and
+  // email as though they were the signed-in user.
+  const userName = user?.name || "Your Account";
+  const userEmail = user?.email || "";
+  const userInitials = user?.name
+    ? user.name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase()
+    : "—";
 
   return (
     <>
@@ -119,8 +144,9 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             </div>
             <button
               onClick={handleLogout}
+              disabled={isLoggingOut}
               title="Sign out"
-              className="text-muted-foreground hover:text-destructive transition-colors p-1 shrink-0"
+              className="text-muted-foreground hover:text-destructive transition-colors p-1 shrink-0 disabled:opacity-50"
             >
               <LogOut className="h-4 w-4" />
             </button>

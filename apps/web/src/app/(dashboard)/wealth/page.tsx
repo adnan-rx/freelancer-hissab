@@ -14,9 +14,10 @@ import { SortableTableHead } from "@/components/ui/sortable-table-head"
 import { PaginationBar } from "@/components/ui/pagination-bar"
 import { BulkActionsBar } from "@/components/ui/bulk-actions-bar"
 import { ConfirmModal } from "@/components/ui/confirm-modal"
-import { Toast } from "@/components/ui/toast"
+import { useToast } from "@/providers/toast-provider"
 import { useAuthStore } from "@/stores/auth.store"
 import { apiClient } from "@/lib/api-client"
+import { apiErrorMessage } from "@/lib/utils"
 import { useDataTable } from "@/hooks/use-data-table"
 import { getCurrentTaxYear, taxYearOptions } from "@/lib/tax-year"
 
@@ -27,7 +28,6 @@ export default function WealthPage() {
   const [loading, setLoading] = useState(true)
   const [taxYear, setTaxYear] = useState(() => String(getCurrentTaxYear()))
   
-  const [statement, setStatement] = useState<any>(null)
   const [assets, setAssets] = useState<any[]>([])
   const [liabilities, setLiabilities] = useState<any[]>([])
   const [reconciliation, setReconciliation] = useState<any>(null)
@@ -40,7 +40,9 @@ export default function WealthPage() {
   const [newAsset, setNewAsset] = useState({ type: "CASH", description: "", valuePKR: "", name: "", currency: "PKR", balance: "" })
   const [newLiability, setNewLiability] = useState({ description: "", amountPKR: "" })
 
-  const [toast, setToast] = useState<{ type: "error" | "success"; title?: string; message: string } | null>(null)
+  const { showSuccess, showError } = useToast()
+  const [deleteAssetTarget, setDeleteAssetTarget] = useState<{ id: string; name: string } | null>(null)
+  const [deleteLiabilityTarget, setDeleteLiabilityTarget] = useState<{ id: string; description: string } | null>(null)
   const [bulkAssetConfirmOpen, setBulkAssetConfirmOpen] = useState(false)
   const [isBulkDeletingAssets, setIsBulkDeletingAssets] = useState(false)
   const [bulkLiabilityConfirmOpen, setBulkLiabilityConfirmOpen] = useState(false)
@@ -50,7 +52,7 @@ export default function WealthPage() {
     if (!token) return
     try {
       setLoading(true)
-      
+
       const [stmtRes, assetsRes, liabRes, reconRes] = await Promise.all([
         apiClient.get(`/wealth/statement?year=${taxYear}`),
         apiClient.get(`/wealth/assets?year=${taxYear}`),
@@ -63,13 +65,15 @@ export default function WealthPage() {
       const liabData = liabRes.data
       const reconData = reconRes.data
 
-      setStatement(stmtData?.data || stmtData)
       setAssets(Array.isArray(assetsData?.data) ? assetsData.data : Array.isArray(assetsData) ? assetsData : [])
       setLiabilities(Array.isArray(liabData?.data) ? liabData.data : Array.isArray(liabData) ? liabData : [])
       setReconciliation(reconData?.data || reconData)
       setOpeningWealth(stmtData?.data?.openingWealthPKR || stmtData?.openingWealthPKR || "")
     } catch (error) {
-      console.error(error)
+      // Every write below already reports its own success/failure; this is
+      // the initial page load, so a failure here means the whole page has
+      // nothing to show — worth a toast rather than a silently blank screen.
+      showError(apiErrorMessage(error, "Could not load your wealth data."), "Load Failed")
     } finally {
       setLoading(false)
     }
@@ -77,6 +81,7 @@ export default function WealthPage() {
 
   useEffect(() => {
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, taxYear])
 
   const updateOpeningWealth = async () => {
@@ -84,9 +89,10 @@ export default function WealthPage() {
       await apiClient.patch(`/wealth/statement?year=${taxYear}`, {
         openingWealthPKR: Number(openingWealth)
       })
+      showSuccess("Opening wealth updated.", "Saved")
       fetchData()
     } catch (error) {
-      console.error(error)
+      showError(apiErrorMessage(error, "Failed to update opening wealth."), "Save Failed")
     }
   }
 
@@ -102,20 +108,25 @@ export default function WealthPage() {
         description: newAsset.description,
         valuePKR: Number(newAsset.valuePKR)
       })
+      showSuccess(`"${newAsset.name}" added.`, "Asset Added")
       setNewAsset({ type: "CASH", description: "", valuePKR: "", name: "", currency: "PKR", balance: "" })
       setIsAssetDialogOpen(false)
       fetchData()
     } catch (error) {
-      console.error(error)
+      showError(apiErrorMessage(error, "Failed to save the asset."), "Save Failed")
     }
   }
 
-  const deleteAsset = async (id: string) => {
+  const handleConfirmDeleteAsset = async () => {
+    if (!deleteAssetTarget) return
     try {
-      await apiClient.delete(`/wealth/assets/${id}`)
+      await apiClient.delete(`/wealth/assets/${deleteAssetTarget.id}`)
+      showSuccess(`"${deleteAssetTarget.name}" removed.`, "Asset Deleted")
       fetchData()
     } catch (error) {
-      console.error(error)
+      showError(apiErrorMessage(error, "Failed to delete the asset."), "Delete Failed")
+    } finally {
+      setDeleteAssetTarget(null)
     }
   }
 
@@ -141,11 +152,11 @@ export default function WealthPage() {
 
     const failed = results.filter((r) => r.status === "rejected").length
     const deleted = ids.length - failed
-    setToast(
-      failed === 0
-        ? { type: "success", title: "Assets Deleted", message: `${deleted} asset(s) removed.` }
-        : { type: "error", title: "Some Deletes Failed", message: `${deleted} deleted, ${failed} failed.` }
-    )
+    if (failed === 0) {
+      showSuccess(`${deleted} asset(s) removed.`, "Assets Deleted")
+    } else {
+      showError(`${deleted} deleted, ${failed} failed.`, "Some Deletes Failed")
+    }
   }
 
   const addLiability = async (e: React.FormEvent) => {
@@ -156,20 +167,25 @@ export default function WealthPage() {
         description: newLiability.description,
         amountPKR: Number(newLiability.amountPKR)
       })
+      showSuccess(`"${newLiability.description}" added.`, "Liability Added")
       setNewLiability({ description: "", amountPKR: "" })
       setIsLiabilityDialogOpen(false)
       fetchData()
     } catch (error) {
-      console.error(error)
+      showError(apiErrorMessage(error, "Failed to save the liability."), "Save Failed")
     }
   }
 
-  const deleteLiability = async (id: string) => {
+  const handleConfirmDeleteLiability = async () => {
+    if (!deleteLiabilityTarget) return
     try {
-      await apiClient.delete(`/wealth/liabilities/${id}`)
+      await apiClient.delete(`/wealth/liabilities/${deleteLiabilityTarget.id}`)
+      showSuccess(`"${deleteLiabilityTarget.description}" removed.`, "Liability Deleted")
       fetchData()
     } catch (error) {
-      console.error(error)
+      showError(apiErrorMessage(error, "Failed to delete the liability."), "Delete Failed")
+    } finally {
+      setDeleteLiabilityTarget(null)
     }
   }
 
@@ -193,11 +209,11 @@ export default function WealthPage() {
 
     const failed = results.filter((r) => r.status === "rejected").length
     const deleted = ids.length - failed
-    setToast(
-      failed === 0
-        ? { type: "success", title: "Liabilities Deleted", message: `${deleted} liability(ies) removed.` }
-        : { type: "error", title: "Some Deletes Failed", message: `${deleted} deleted, ${failed} failed.` }
-    )
+    if (failed === 0) {
+      showSuccess(`${deleted} liability(ies) removed.`, "Liabilities Deleted")
+    } else {
+      showError(`${deleted} deleted, ${failed} failed.`, "Some Deletes Failed")
+    }
   }
 
   const formatCurrency = (val: number | string | undefined) => {
@@ -465,7 +481,11 @@ export default function WealthPage() {
                       <TableCell className="text-muted-foreground text-xs">{asset.currency || "PKR"}</TableCell>
                       <TableCell className="text-muted-foreground text-xs">{asset.description}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" onClick={() => deleteAsset(asset.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleteAssetTarget({ id: asset.id, name: asset.name || asset.description || "this asset" })}
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </TableCell>
@@ -557,7 +577,11 @@ export default function WealthPage() {
                       <TableCell className="font-medium">{liab.description}</TableCell>
                       <TableCell className="text-right font-mono text-destructive">{formatCurrency(liab.amountPKR)}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" onClick={() => deleteLiability(liab.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleteLiabilityTarget({ id: liab.id, description: liab.description || "this liability" })}
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </TableCell>
@@ -571,6 +595,24 @@ export default function WealthPage() {
         </div>
 
       </div>
+
+      <ConfirmModal
+        isOpen={!!deleteAssetTarget}
+        onClose={() => setDeleteAssetTarget(null)}
+        onConfirm={handleConfirmDeleteAsset}
+        title="Delete Asset?"
+        description={deleteAssetTarget ? `Delete "${deleteAssetTarget.name}"? This cannot be undone.` : ""}
+        confirmText="Delete Asset"
+      />
+
+      <ConfirmModal
+        isOpen={!!deleteLiabilityTarget}
+        onClose={() => setDeleteLiabilityTarget(null)}
+        onConfirm={handleConfirmDeleteLiability}
+        title="Delete Liability?"
+        description={deleteLiabilityTarget ? `Delete "${deleteLiabilityTarget.description}"? This cannot be undone.` : ""}
+        confirmText="Delete Liability"
+      />
 
       <ConfirmModal
         isOpen={bulkAssetConfirmOpen}
@@ -591,10 +633,6 @@ export default function WealthPage() {
         confirmText="Delete Selected"
         isLoading={isBulkDeletingLiabilities}
       />
-
-      {toast && (
-        <Toast type={toast.type} title={toast.title} message={toast.message} onClose={() => setToast(null)} />
-      )}
     </div>
   )
 }

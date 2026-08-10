@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -19,9 +19,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPKR } from "@/lib/utils";
-import { useIncomeVsExpensesReport, useTaxEstimate } from "@/hooks/use-reports";
+import { useIncomeVsExpensesReport } from "@/hooks/use-reports";
+import { useTaxEstimate } from "@/hooks/use-tax";
 import { useIncome } from "@/hooks/use-income";
 import { useExpenses } from "@/hooks/use-expenses";
+import { getCurrentTaxYear, taxYearBounds } from "@/lib/tax-year";
 
 const PAGE_SIZE = 10;
 
@@ -31,10 +33,14 @@ function toDateOnly(value: string | undefined): string {
 }
 
 export default function ReportsPage() {
-  const { data: trendData = [] } = useIncomeVsExpensesReport();
+  const currentTaxYear = getCurrentTaxYear();
+  const { data: trendData = [] } = useIncomeVsExpensesReport(String(currentTaxYear));
   const { data: incomeList = [] } = useIncome();
   const { data: expensesList = [] } = useExpenses();
-  const { data: taxEstimate } = useTaxEstimate(true);
+  // PSEB status is derived server-side from the user's own profile, not
+  // hardcoded — an unregistered freelancer used to be quoted the 0.25%
+  // concessional rate here regardless of their actual registration.
+  const { data: taxEstimate, isLoading: isTaxLoading, isError: isTaxError } = useTaxEstimate(currentTaxYear);
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -47,24 +53,34 @@ export default function ReportsPage() {
   const hasDateFilter = !!(startDate || endDate);
   const dateRangeInvalid = !!(startDate && endDate && startDate > endDate);
 
-  const inRange = (dateStr: string) => {
-    if (!dateStr) return false;
-    if (startDate && dateStr < startDate) return false;
-    if (endDate && dateStr > endDate) return false;
-    return true;
-  };
+  // With no explicit filter, the KPIs and P&L table default to the SAME
+  // current-tax-year window as the trend chart and tax card beside them.
+  // They used to default to "every income/expense ever," so this page could
+  // show three different totals for "the same" data depending which card you
+  // looked at. An explicit filter still overrides the default on either end.
+  const defaultBounds = taxYearBounds(currentTaxYear);
+  const effectiveStart = startDate || defaultBounds.start;
+  const effectiveEnd = endDate || defaultBounds.end;
 
-  // Every KPI, chart and table below derives from these two filtered lists, so the
-  // date range consistently scopes the entire page rather than just one table.
+  const inRange = useCallback(
+    (dateStr: string) => {
+      if (!dateStr) return false;
+      if (dateStr < effectiveStart) return false;
+      if (dateStr > effectiveEnd) return false;
+      return true;
+    },
+    [effectiveStart, effectiveEnd],
+  );
+
   const filteredIncome = useMemo(() => {
-    if (!hasDateFilter || dateRangeInvalid) return hasDateFilter ? [] : incomeList;
+    if (dateRangeInvalid) return [];
     return incomeList.filter((inc: any) => inRange(toDateOnly(inc.receivedAt)));
-  }, [incomeList, startDate, endDate]);
+  }, [incomeList, inRange, dateRangeInvalid]);
 
   const filteredExpenses = useMemo(() => {
-    if (!hasDateFilter || dateRangeInvalid) return hasDateFilter ? [] : expensesList;
+    if (dateRangeInvalid) return [];
     return expensesList.filter((exp: any) => inRange(toDateOnly(exp.expenseDate)));
-  }, [expensesList, startDate, endDate]);
+  }, [expensesList, inRange, dateRangeInvalid]);
 
   const totalRevenuePKR = filteredIncome.reduce((sum: number, inc: any) => sum + Number(inc.amountPKR || 0), 0);
   const totalExpensesPKR = filteredExpenses.reduce((sum: number, exp: any) => sum + Number(exp.amountPKR ?? exp.amount ?? 0), 0);
@@ -100,12 +116,15 @@ export default function ReportsPage() {
     percentage: totalIncomeSum > 0 ? Math.round((p.amount / totalIncomeSum) * 100) : 0,
   }));
 
-  const taxRate =
-    taxEstimate && taxEstimate.exportTaxRatePercentage !== undefined ? `${taxEstimate.exportTaxRatePercentage}%` : "0.25%";
-  const taxLiability =
-    taxEstimate && taxEstimate.totalTaxLiabilityPKR !== undefined
-      ? formatPKR(taxEstimate.totalTaxLiabilityPKR)
-      : formatPKR(totalRevenuePKR * 0.0025);
+  // No fabricated fallback: a failed/loading estimate used to render as
+  // "0.25% / Rs X" computed from a hardcoded rate, indistinguishable from a
+  // real number. It now honestly shows loading or unavailable.
+  const taxLiability = isTaxLoading ? "…" : isTaxError || !taxEstimate ? "—" : formatPKR(taxEstimate.totalTaxLiabilityPKR);
+  const taxRateLabel = isTaxLoading
+    ? "Loading…"
+    : isTaxError || !taxEstimate
+      ? "Tax estimate unavailable"
+      : `${taxEstimate.exportTaxRatePercentage}% Export Tax Rate${taxEstimate.isPsebRegistered ? " (PSEB)" : ""}`;
 
   // P&L rows: income + expenses merged, newest first, paginated client-side —
   // both lists are already fully loaded for the KPI math above, so a second
@@ -231,7 +250,7 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{taxLiability}</div>
-            <p className="text-xs text-primary mt-1 font-medium">{taxRate} PSEB Reduced Export Tax Rate</p>
+            <p className="text-xs text-primary mt-1 font-medium">{taxRateLabel}</p>
           </CardContent>
         </Card>
       </div>

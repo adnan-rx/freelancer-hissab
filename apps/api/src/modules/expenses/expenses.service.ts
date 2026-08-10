@@ -4,6 +4,7 @@ import { DRIZZLE } from '../../database/database.module';
 import { expenses } from '../../database/schema';
 import { CreateExpenseDto, UpdateExpenseDto } from './dto/expense.dto';
 import { ExchangeRateService } from '../exchange-rate/exchange-rate.service';
+import { round2, round4 } from '../../common/money';
 
 @Injectable()
 export class ExpensesService {
@@ -35,9 +36,9 @@ export class ExpensesService {
 
   private async resolveRate(currency: string, explicitRate?: number): Promise<number> {
     if (explicitRate !== undefined && explicitRate !== null && explicitRate > 0) {
-      return explicitRate;
+      return round4(explicitRate);
     }
-    return this.exchangeRateService.getRate(currency, 'PKR');
+    return round4(await this.exchangeRateService.getRate(currency, 'PKR'));
   }
 
   private toDateString(value?: Date | string): string {
@@ -52,15 +53,18 @@ export class ExpensesService {
 
     const currency = (dto.currency || 'PKR').toUpperCase();
     const exchangeRate = await this.resolveRate(currency, dto.exchangeRate);
-    const amountPKR = Math.round(dto.amount * exchangeRate * 100) / 100;
+    const amountPKR = round2(dto.amount * exchangeRate);
 
     const [expense] = await this.db.insert(expenses).values({
       userId,
-      amount: dto.amount.toString(),
+      amount: round2(dto.amount).toString(),
       currency,
       exchangeRate: exchangeRate.toString(),
       amountPKR: amountPKR.toString(),
       category: dto.category as any,
+      // Was accepted by the DTO and then dropped on the floor, so every expense
+      // silently persisted the column default instead of the chosen method.
+      paymentMethod: dto.paymentMethod || 'bank_transfer',
       description: dto.description,
       vendor: dto.vendor,
       expenseDate: this.toDateString(dto.expenseDate),
@@ -81,6 +85,7 @@ export class ExpensesService {
     if (dto.category !== undefined) updateData.category = dto.category as any;
     if (dto.description !== undefined) updateData.description = dto.description;
     if (dto.vendor !== undefined) updateData.vendor = dto.vendor;
+    if (dto.paymentMethod !== undefined) updateData.paymentMethod = dto.paymentMethod;
     if (dto.expenseDate !== undefined) updateData.expenseDate = this.toDateString(dto.expenseDate);
 
     const amountChanged = dto.amount !== undefined;
@@ -96,10 +101,15 @@ export class ExpensesService {
           ? await this.resolveRate(currency)
           : Number(existing.exchangeRate);
 
-      updateData.amount = amount.toString();
+      updateData.amount = round2(amount).toString();
       updateData.currency = currency;
       updateData.exchangeRate = exchangeRate.toString();
-      updateData.amountPKR = (Math.round(amount * exchangeRate * 100) / 100).toString();
+      updateData.amountPKR = round2(amount * exchangeRate).toString();
+    }
+
+    // Drizzle throws "No values to set" on an empty object → used to be a 500.
+    if (Object.keys(updateData).length === 0) {
+      return existing;
     }
 
     const [updated] = await this.db

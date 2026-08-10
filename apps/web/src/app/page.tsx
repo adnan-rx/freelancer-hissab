@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useAuthStore } from "@/stores/auth.store";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Shield, Zap, TrendingUp, ArrowRight, CheckCircle2, Calculator, Wallet, Users } from "lucide-react";
+import { DollarSign, Zap, TrendingUp, ArrowRight, CheckCircle2, Calculator, Wallet, Users } from "lucide-react";
 
 export default function Home() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -81,7 +81,7 @@ export default function Home() {
               </Link>
               <Link href="/login" className="w-full sm:w-auto">
                 <Button size="lg" variant="outline" className="w-full sm:w-auto border-border text-foreground hover:bg-secondary px-8 py-6 text-lg rounded-xl transition-all active:scale-[0.98]">
-                  Demo Login
+                  Sign In
                 </Button>
               </Link>
             </>

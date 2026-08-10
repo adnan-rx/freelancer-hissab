@@ -14,9 +14,10 @@ import { Search, Plus, Users, DollarSign, Building, Mail, Phone, Edit, Trash2, F
 import Link from 'next/link';
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '@/hooks/use-clients';
 import { useDataTable } from '@/hooks/use-data-table';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { formatPKR, formatUSD, apiErrorMessage } from '@/lib/utils';
 import { CSVImportModal } from '@/components/features/csv-import-modal';
-import { Toast } from '@/components/ui/toast';
+import { useToast } from '@/providers/toast-provider';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 
 const PAGE_SIZE = 10;
@@ -25,8 +26,7 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [platformFilter, setPlatformFilter] = useState("all");
 
-  // Toast & Confirm Modal States
-  const [toast, setToast] = useState<{ type: 'error' | 'success'; title?: string; message: string } | null>(null);
+  const { showSuccess, showError } = useToast();
   // `warning` carries the server's "this will also delete N invoices" message on the second (forced) confirm.
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; warning?: string } | null>(null);
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
@@ -47,20 +47,29 @@ export default function ClientsPage() {
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("active");
 
-  const { data: clientsList = [], isLoading } = useClients(search);
+  // The request is debounced; the input and client-side filter below stay
+  // instant so typing never feels laggy. Previously every keystroke fired
+  // its own network request.
+  const debouncedSearch = useDebouncedValue(search);
+  const { data: clientsList = [], isLoading } = useClients(
+    debouncedSearch,
+    platformFilter === "all" ? undefined : platformFilter,
+  );
   const createClientMutation = useCreateClient();
   const updateClientMutation = useUpdateClient();
   const deleteClientMutation = useDeleteClient();
 
   const rawList = clientsList;
 
+  // Platform is now filtered server-side (above). This only re-applies the
+  // search match client-side, so the list still narrows instantly for the
+  // ~300ms the debounced request takes to catch up.
   const displayClients = rawList.filter((client: any) => {
-    const matchesPlatform = platformFilter === "all" || client.platform === platformFilter;
     const clientName = client.name || "";
-    const matchesSearch = clientName.toLowerCase().includes(search.toLowerCase()) || 
+    const matchesSearch = clientName.toLowerCase().includes(search.toLowerCase()) ||
                           (client.email && client.email.toLowerCase().includes(search.toLowerCase())) ||
                           (client.company && client.company.toLowerCase().includes(search.toLowerCase()));
-    return matchesPlatform && matchesSearch;
+    return matchesSearch;
   });
 
   const table = useDataTable(displayClients, {
@@ -75,8 +84,8 @@ export default function ClientsPage() {
   });
 
   const totalClientsCount = rawList.length;
-  const totalLifetimeUSD = rawList.reduce((sum: number, c: any) => sum + Number(c.totalEarnings || c.totalIncome || 0), 0);
-  const totalLifetimePKR = rawList.reduce((sum: number, c: any) => sum + Number(c.totalEarningsPKR || (Number(c.totalEarnings || 0) * 280.50)), 0);
+  const activeClientsCount = rawList.filter((c: any) => c.status !== "archived").length;
+  const totalLifetimePKR = rawList.reduce((sum: number, c: any) => sum + Number(c.totalEarningsPKR || 0), 0);
 
   const handleOpenAdd = () => {
     setName("");
@@ -106,7 +115,6 @@ export default function ClientsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setToast(null);
     const payload = {
       name,
       company: company || undefined,
@@ -121,16 +129,14 @@ export default function ClientsPage() {
     try {
       if (editingClient) {
         await updateClientMutation.mutateAsync({ id: editingClient.id, ...payload });
+        showSuccess(`"${name}" has been updated.`, "Client Updated");
       } else {
         await createClientMutation.mutateAsync(payload);
+        showSuccess(`"${name}" has been added.`, "Client Added");
       }
       setIsAddOpen(false);
     } catch (err: any) {
-      setToast({
-        type: "error",
-        title: "Client Save Failed",
-        message: apiErrorMessage(err, "Failed to save client profile."),
-      });
+      showError(apiErrorMessage(err, "Failed to save client profile."), "Client Save Failed");
     }
   };
 
@@ -144,14 +150,14 @@ export default function ClientsPage() {
     try {
       await deleteClientMutation.mutateAsync({ id: deleteTarget.id, force: alreadyWarned });
       setDeleteTarget(null);
-      setToast({ type: "success", title: "Client Deleted", message: `"${deleteTarget.name}" has been removed.` });
+      showSuccess(`"${deleteTarget.name}" has been removed.`, "Client Deleted");
     } catch (err: any) {
       const apiErr = err?.response?.data?.error;
       if (apiErr?.details?.requiresForce) {
         setDeleteTarget({ ...deleteTarget, warning: apiErrorMessage(err) });
         return;
       }
-      setToast({ type: "error", title: "Delete Client Failed", message: apiErrorMessage(err) });
+      showError(apiErrorMessage(err), "Delete Client Failed");
       setDeleteTarget(null);
     }
   };
@@ -171,13 +177,9 @@ export default function ClientsPage() {
     const failed = results.filter((r) => r.status === "rejected").length;
     const deleted = ids.length - failed;
     if (failed === 0) {
-      setToast({ type: "success", title: "Clients Deleted", message: `${deleted} client(s) removed.` });
+      showSuccess(`${deleted} client(s) removed.`, "Clients Deleted");
     } else {
-      setToast({
-        type: "error",
-        title: "Some Deletes Failed",
-        message: `${deleted} client(s) deleted, ${failed} failed.`,
-      });
+      showError(`${deleted} client(s) deleted, ${failed} failed.`, "Some Deletes Failed");
     }
   };
 
@@ -206,7 +208,7 @@ export default function ClientsPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Active Clients</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Total Clients</CardTitle>
             <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
@@ -217,12 +219,12 @@ export default function ClientsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Lifetime Revenue (USD)</CardTitle>
-            <DollarSign className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm font-medium text-foreground">Active Clients</CardTitle>
+            <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{formatUSD(totalLifetimeUSD)}</div>
-            <p className="text-xs text-primary mt-1 font-medium">Billed across all portals</p>
+            <div className="text-2xl font-bold text-foreground">{activeClientsCount}</div>
+            <p className="text-xs text-muted-foreground mt-1">Excludes archived clients</p>
           </CardContent>
         </Card>
 
@@ -233,7 +235,7 @@ export default function ClientsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">{formatPKR(totalLifetimePKR)}</div>
-            <p className="text-xs text-primary mt-1 font-medium">Auto-converted at ~280.50 PKR</p>
+            <p className="text-xs text-primary mt-1 font-medium">Converted at each entry's own exchange rate</p>
           </CardContent>
         </Card>
       </div>
@@ -316,8 +318,11 @@ export default function ClientsPage() {
               </TableRow>
             ) : (
               table.paged.map((client: any) => {
-                const lifetimeUSD = Number(client.totalEarnings || client.totalIncome || 0);
-                const lifetimePKR = Number(client.totalEarningsPKR || (lifetimeUSD * 280.50));
+                // This client's own billed total, in their own billing
+                // currency — formatting it as USD regardless of that currency
+                // used to mislabel EUR/GBP clients' totals with a "$" sign.
+                const lifetimeNative = Number(client.totalEarnings || client.totalIncome || 0);
+                const lifetimePKR = Number(client.totalEarningsPKR || 0);
                 return (
                   <TableRow key={client.id} className="transition-colors" data-state={table.selected.has(client.id) ? "selected" : undefined}>
                     <TableCell>
@@ -347,7 +352,11 @@ export default function ClientsPage() {
                     </TableCell>
 
                     <TableCell className="font-mono">
-                      <div className="font-bold text-primary">{formatUSD(lifetimeUSD)}</div>
+                      <div className="font-bold text-primary">
+                        {client.currency === "USD"
+                          ? formatUSD(lifetimeNative)
+                          : `${client.currency || "USD"} ${lifetimeNative.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                      </div>
                       <div className="text-[11px] text-muted-foreground">{formatPKR(lifetimePKR)}</div>
                     </TableCell>
 
@@ -542,15 +551,6 @@ export default function ClientsPage() {
         confirmText="Delete Selected"
         isLoading={isBulkDeleting}
       />
-
-      {toast && (
-        <Toast 
-          type={toast.type} 
-          title={toast.title} 
-          message={toast.message} 
-          onClose={() => setToast(null)} 
-        />
-      )}
     </div>
   );
 }

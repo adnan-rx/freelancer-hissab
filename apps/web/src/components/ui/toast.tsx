@@ -11,6 +11,7 @@ export interface ToastProps {
   duration?: number;
 }
 
+/** A single toast card. Stacking and screen position are owned by ToastProvider's viewport. */
 export function Toast({ type = "error", title, message, onClose, duration = 6000 }: ToastProps) {
   // onClose is almost always a fresh inline function from the caller, so it must not
   // sit in the effect's deps — otherwise any parent re-render while the toast is open
@@ -34,16 +35,16 @@ export function Toast({ type = "error", title, message, onClose, duration = 6000
   const Icon = { error: AlertCircle, success: CheckCircle2, info: Info }[type];
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 flex items-start gap-3 max-w-md p-4 rounded-xl border shadow-2xl backdrop-blur-md transition-all animate-in slide-in-from-bottom-5 ${style}`}>
+    <div className={`flex items-start gap-3 w-full p-4 rounded-xl border shadow-2xl backdrop-blur-md transition-all animate-in slide-in-from-bottom-5 ${style}`}>
       <Icon className="h-5 w-5 shrink-0 mt-0.5" />
-      <div className="flex-1 space-y-1">
+      <div className="flex-1 space-y-1 min-w-0">
         <h4 className="text-sm font-bold tracking-wide">
           {title || defaultTitle}
         </h4>
-        <p className="text-xs leading-relaxed opacity-90">{message}</p>
+        <p className="text-xs leading-relaxed opacity-90 break-words">{message}</p>
       </div>
-      <button 
-        onClick={onClose} 
+      <button
+        onClick={onClose}
         type="button"
         className="p-1 rounded-lg hover:bg-black/10 text-current opacity-70 hover:opacity-100 transition-opacity"
       >

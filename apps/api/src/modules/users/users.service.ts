@@ -91,6 +91,10 @@ export class UsersService {
       name: data.name,
       businessName: data.businessName || null,
       defaultCurrency: 'PKR',
+      // Explicit rather than relying on the column's static DEFAULT
+      // ('FH-2026-'), which would otherwise stamp every account created from
+      // 2027 onward with an already-wrong prefix.
+      invoicePrefix: `FH-${new Date().getFullYear()}-`,
     }).returning();
     return result[0];
   }

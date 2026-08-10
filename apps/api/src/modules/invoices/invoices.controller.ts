@@ -14,6 +14,12 @@ export class InvoicesController {
     return this.invoicesService.findAll(user.id, query);
   }
 
+  /** Sequential next number, so the UI stops inventing random ones. */
+  @Get('next-number')
+  async nextNumber(@CurrentUser() user: any) {
+    return { invoiceNumber: await this.invoicesService.nextInvoiceNumber(user.id) };
+  }
+
   @Get(':id')
   findOne(@CurrentUser() user: any, @Param('id') id: string) {
     return this.invoicesService.findOne(user.id, id);

@@ -12,7 +12,7 @@ import { useAuthStore } from "@/stores/auth.store";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import { apiClient } from "@/lib/api-client";
 import { apiErrorMessage } from "@/lib/utils";
-import { Toast } from "@/components/ui/toast";
+import { useToast } from "@/providers/toast-provider";
 import { TaxRulesTab } from "@/components/features/tax-rules-tab";
 
 const IBAN_PATTERN = /^[A-Za-z]{2}[0-9]{2}[A-Za-z0-9]{11,30}$/;
@@ -20,8 +20,9 @@ const IBAN_PATTERN = /^[A-Za-z]{2}[0-9]{2}[A-Za-z0-9]{11,30}$/;
 export default function SettingsPage() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
-  const { data: profile, isLoading } = useProfile();
+  const { data: profile } = useProfile();
   const updateProfileMutation = useUpdateProfile();
+  const { showSuccess, showError } = useToast();
 
   // Profile Form State
   const [name, setName] = useState(user?.name || "");
@@ -36,19 +37,17 @@ export default function SettingsPage() {
   const [psebId, setPsebId] = useState("");
   const [isFiler, setIsFiler] = useState(true);
 
-  // Invoice Prefs State
-  const [invoicePrefix, setInvoicePrefix] = useState("FH-2026-");
+  // Invoice Prefs State — overwritten by the loaded profile below; no
+  // hardcoded year here since it would otherwise flash a stale "FH-2026-"
+  // for every account created after that year.
+  const [invoicePrefix, setInvoicePrefix] = useState("");
   const [paymentTerms, setPaymentTerms] = useState("Due on Receipt");
   const [invoiceNotes, setInvoiceNotes] = useState("");
 
   // Security tab state
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
-  const [savedSuccess, setSavedSuccess] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
   const [ibanError, setIbanError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -92,9 +91,7 @@ export default function SettingsPage() {
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaveError(null);
     setIbanError(null);
-    setSavedSuccess(null);
 
     if (iban.trim() && !IBAN_PATTERN.test(iban.trim())) {
       setIbanError("Enter a valid IBAN, e.g. PK36MEZN0001020304050607.");
@@ -120,9 +117,9 @@ export default function SettingsPage() {
       if (user) {
         setUser({ ...user, name, businessName, psebId: psebId || null, hasPseb: !!psebId });
       }
-      setSavedSuccess("Settings updated & saved to database!");
+      showSuccess("Settings updated & saved to database!", "Saved");
     } catch (err) {
-      setSaveError(apiErrorMessage(err, "Failed to save your settings."));
+      showError(apiErrorMessage(err, "Failed to save your settings."), "Save Failed");
     }
   };
 
@@ -131,22 +128,22 @@ export default function SettingsPage() {
       const res = await apiClient.patch("/users/password", { currentPassword, newPassword });
       return res.data;
     },
+    // Handled locally below so the message can be paired with clearing the form.
+    meta: { suppressErrorToast: true },
     onSuccess: () => {
-      setPasswordSuccess(true);
-      setPasswordError(null);
+      showSuccess("Your other sessions have been signed out.", "Password Updated");
       setCurrentPassword("");
       setNewPassword("");
     },
     onError: (err) => {
-      setPasswordError(apiErrorMessage(err, "Failed to change your password."));
+      showError(apiErrorMessage(err, "Failed to change your password."), "Password Not Updated");
     },
   });
 
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault();
-    setPasswordError(null);
     if (!currentPassword || !newPassword) {
-      setPasswordError("Enter your current and new password.");
+      showError("Enter your current and new password.", "Password Not Updated");
       return;
     }
     changePasswordMutation.mutate();
@@ -162,13 +159,6 @@ export default function SettingsPage() {
           </p>
         </div>
       </div>
-
-      {savedSuccess && (
-        <Toast type="success" title="Saved" message={savedSuccess} onClose={() => setSavedSuccess(null)} />
-      )}
-      {saveError && (
-        <Toast type="error" title="Save Failed" message={saveError} onClose={() => setSaveError(null)} />
-      )}
 
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList className="bg-muted border border-border p-1 rounded-xl">
@@ -400,18 +390,6 @@ export default function SettingsPage() {
               <CardDescription>Change your password and inspect active session tokens.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 max-w-xl">
-              {passwordError && (
-                <Toast type="error" title="Password Not Updated" message={passwordError} onClose={() => setPasswordError(null)} />
-              )}
-              {passwordSuccess && (
-                <Toast
-                  type="success"
-                  title="Password Updated"
-                  message="Your other sessions have been signed out."
-                  onClose={() => setPasswordSuccess(false)}
-                />
-              )}
-
               <form onSubmit={handleChangePassword} className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Current Password</label>
@@ -445,7 +423,7 @@ export default function SettingsPage() {
                 <p className="text-xs font-semibold text-foreground">Active Authentication Session</p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10">JWT Bearer Token Active</Badge>
-                  <span>Expires in 2 minutes (auto-refreshed while you're active)</span>
+                  <span>Automatically refreshed in the background while you&apos;re active</span>
                 </div>
               </div>
             </CardContent>

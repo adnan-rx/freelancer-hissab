@@ -108,15 +108,19 @@ export class ClientsService {
   async delete(userId: string, id: string, force = false) {
     const client = await this.findOne(userId, id);
 
+    // Counted WITHOUT the userId scope on purpose: the FK cascades, so the true
+    // blast radius is every referencing row, not just this user's. Scoping it
+    // reported "0 invoices" while the delete removed rows created before
+    // cross-tenant references were blocked at write time.
     const relatedInvoices = await this.db
       .select({ id: invoices.id })
       .from(invoices)
-      .where(and(eq(invoices.clientId, id), eq(invoices.userId, userId)));
+      .where(eq(invoices.clientId, id));
 
     const relatedIncome = await this.db
       .select({ id: income.id })
       .from(income)
-      .where(and(eq(income.clientId, id), eq(income.userId, userId)));
+      .where(eq(income.clientId, id));
 
     if (!force && (relatedInvoices.length > 0 || relatedIncome.length > 0)) {
       throw new ConflictException({

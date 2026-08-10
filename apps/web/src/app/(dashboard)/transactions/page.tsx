@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { Search, Loader2, ArrowUpRight, ArrowDownRight, Filter, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,10 +20,11 @@ import { SortableTableHead, SortState } from "@/components/ui/sortable-table-hea
 import { PaginationBar } from "@/components/ui/pagination-bar";
 import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
-import { Toast } from "@/components/ui/toast";
-import { useTransactions, TransactionType, UnifiedTransaction } from "@/hooks/use-transactions";
+import { useToast } from "@/providers/toast-provider";
+import { useTransactions, TransactionType, TransactionSortKey, UnifiedTransaction } from "@/hooks/use-transactions";
 import { useDeleteIncome } from "@/hooks/use-income";
 import { useDeleteExpense } from "@/hooks/use-expenses";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 
 const PAGE_SIZE = 20;
 
@@ -40,51 +41,40 @@ export default function TransactionsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-  const [toast, setToast] = useState<{ type: "error" | "success"; title?: string; message: string } | null>(null);
+  const { showSuccess, showError } = useToast();
 
   const deleteIncomeMutation = useDeleteIncome();
   const deleteExpenseMutation = useDeleteExpense();
+
+  // The input stays instant; the request that goes to the server (and the
+  // page-1 reset below) waits for typing to pause. Every keystroke used to
+  // fire its own paginated query.
+  const debouncedSearch = useDebouncedValue(search);
 
   // Any filter change invalidates the current page — starting over on page 1
   // avoids landing on a now-empty page (e.g. filtering to a date range with fewer rows).
   useEffect(() => {
     setPage(1);
-  }, [search, typeFilter, startDate, endDate]);
+  }, [debouncedSearch, typeFilter, startDate, endDate, sort]);
 
   const { data, isLoading, isFetching } = useTransactions({
-    search,
+    search: debouncedSearch,
     type: typeFilter,
     startDate: startDate || undefined,
     endDate: endDate || undefined,
     page,
     pageSize: PAGE_SIZE,
+    // Sorted server-side now: this used to only reorder the 20 rows already
+    // on the current page, so "sort by amount" looked plausible but was
+    // actually sorting a date-sorted slice, not the full result set.
+    sortBy: (sort?.key as TransactionSortKey) || undefined,
+    sortDir: sort?.direction,
   });
 
   const total = data?.total ?? 0;
   const hasDateFilter = !!(startDate || endDate);
   const dateRangeInvalid = !!(startDate && endDate && startDate > endDate);
-
-  // Sorting only reorders the current page — the data itself is paginated server-side.
-  const transactions = useMemo(() => {
-    const rows = data?.data ?? [];
-    if (!sort) return rows;
-    const accessors: Record<string, (tx: UnifiedTransaction) => string | number> = {
-      date: (tx) => tx.date,
-      entity: (tx) => (tx.entity || "").toLowerCase(),
-      category: (tx) => (tx.category || "").toLowerCase(),
-      amount: (tx) => Number(tx.amount || 0),
-    };
-    const accessor = accessors[sort.key];
-    if (!accessor) return rows;
-    const copy = [...rows];
-    copy.sort((a, b) => {
-      const av = accessor(a);
-      const bv = accessor(b);
-      const cmp = av < bv ? -1 : av > bv ? 1 : 0;
-      return sort.direction === "asc" ? cmp : -cmp;
-    });
-    return copy;
-  }, [data, sort]);
+  const transactions = data?.data ?? [];
 
   function toggleSort(key: string) {
     setSort((prev) => {
@@ -131,11 +121,11 @@ export default function TransactionsPage() {
 
     const failed = results.filter((r) => r.status === "rejected").length;
     const deleted = keys.length - failed;
-    setToast(
-      failed === 0
-        ? { type: "success", title: "Transactions Deleted", message: `${deleted} transaction(s) removed.` }
-        : { type: "error", title: "Some Deletes Failed", message: `${deleted} deleted, ${failed} failed.` }
-    );
+    if (failed === 0) {
+      showSuccess(`${deleted} transaction(s) removed.`, "Transactions Deleted");
+    } else {
+      showError(`${deleted} deleted, ${failed} failed.`, "Some Deletes Failed");
+    }
   };
 
   const clearDateFilter = () => {
@@ -315,10 +305,6 @@ export default function TransactionsPage() {
         confirmText="Delete Selected"
         isLoading={isBulkDeleting}
       />
-
-      {toast && (
-        <Toast type={toast.type} title={toast.title} message={toast.message} onClose={() => setToast(null)} />
-      )}
     </div>
   );
 }

@@ -13,16 +13,6 @@ export class ReportsController {
     return this.reportsService.getIncomeVsExpenses(user.id, year);
   }
 
-  @Get('client-breakdown')
-  getClientBreakdown(@CurrentUser() user: any) {
-    return this.reportsService.getClientBreakdown(user.id);
-  }
-
-  @Get('platform-breakdown')
-  getPlatformBreakdown(@CurrentUser() user: any) {
-    return this.reportsService.getPlatformBreakdown(user.id);
-  }
-
   @Get('income-consolidation')
   getIncomeConsolidation(@CurrentUser() user: any, @Query('year') year?: string) {
     return this.reportsService.getIncomeConsolidation(user.id, year);

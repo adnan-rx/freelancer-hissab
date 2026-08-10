@@ -16,19 +16,19 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { AddExpenseModal } from '@/components/features/add-expense-modal';
 import { EvidenceVaultModal } from '@/components/features/evidence-vault-modal';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
-import { Toast } from '@/components/ui/toast';
+import { useToast } from '@/providers/toast-provider';
 
 const PAGE_SIZE = 10;
 
 export default function ExpensesPage() {
   const { data: expensesList = [], isLoading, isError, error } = useExpenses();
   const deleteExpenseMutation = useDeleteExpense();
+  const { showSuccess, showError } = useToast();
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<any | null>(null);
   const [evidenceTarget, setEvidenceTarget] = useState<{ id: string; title: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; description: string } | null>(null);
-  const [toast, setToast] = useState<{ type: 'error' | 'success'; title?: string; message: string } | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -55,9 +55,9 @@ export default function ExpensesPage() {
     if (!deleteTarget) return;
     try {
       await deleteExpenseMutation.mutateAsync(deleteTarget.id);
-      setToast({ type: "success", title: "Expense Deleted", message: "The expense has been removed." });
+      showSuccess("The expense has been removed.", "Expense Deleted");
     } catch (err) {
-      setToast({ type: "error", title: "Delete Failed", message: apiErrorMessage(err) });
+      showError(apiErrorMessage(err), "Delete Failed");
     } finally {
       setDeleteTarget(null);
     }
@@ -73,11 +73,11 @@ export default function ExpensesPage() {
 
     const failed = results.filter((r) => r.status === "rejected").length;
     const deleted = ids.length - failed;
-    setToast(
-      failed === 0
-        ? { type: "success", title: "Expenses Deleted", message: `${deleted} expense(s) removed.` }
-        : { type: "error", title: "Some Deletes Failed", message: `${deleted} deleted, ${failed} failed.` }
-    );
+    if (failed === 0) {
+      showSuccess(`${deleted} expense(s) removed.`, "Expenses Deleted");
+    } else {
+      showError(`${deleted} deleted, ${failed} failed.`, "Some Deletes Failed");
+    }
   };
 
   return (
@@ -275,10 +275,6 @@ export default function ExpensesPage() {
         confirmText="Delete Selected"
         isLoading={isBulkDeleting}
       />
-
-      {toast && (
-        <Toast type={toast.type} title={toast.title} message={toast.message} onClose={() => setToast(null)} />
-      )}
     </div>
   );
 }

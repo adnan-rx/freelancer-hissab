@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth.store";
+import { unwrapApi } from "@/lib/utils";
 
 /** Mirrors the `expense_category` enum accepted by the API. */
 export const EXPENSE_CATEGORIES = [
@@ -29,10 +30,8 @@ export function useExpenses() {
   return useQuery({
     queryKey: ["expenses", accessToken],
     queryFn: async () => {
-      if (!accessToken) return [];
       const res = await apiClient.get("/expenses");
-      const resData = res.data;
-      const list = resData?.data?.data || resData?.data || resData || [];
+      const list = unwrapApi<any[]>(res);
       return Array.isArray(list) ? list : [];
     },
     enabled: !!accessToken,
@@ -44,9 +43,10 @@ export function useCreateExpense() {
   return useMutation({
     mutationFn: async (payload: any) => {
       const res = await apiClient.post("/expenses", payload);
-      const resData = res.data;
-      return resData?.data?.data || resData?.data || resData;
+      return unwrapApi(res);
     },
+    // add-expense-modal.tsx shows its own inline validation/error banner.
+    meta: { suppressErrorToast: true },
     onSuccess: () => invalidateAll(queryClient),
   });
 }
@@ -56,9 +56,9 @@ export function useUpdateExpense() {
   return useMutation({
     mutationFn: async ({ id, ...payload }: { id: string; [key: string]: any }) => {
       const res = await apiClient.patch(`/expenses/${id}`, payload);
-      const resData = res.data;
-      return resData?.data?.data || resData?.data || resData;
+      return unwrapApi(res);
     },
+    meta: { suppressErrorToast: true },
     onSuccess: () => invalidateAll(queryClient),
   });
 }
@@ -68,9 +68,10 @@ export function useDeleteExpense() {
   return useMutation({
     mutationFn: async (id: string) => {
       const res = await apiClient.delete(`/expenses/${id}`);
-      const resData = res.data;
-      return resData?.data?.data || resData?.data || resData;
+      return unwrapApi(res);
     },
+    // Single vs. bulk delete show their own success/failure counts.
+    meta: { suppressErrorToast: true },
     onSuccess: () => invalidateAll(queryClient),
   });
 }

@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Re
 import { WealthService } from './wealth.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateAssetDto, UpdateAssetDto, CreateLiabilityDto, UpdateLiabilityDto, UpdateWealthStatementDto } from './dto/wealth.dto';
+import { parseTaxYear } from '../../common/tax-year';
 
 @Controller('wealth')
 @UseGuards(JwtAuthGuard)
@@ -9,17 +10,17 @@ export class WealthController {
   constructor(private readonly wealthService: WealthService) {}
 
   @Get('statement')
-  getStatement(@Request() req: any, @Query('year') year: string = '2026') {
+  getStatement(@Request() req: any, @Query('year') year?: string) {
     return this.wealthService.getWealthStatement(req.user.id, year);
   }
 
   @Patch('statement')
-  updateStatement(@Request() req: any, @Query('year') year: string = '2026', @Body() dto: UpdateWealthStatementDto) {
+  updateStatement(@Request() req: any, @Body() dto: UpdateWealthStatementDto, @Query('year') year?: string) {
     return this.wealthService.updateWealthStatement(req.user.id, year, dto);
   }
 
   @Get('assets')
-  getAssets(@Request() req: any, @Query('year') year: string = '2026') {
+  getAssets(@Request() req: any, @Query('year') year?: string) {
     return this.wealthService.getAssets(req.user.id, year);
   }
 
@@ -39,7 +40,7 @@ export class WealthController {
   }
 
   @Get('liabilities')
-  getLiabilities(@Request() req: any, @Query('year') year: string = '2026') {
+  getLiabilities(@Request() req: any, @Query('year') year?: string) {
     return this.wealthService.getLiabilities(req.user.id, year);
   }
 
@@ -59,7 +60,7 @@ export class WealthController {
   }
 
   @Get('reconciliation')
-  getReconciliation(@Request() req: any, @Query('year') year: string = '2026') {
+  getReconciliation(@Request() req: any, @Query('year') year?: string) {
     return this.wealthService.getReconciliation(req.user.id, year);
   }
 }

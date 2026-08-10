@@ -8,6 +8,7 @@ import { useCreateIncome, useUpdateIncome } from "@/hooks/use-income";
 import { useClients } from "@/hooks/use-clients";
 import { useExchangeRate } from "@/hooks/use-exchange-rate";
 import { apiErrorMessage, formatPKR } from "@/lib/utils";
+import { useToast } from "@/providers/toast-provider";
 
 interface AddIncomeModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export function AddIncomeModal({ isOpen, onClose, income }: AddIncomeModalProps)
   const createIncomeMutation = useCreateIncome();
   const updateIncomeMutation = useUpdateIncome();
   const { data: clientsList = [] } = useClients();
+  const { showSuccess } = useToast();
   const isEditing = !!income?.id;
 
   const [receivedAt, setReceivedAt] = useState(new Date().toISOString().split("T")[0]);
@@ -78,8 +80,10 @@ export function AddIncomeModal({ isOpen, onClose, income }: AddIncomeModalProps)
     try {
       if (isEditing) {
         await updateIncomeMutation.mutateAsync({ id: income.id, ...payload });
+        showSuccess("Income entry updated.", "Income Updated");
       } else {
         await createIncomeMutation.mutateAsync(payload);
+        showSuccess(`"${payload.description}" logged.`, "Income Added");
       }
       onClose();
     } catch (err) {

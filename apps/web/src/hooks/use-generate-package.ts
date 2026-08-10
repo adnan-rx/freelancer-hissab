@@ -4,6 +4,7 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { apiClient } from '@/lib/api-client';
 import { apiErrorMessage } from '@/lib/utils';
+import { useToast } from '@/providers/toast-provider';
 
 const MARGIN = 14;
 const LINE = 6;
@@ -97,6 +98,7 @@ function drawTable(doc: jsPDF, startY: number, columns: Column[], rows: string[]
 export function useGeneratePackage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const { showSuccess } = useToast();
 
   /**
    * Builds the filing package from live API data. Previously this rasterised a
@@ -298,6 +300,9 @@ export function useGeneratePackage() {
 
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       saveAs(zipBlob, `FreelancerHisab-Filing-Package-${label}.zip`);
+      // A multi-second background download used to finish with zero feedback —
+      // easy to mistake for nothing having happened.
+      showSuccess(`Filing package for ${label} downloaded.`, 'Package Ready');
     } catch (error) {
       setGenerateError(apiErrorMessage(error, 'Failed to generate the filing package.'));
     } finally {

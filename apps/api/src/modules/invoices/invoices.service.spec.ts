@@ -3,7 +3,8 @@ import { BadRequestException, ConflictException, NotFoundException } from '@nest
 import { InvoicesService } from './invoices.service';
 import { DRIZZLE } from '../../database/database.module';
 import { invoices, invoiceItems, clients, users } from '../../database/schema';
-import { createMockDb } from '../../common/testing/mock-db';
+import { createMockDb, mockExchangeRateService } from '../../common/testing/mock-db';
+import { ExchangeRateService } from '../exchange-rate/exchange-rate.service';
 
 describe('InvoicesService Editing & Compliance Rules', () => {
   let service: InvoicesService;
@@ -12,6 +13,8 @@ describe('InvoicesService Editing & Compliance Rules', () => {
     insert: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    // Multi-table writes are wrapped in a transaction now; the mock just runs the callback.
+    transaction: jest.fn(async (fn: any) => fn(mockDbInstance)),
   };
 
   beforeEach(async () => {
@@ -22,6 +25,10 @@ describe('InvoicesService Editing & Compliance Rules', () => {
         {
           provide: DRIZZLE,
           useValue: mockDbInstance,
+        },
+        {
+          provide: ExchangeRateService,
+          useValue: mockExchangeRateService,
         },
       ],
     }).compile();

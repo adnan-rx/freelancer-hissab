@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.module';
-import { income, expenses, clients } from '../../database/schema';
+import { income, expenses } from '../../database/schema';
 import { taxYearRange, incomeInTaxYear } from '../../common/tax-year';
 
 @Injectable()
@@ -45,38 +45,6 @@ export class ReportsService {
         profit: Math.round((inc - exp) * 100) / 100,
       };
     });
-  }
-
-  async getClientBreakdown(userId: string) {
-    const userIncome = await this.db.select().from(income).where(eq(income.userId, userId));
-    const userClients = await this.db.select().from(clients).where(eq(clients.userId, userId));
-
-    const clientBreakdown: Record<string, number> = {};
-    
-    userIncome.forEach((inc: any) => {
-      if (inc.clientId) {
-        const client = userClients.find((c: any) => c.id === inc.clientId);
-        const name = client ? client.name : 'Unknown';
-        clientBreakdown[name] = (clientBreakdown[name] || 0) + Number(inc.amountPKR || 0);
-      } else {
-        clientBreakdown['Other'] = (clientBreakdown['Other'] || 0) + Number(inc.amountPKR || 0);
-      }
-    });
-
-    return Object.keys(clientBreakdown).map((name) => ({ name, value: clientBreakdown[name] }));
-  }
-
-  async getPlatformBreakdown(userId: string) {
-    const userIncome = await this.db.select().from(income).where(eq(income.userId, userId));
-    
-    const platformBreakdown: Record<string, number> = {};
-    
-    userIncome.forEach((inc: any) => {
-      const platform = inc.platform || 'Other';
-      platformBreakdown[platform] = (platformBreakdown[platform] || 0) + Number(inc.amountPKR || 0);
-    });
-
-    return Object.keys(platformBreakdown).map((name) => ({ name, value: platformBreakdown[name] }));
   }
 
   async getIncomeConsolidation(userId: string, year?: string) {

@@ -1,44 +1,75 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, desc } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.module';
 import { income, expenses, invoices } from '../../database/schema';
+import { taxYearRange, incomeInTaxYear, expensesInTaxYear, isWithinTaxYear } from '../../common/tax-year';
+import { round2 } from '../../common/money';
+
+/** Statuses that represent money genuinely owed to the user. */
+const PENDING_INVOICE_STATUSES = ['sent', 'viewed', 'overdue'];
 
 @Injectable()
 export class DashboardService {
   constructor(@Inject(DRIZZLE) private readonly db: any) {}
 
-  async getSummary(userId: string) {
-    const userIncome = await this.db.select().from(income).where(eq(income.userId, userId));
-    const userExpenses = await this.db.select().from(expenses).where(eq(expenses.userId, userId));
-    const userInvoices = await this.db.select().from(invoices).where(eq(invoices.userId, userId));
+  /**
+   * Scoped to a Pakistani tax year, like every other financial surface.
+   * These totals used to be lifetime sums with no period filter at all, so the
+   * dashboard disagreed with the tax estimate and the reports page on the same data.
+   */
+  async getSummary(userId: string, year?: string) {
+    const range = taxYearRange(year);
+
+    const allIncome = await this.db.select().from(income).where(eq(income.userId, userId));
+    const allExpenses = await this.db.select().from(expenses).where(eq(expenses.userId, userId));
+    const allInvoices = await this.db.select().from(invoices).where(eq(invoices.userId, userId));
+
+    const userIncome = incomeInTaxYear(allIncome, range);
+    const userExpenses = expensesInTaxYear(allExpenses, range);
+    const userInvoices = allInvoices.filter((inv: any) => isWithinTaxYear(inv.createdAt, range));
 
     const totalIncome = userIncome.reduce((sum: number, inc: any) => sum + Number(inc.amountPKR || 0), 0);
     const totalExpenses = userExpenses.reduce((sum: number, exp: any) => sum + Number(exp.amountPKR || 0), 0);
     const netProfit = totalIncome - totalExpenses;
 
-    const pendingInvoices = userInvoices.filter((inv: any) => inv.status !== 'paid' && inv.status !== 'cancelled');
+    // Drafts have never been sent to anyone, so they are not money owed.
+    const pendingInvoices = userInvoices.filter((inv: any) => PENDING_INVOICE_STATUSES.includes(inv.status));
     const pendingAmount = pendingInvoices.reduce((sum: number, inv: any) => sum + Number(inv.totalPKR || 0), 0);
 
+    const draftInvoices = userInvoices.filter((inv: any) => inv.status === 'draft');
+
     return {
-      totalIncome: Math.round(totalIncome * 100) / 100,
-      totalExpenses: Math.round(totalExpenses * 100) / 100,
-      netProfit: Math.round(netProfit * 100) / 100,
+      taxYear: range.taxYear,
+      taxYearLabel: range.label,
+      periodStart: range.start.toISOString().split('T')[0],
+      periodEnd: new Date(range.end.getTime() - 86400000).toISOString().split('T')[0],
+      totalIncome: round2(totalIncome),
+      totalExpenses: round2(totalExpenses),
+      netProfit: round2(netProfit),
       pendingInvoices: pendingInvoices.length,
-      pendingAmount: Math.round(pendingAmount * 100) / 100,
+      pendingAmount: round2(pendingAmount),
+      draftInvoices: draftInvoices.length,
       ...this.calculateGrowth(userIncome, userExpenses),
       currency: 'PKR',
     };
   }
 
   /**
-   * Month-over-month change, replacing the previously hardcoded 12.5%.
-   * Returns null when the prior month has no data — the UI must not show a
-   * percentage it cannot derive.
+   * Month-over-month change comparing like with like: the current month up to
+   * today against the SAME number of days last month. Comparing a partial month
+   * against a full one reported ~-90% growth on the 3rd of every month.
+   * Returns null when the prior window has no data to compare against.
    */
   private calculateGrowth(userIncome: any[], userExpenses: any[]) {
     const now = new Date();
     const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    // Same elapsed span last month, clamped so a 31st never overflows a short month.
+    const elapsedMs = now.getTime() - startOfThisMonth.getTime();
+    const endOfLastMonthWindow = new Date(
+      Math.min(startOfLastMonth.getTime() + elapsedMs, startOfThisMonth.getTime()),
+    );
 
     const sumBetween = (rows: any[], dateKey: string, amountKey: string, from: Date, to: Date) =>
       rows.reduce((sum, row) => {
@@ -52,29 +83,13 @@ export class DashboardService {
     };
 
     const incomeThis = sumBetween(userIncome, 'receivedAt', 'amountPKR', startOfThisMonth, now);
-    const incomeLast = sumBetween(userIncome, 'receivedAt', 'amountPKR', startOfLastMonth, startOfThisMonth);
+    const incomeLast = sumBetween(userIncome, 'receivedAt', 'amountPKR', startOfLastMonth, endOfLastMonthWindow);
     const expenseThis = sumBetween(userExpenses, 'expenseDate', 'amountPKR', startOfThisMonth, now);
-    const expenseLast = sumBetween(userExpenses, 'expenseDate', 'amountPKR', startOfLastMonth, startOfThisMonth);
+    const expenseLast = sumBetween(userExpenses, 'expenseDate', 'amountPKR', startOfLastMonth, endOfLastMonthWindow);
 
     return {
       monthlyGrowth: change(incomeThis, incomeLast),
       expenseGrowth: change(expenseThis, expenseLast),
     };
-  }
-
-  async getRecentActivity(userId: string) {
-    const userIncome = await this.db.select().from(income).where(eq(income.userId, userId)).orderBy(desc(income.createdAt)).limit(5);
-    const userExpenses = await this.db.select().from(expenses).where(eq(expenses.userId, userId)).orderBy(desc(expenses.createdAt)).limit(5);
-    const userInvoices = await this.db.select().from(invoices).where(eq(invoices.userId, userId)).orderBy(desc(invoices.createdAt)).limit(5);
-
-    const activity = [
-      ...userIncome.map((inc: any) => ({ type: 'income', data: inc, date: inc.createdAt })),
-      ...userExpenses.map((exp: any) => ({ type: 'expense', data: exp, date: exp.createdAt })),
-      ...userInvoices.map((inv: any) => ({ type: 'invoice', data: inv, date: inv.createdAt })),
-    ];
-
-    activity.sort((a: any, b: any) => b.date.getTime() - a.date.getTime());
-
-    return activity.slice(0, 10);
   }
 }

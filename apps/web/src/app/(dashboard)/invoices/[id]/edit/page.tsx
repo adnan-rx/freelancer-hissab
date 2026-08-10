@@ -24,7 +24,7 @@ import { formatPKR, formatUSD, apiErrorMessage } from "@/lib/utils";
 import { useClients } from "@/hooks/use-clients";
 import { useInvoice, useUpdateInvoice } from "@/hooks/use-invoices";
 import { useExchangeRate } from "@/hooks/use-exchange-rate";
-import { Toast } from "@/components/ui/toast";
+import { useToast } from "@/providers/toast-provider";
 
 export default function EditInvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -33,8 +33,8 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
   const { data: rawInvoice, isLoading, isError, error } = useInvoice(id);
   const { data: clients = [] } = useClients();
   const updateInvoiceMutation = useUpdateInvoice();
+  const { showSuccess, showError } = useToast();
 
-  const [toast, setToast] = useState<{ type: "error" | "success"; title?: string; message: string } | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   // Form state
@@ -45,14 +45,28 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [currency, setCurrency] = useState("USD");
-  const [exchangeRate, setExchangeRate] = useState(280.5);
+  const [exchangeRate, setExchangeRate] = useState(0);
   const [taxRate, setTaxRate] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [notes, setNotes] = useState("");
-  const [status, setStatus] = useState("draft");
   const [items, setItems] = useState([{ description: "", quantity: 1, rate: 0 }]);
 
   const { data: liveRate } = useExchangeRate(currency);
+  // Distinguishes the user picking a new currency from the initial load
+  // setting `currency` from the invoice's own record — only the former
+  // should overwrite the exchange rate with today's live rate. Getting this
+  // wrong would silently replace a paid/historical invoice's recorded rate
+  // with today's rate just because some other field was edited.
+  const [currencyEdited, setCurrencyEdited] = useState(false);
+
+  // Was fetched but never applied — unlike the "new invoice" form, changing
+  // currency here left the exchange rate exactly where it was instead of
+  // refreshing to the live rate for the new currency.
+  useEffect(() => {
+    if (currencyEdited && liveRate && liveRate > 0) {
+      setExchangeRate(liveRate);
+    }
+  }, [liveRate, currencyEdited]);
 
   useEffect(() => {
     if (rawInvoice && !initialized) {
@@ -68,11 +82,10 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
           : ""
       );
       setCurrency(rawInvoice.currency || "USD");
-      setExchangeRate(parseFloat(rawInvoice.exchangeRate || "280.5"));
+      setExchangeRate(parseFloat(rawInvoice.exchangeRate || "0"));
       setTaxRate(parseFloat(rawInvoice.taxRate || "0"));
       setDiscountAmount(parseFloat(rawInvoice.discountAmount || "0"));
       setNotes(rawInvoice.notes || "");
-      setStatus(rawInvoice.status || "draft");
 
       if (Array.isArray(rawInvoice.items) && rawInvoice.items.length > 0) {
         setItems(
@@ -190,11 +203,10 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
   const subtotal = items.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.rate || 0), 0);
   const calculatedTaxAmount = subtotal * (Number(taxRate || 0) / 100);
   const total = subtotal + calculatedTaxAmount - Number(discountAmount || 0);
-  const totalPKR = total * Number(exchangeRate || 280.5);
+  const totalPKR = total * Number(exchangeRate || 0);
 
   const handleSubmit = async (e: React.FormEvent, targetStatus?: string) => {
     e.preventDefault();
-    setToast(null);
     setFormError(null);
 
     if (!clientName.trim()) {
@@ -211,6 +223,10 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
     }
     if (total < 0) {
       setFormError("The total is negative — check the discount amount against the subtotal.");
+      return;
+    }
+    if (!exchangeRate || exchangeRate <= 0) {
+      setFormError("Enter an exchange rate greater than zero.");
       return;
     }
 
@@ -238,20 +254,13 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
 
     try {
       await updateInvoiceMutation.mutateAsync({ id, payload });
-      setToast({
-        type: "success",
-        title: "Invoice Updated",
-        message: `Changes to "${invoiceNumber || rawInvoice.invoiceNumber}" have been saved.`,
-      });
-      setTimeout(() => {
-        router.push(`/invoices/${id}`);
-      }, 800);
+      // The toast lives in a provider mounted above the router, so it's safe
+      // to navigate immediately — no more artificial delay to let it be seen
+      // before the page it was rendered on unmounts.
+      showSuccess(`Changes to "${invoiceNumber || rawInvoice.invoiceNumber}" have been saved.`, "Invoice Updated");
+      router.push(`/invoices/${id}`);
     } catch (err: any) {
-      setToast({
-        type: "error",
-        title: "Could Not Update Invoice",
-        message: apiErrorMessage(err, "Failed to update invoice."),
-      });
+      showError(apiErrorMessage(err, "Failed to update invoice."), "Could Not Update Invoice");
     }
   };
 
@@ -352,7 +361,10 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
                       if (selected) {
                         setClientName(selected.name);
                         setClientEmail(selected.email || "");
-                        if (selected.currency) setCurrency(selected.currency);
+                        if (selected.currency) {
+                          setCurrency(selected.currency);
+                          setCurrencyEdited(true);
+                        }
                       }
                     }}
                     className="w-full h-10 px-3 rounded-md bg-background border border-input text-foreground text-sm focus:border-primary focus:outline-none"
@@ -428,7 +440,7 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
                 <label className="text-sm font-medium text-foreground">Currency</label>
                 <select
                   value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
+                  onChange={(e) => { setCurrency(e.target.value); setCurrencyEdited(true); }}
                   className="w-full h-10 px-3 rounded-md bg-background border border-input text-foreground text-sm focus:border-primary focus:outline-none"
                 >
                   <option value="USD">USD ($)</option>
@@ -621,15 +633,6 @@ export default function EditInvoicePage({ params }: { params: Promise<{ id: stri
           </Button>
         </div>
       </form>
-
-      {toast && (
-        <Toast
-          type={toast.type}
-          title={toast.title}
-          message={toast.message}
-          onClose={() => setToast(null)}
-        />
-      )}
     </div>
   );
 }

@@ -47,13 +47,25 @@ export function apiErrorMessage(err: any, fallback = "Something went wrong. Plea
   return err?.message || fallback;
 }
 
+/**
+ * Every API response is wrapped once as `{ success, data, error }` by the
+ * backend's TransformInterceptor, so the payload always lives at `res.data.data`.
+ * Hooks used to guess between three possible shapes
+ * (`resData?.data?.data || resData?.data || resData`) "just in case" — that
+ * guessing hid real contract breaks by quietly falling back to the wrapper
+ * object instead of failing loudly.
+ */
+export function unwrapApi<T = any>(res: { data?: { data?: T } }): T {
+  return res.data?.data as T;
+}
+
 export function formatDate(date: string | Date) {
   if (!date) return "N/A";
   try {
     return new Intl.DateTimeFormat("en-US", {
       dateStyle: "medium",
     }).format(new Date(date));
-  } catch (e) {
+  } catch {
     return String(date);
   }
 }

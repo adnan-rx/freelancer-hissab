@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { X, Check, Wallet, AlertCircle } from "lucide-react";
 import { useCreateExpense, useUpdateExpense, EXPENSE_CATEGORIES } from "@/hooks/use-expenses";
 import { apiErrorMessage } from "@/lib/utils";
+import { useToast } from "@/providers/toast-provider";
 
 interface AddExpenseModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ interface AddExpenseModalProps {
 export function AddExpenseModal({ isOpen, onClose, expense }: AddExpenseModalProps) {
   const createExpenseMutation = useCreateExpense();
   const updateExpenseMutation = useUpdateExpense();
+  const { showSuccess } = useToast();
   const isEditing = !!expense?.id;
 
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split("T")[0]);
@@ -68,8 +70,10 @@ export function AddExpenseModal({ isOpen, onClose, expense }: AddExpenseModalPro
     try {
       if (isEditing) {
         await updateExpenseMutation.mutateAsync({ id: expense.id, ...payload });
+        showSuccess("Expense updated.", "Expense Updated");
       } else {
         await createExpenseMutation.mutateAsync(payload);
+        showSuccess(`"${payload.description}" logged.`, "Expense Added");
       }
       onClose();
     } catch (err) {

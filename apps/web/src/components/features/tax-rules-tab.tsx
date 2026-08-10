@@ -8,27 +8,30 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Pencil, Check, Loader2 } from "lucide-react";
 import { useTaxRules, useCreateTaxRule, useUpdateTaxRule, useDeleteTaxRule } from "@/hooks/use-tax";
-import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/providers/toast-provider";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { taxYearLabel } from "@/lib/tax-year";
 
 export function TaxRulesTab() {
   const { data: rules, isLoading } = useTaxRules();
   const createRuleMutation = useCreateTaxRule();
   const updateRuleMutation = useUpdateTaxRule();
   const deleteRuleMutation = useDeleteTaxRule();
-  const queryClient = useQueryClient();
+  const { showSuccess } = useToast();
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; taxYear: string; incomeType: string } | null>(null);
 
   // Form State
-  const [taxYear, setTaxYear] = useState("2026-27");
+  const [taxYear, setTaxYear] = useState(taxYearLabel());
   const [incomeType, setIncomeType] = useState("IT_EXPORT_PSEB");
   const [rate, setRate] = useState("0.01");
   const [effectiveFrom, setEffectiveFrom] = useState(new Date().toISOString().split("T")[0]);
   const [notes, setNotes] = useState("");
 
   const resetForm = () => {
-    setTaxYear("2026-27");
+    setTaxYear(taxYearLabel());
     setIncomeType("IT_EXPORT_PSEB");
     setRate("0.01");
     setEffectiveFrom(new Date().toISOString().split("T")[0]);
@@ -57,20 +60,30 @@ export function TaxRulesTab() {
       notes,
     };
 
+    // No try/catch: a failure here throws, skips resetForm below, and is
+    // reported by the global mutation-error toast — this form previously had
+    // no error handling of any kind, so a failed save looked identical to a
+    // successful one.
     if (editingId) {
       await updateRuleMutation.mutateAsync({ id: editingId, data: payload });
+      showSuccess("Tax rule updated.", "Rule Updated");
     } else {
       await createRuleMutation.mutateAsync(payload);
+      showSuccess("Tax rule created.", "Rule Created");
     }
-    
-    queryClient.invalidateQueries({ queryKey: ["tax-rules"] });
+
     resetForm();
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this tax rule?")) {
-      await deleteRuleMutation.mutateAsync(id);
-      queryClient.invalidateQueries({ queryKey: ["tax-rules"] });
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteRuleMutation.mutateAsync(deleteTarget.id);
+      showSuccess("Tax rule deleted.", "Rule Deleted");
+    } finally {
+      // Closes the modal either way; a failure is already reported by the
+      // global mutation-error toast.
+      setDeleteTarget(null);
     }
   };
 
@@ -161,7 +174,12 @@ export function TaxRulesTab() {
                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(rule)}>
                           <Pencil className="h-3 w-3" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleDelete(rule.id)}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => setDeleteTarget({ id: rule.id, taxYear: rule.taxYear, incomeType: rule.incomeType })}
+                        >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -173,6 +191,20 @@ export function TaxRulesTab() {
           </Table>
         </div>
       </CardContent>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Tax Rule?"
+        description={
+          deleteTarget
+            ? `Delete the ${deleteTarget.taxYear} rule for ${deleteTarget.incomeType}? This affects every user's tax calculation.`
+            : ""
+        }
+        confirmText="Delete Rule"
+        isLoading={deleteRuleMutation.isPending}
+      />
     </Card>
   );
 }

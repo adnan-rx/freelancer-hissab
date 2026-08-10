@@ -1,4 +1,11 @@
-import { parseTaxYear, taxYearRange, isWithinTaxYear, incomeInTaxYear, expensesInTaxYear } from './tax-year';
+import {
+  parseTaxYear,
+  taxYearRange,
+  isWithinTaxYear,
+  incomeInTaxYear,
+  expensesInTaxYear,
+  getCurrentTaxYear,
+} from './tax-year';
 
 describe('tax-year helpers', () => {
   it('parses every accepted tax year format to the same year', () => {
@@ -8,10 +15,18 @@ describe('tax-year helpers', () => {
     expect(parseTaxYear('2025-2026')).toBe(2026);
   });
 
-  it('falls back to the default for junk input', () => {
-    expect(parseTaxYear(undefined)).toBe(2026);
-    expect(parseTaxYear('')).toBe(2026);
-    expect(parseTaxYear('not-a-year')).toBe(2026);
+  it('rolls into the next tax year on 1 July', () => {
+    expect(getCurrentTaxYear(new Date('2026-06-30T00:00:00Z'))).toBe(2026);
+    expect(getCurrentTaxYear(new Date('2026-07-01T00:00:00Z'))).toBe(2027);
+    expect(getCurrentTaxYear(new Date('2026-12-31T00:00:00Z'))).toBe(2027);
+    expect(getCurrentTaxYear(new Date('2027-01-01T00:00:00Z'))).toBe(2027);
+  });
+
+  it('falls back to the CURRENT tax year for junk input, never a fixed year', () => {
+    const current = getCurrentTaxYear();
+    expect(parseTaxYear(undefined)).toBe(current);
+    expect(parseTaxYear('')).toBe(current);
+    expect(parseTaxYear('not-a-year')).toBe(current);
   });
 
   it('spans 1 July to 30 June and labels the rule year', () => {

@@ -10,7 +10,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { CsvService } from './csv.service';
+import { CsvService, MAX_CSV_BYTES } from './csv.service';
 import { ImportCsvDto } from './dto/import-csv.dto';
 
 @Controller('csv')
@@ -19,7 +19,9 @@ export class CsvController {
   constructor(private readonly csvService: CsvService) {}
 
   @Post('import')
-  @UseInterceptors(FileInterceptor('file'))
+  // The 5MB cap used to exist only in the browser modal, so it was trivially
+  // bypassed by posting to the API directly.
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_CSV_BYTES, files: 1 } }))
   async importCSV(
     @CurrentUser() user: any,
     @Body() dto: ImportCsvDto,

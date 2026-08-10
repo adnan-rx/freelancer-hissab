@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, CheckCircle2, FileSpreadsheet, Sparkles, X, AlertCircle, Download } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { apiErrorMessage, unwrapApi } from "@/lib/utils";
 
 export function CSVImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const queryClient = useQueryClient();
@@ -22,7 +23,10 @@ export function CSVImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
     const isCSVExtension = file.name.toLowerCase().endsWith('.csv');
     const isCSVMime = file.type === 'text/csv' || file.type === 'application/vnd.ms-excel' || file.type === '';
 
-    if (!isCSVExtension) {
+    // Was computed but never checked — a non-CSV file renamed to end in
+    // .csv passed this validation and only failed later, after upload,
+    // with a less specific error from the parser.
+    if (!isCSVExtension || !isCSVMime) {
       return `Invalid file format: "${file.name}". Please upload a valid .csv file.`;
     }
 
@@ -64,20 +68,27 @@ export function CSVImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
         throw new Error("No file or CSV text supplied");
       }
 
-      const data = res.data.data || res.data;
-      setParsedCount(data.totalParsed || 0);
+      const data = unwrapApi<{ totalParsed?: number }>(res);
+      setParsedCount(data?.totalParsed || 0);
       setImportedSuccess(true);
 
-      // Refresh cache across dashboard, income, expenses, and clients
+      // Refresh every cache the import can affect. This used to invalidate a
+      // literal ["reports"] key, which matches none of the real report query
+      // keys below — none of the report charts ever refreshed after an import.
       queryClient.invalidateQueries({ queryKey: ["income"] });
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
-      queryClient.invalidateQueries({ queryKey: ["reports"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["filing-readiness"] });
+      queryClient.invalidateQueries({ queryKey: ["report-income-vs-expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["report-income-consolidation"] });
     } catch (err: any) {
-      console.error("CSV Import Error:", err);
-      const msg = err.response?.data?.message || err.message || "Failed to process CSV import";
-      setErrorMessage(Array.isArray(msg) ? msg.join(", ") : msg);
+      // Was reading err.response.data.message, which doesn't exist on this
+      // API's error envelope ({ error: { message, details } }) — every import
+      // failure showed axios's generic "Request failed with status code 400"
+      // instead of the real reason.
+      setErrorMessage(apiErrorMessage(err, "Failed to process CSV import."));
     } finally {
       setImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

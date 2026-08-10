@@ -17,6 +17,8 @@ export interface UnifiedTransaction {
   createdAt: string;
 }
 
+export type TransactionSortKey = 'date' | 'entity' | 'category' | 'amount';
+
 export interface FindTransactionsQuery {
   search?: string;
   type?: TransactionType;
@@ -25,6 +27,8 @@ export interface FindTransactionsQuery {
   endDate?: string;
   page?: number;
   pageSize?: number;
+  sortBy?: TransactionSortKey;
+  sortDir?: 'asc' | 'desc';
 }
 
 export interface PaginatedTransactions {
@@ -117,8 +121,29 @@ export class TransactionsService {
       allTransactions = allTransactions.filter((t) => new Date(t.date).getTime() <= end);
     }
 
-    // 7. Sort by Date Descending
-    allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // 7. Sort — was hardcoded to date descending, so clicking any other
+    // column header only reordered the 20 rows already on the current page
+    // instead of the full result set behind the pagination.
+    const sortKey = query.sortBy || 'date';
+    const sortDir = query.sortDir === 'asc' ? 1 : -1;
+    const sortValue = (t: UnifiedTransaction): string | number => {
+      switch (sortKey) {
+        case 'amount':
+          return t.amount;
+        case 'entity':
+          return t.entity.toLowerCase();
+        case 'category':
+          return t.category.toLowerCase();
+        default:
+          return new Date(t.date).getTime();
+      }
+    };
+    allTransactions.sort((a, b) => {
+      const av = sortValue(a);
+      const bv = sortValue(b);
+      const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+      return cmp * sortDir;
+    });
 
     // 8. Paginate
     const total = allTransactions.length;

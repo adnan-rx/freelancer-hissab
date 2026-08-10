@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
+import { ToastProvider } from "@/providers/toast-provider";
 import { QueryProvider } from "@/providers/query-provider";
 
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-sans" });
@@ -18,9 +19,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body className={`${outfit.variable} font-sans h-full bg-background text-foreground antialiased`}>
-        <QueryProvider>
-          {children}
-        </QueryProvider>
+        <ToastProvider>
+          <QueryProvider>
+            {children}
+          </QueryProvider>
+        </ToastProvider>
       </body>
     </html>
   );

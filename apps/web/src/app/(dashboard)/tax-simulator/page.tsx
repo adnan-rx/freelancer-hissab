@@ -18,7 +18,10 @@ export default function TaxSimulatorPage() {
   const [isPseb, setIsPseb] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: currentTax, isLoading: isCurrentLoading } = useTaxEstimate(getCurrentTaxYear(), isPseb);
+  // Only the loading flag is used below (as a guard before the simulation's
+  // own `current` figures are available); the estimate itself is unused here
+  // since the simulation response already returns its own `current` snapshot.
+  const { isLoading: isCurrentLoading } = useTaxEstimate(getCurrentTaxYear(), isPseb);
   const simulateMutation = useSimulateTax();
 
   const handleSimulate = () => {

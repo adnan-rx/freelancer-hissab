@@ -112,12 +112,66 @@ describe('CsvService', () => {
     expect(inserted[0].description).toBe('Invoice for Acme, Inc. - Phase 2');
   });
 
-  it('falls back to today when the date cannot be parsed', async () => {
+  // Regression: this used to silently fall back to "today", which pushed a
+  // historical transaction into whatever tax year the import happened to run
+  // in. It is now skipped and reported so the user can fix and re-import.
+  it('skips rows whose date cannot be parsed and reports them', async () => {
     const { service } = await buildService();
     const csv = `Date,Description,Amount,Type,Currency
-not-a-date,"Some payment",100.00,income,USD`;
+not-a-date,"Some payment",100.00,income,USD
+2026-08-02,"A valid one",50.00,income,USD`;
 
     const result = await service.parseAndImport('user1', Buffer.from(csv));
     expect(result.totalParsed).toBe(1);
+    expect(result.invalidDateRows).toBe(1);
+    expect(result.incomeCount).toBe(1);
+  });
+
+  it('skips a row that duplicates one already in the ledger', async () => {
+    const rows = new Map<any, any[]>([
+      [clients, []],
+      [
+        income,
+        [
+          {
+            id: 'existing-1',
+            userId: 'user1',
+            amount: '100.00',
+            description: 'Some payment',
+            receivedAt: new Date('2026-08-02'),
+          },
+        ],
+      ],
+      [expenses, []],
+    ]);
+    const db = createMockDb(rows);
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        CsvService,
+        { provide: DRIZZLE, useValue: db },
+        { provide: ExchangeRateService, useValue: mockExchangeRateService },
+      ],
+    }).compile();
+    const service = module.get<CsvService>(CsvService);
+
+    const csv = `Date,Description,Amount,Type,Currency
+2026-08-02,"Some payment",100.00,income,USD`;
+
+    const result = await service.parseAndImport('user1', Buffer.from(csv));
+    expect(result.totalParsed).toBe(0);
+    expect(result.duplicateRows).toBe(1);
+  });
+
+  // Regression: `(500)` accounting notation used to strip the parens and keep
+  // the amount positive, turning a fee into income.
+  it('treats accounting-style parentheses as a negative amount', async () => {
+    const { service, db } = await buildService();
+    const csv = `Date,Description,Amount
+2026-08-02,"Platform fee",(45.00)`;
+
+    const result = await service.parseAndImport('user1', Buffer.from(csv));
+    expect(result.expenseCount).toBe(1);
+    const inserted = db._inserted.find((i: any) => i.table === expenses);
+    expect(inserted.values.amount).toBe('45.00');
   });
 });

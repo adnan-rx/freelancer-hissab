@@ -10,29 +10,28 @@ import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { PaginationBar } from '@/components/ui/pagination-bar';
 import { BulkActionsBar } from '@/components/ui/bulk-actions-bar';
 import { Plus, Sparkles, Trash2, DollarSign, Pencil } from 'lucide-react';
-import { formatPKR, formatUSD } from '@/lib/utils';
+import { formatPKR, formatUSD, apiErrorMessage } from '@/lib/utils';
 import { useIncome, useDeleteIncome } from '@/hooks/use-income';
 import { useDataTable } from '@/hooks/use-data-table';
 import { CSVImportModal } from '@/components/features/csv-import-modal';
 import { AddIncomeModal } from '@/components/features/add-income-modal';
 import { EvidenceVaultModal } from '@/components/features/evidence-vault-modal';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
-import { Toast } from '@/components/ui/toast';
+import { useToast } from '@/providers/toast-provider';
 
 const PAGE_SIZE = 10;
 
 export default function IncomePage() {
   const { data: incomeList = [], isLoading } = useIncome();
   const deleteIncomeMutation = useDeleteIncome();
+  const { showSuccess, showError } = useToast();
 
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingIncome, setEditingIncome] = useState<any | null>(null);
   const [evidenceTarget, setEvidenceTarget] = useState<{ id: string; title: string } | null>(null);
 
-  // Modal & Toast States
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; description: string } | null>(null);
-  const [toast, setToast] = useState<{ type: 'error' | 'success'; title?: string; message: string } | null>(null);
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -67,31 +66,21 @@ export default function IncomePage() {
 
     const failed = results.filter((r) => r.status === "rejected").length;
     const deleted = ids.length - failed;
-    setToast(
-      failed === 0
-        ? { type: "success", title: "Income Deleted", message: `${deleted} income entr${deleted === 1 ? "y" : "ies"} removed.` }
-        : { type: "error", title: "Some Deletes Failed", message: `${deleted} deleted, ${failed} failed.` }
-    );
+    if (failed === 0) {
+      showSuccess(`${deleted} income entr${deleted === 1 ? "y" : "ies"} removed.`, "Income Deleted");
+    } else {
+      showError(`${deleted} deleted, ${failed} failed.`, "Some Deletes Failed");
+    }
   };
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     try {
       await deleteIncomeMutation.mutateAsync(deleteTarget.id);
-      setToast({
-        type: "success",
-        title: "Income Entry Deleted",
-        message: "Income log has been removed from database.",
-      });
+      showSuccess("Income log has been removed.", "Income Entry Deleted");
       setDeleteTarget(null);
     } catch (err: any) {
-      console.warn("Delete income error:", err);
-      const apiErr = err?.response?.data?.error;
-      setToast({
-        type: "error",
-        title: "Delete Failed",
-        message: apiErr?.message || "Could not delete income log.",
-      });
+      showError(apiErrorMessage(err, "Could not delete income log."), "Delete Failed");
       setDeleteTarget(null);
     }
   };
@@ -261,15 +250,6 @@ export default function IncomePage() {
         confirmText="Delete Selected"
         isLoading={isBulkDeleting}
       />
-
-      {toast && (
-        <Toast 
-          type={toast.type} 
-          title={toast.title} 
-          message={toast.message} 
-          onClose={() => setToast(null)} 
-        />
-      )}
     </div>
   );
 }

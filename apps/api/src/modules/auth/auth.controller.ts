@@ -1,9 +1,8 @@
-import { Body, Controller, Get, Post, UseGuards, Res, Req, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Post, Res, Req, UnauthorizedException } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
-import { JwtAuthGuard } from './jwt-auth.guard';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -18,6 +17,9 @@ export class AuthController {
     });
   }
 
+  // Credential endpoints get a tight bucket of their own; the global 100/min
+  // throttle left password guessing effectively unlimited.
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register')
   async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.register(dto);
@@ -28,6 +30,7 @@ export class AuthController {
     };
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(dto);
@@ -54,15 +57,9 @@ export class AuthController {
   }
 
   @Post('logout')
-  async logout(@Res({ passthrough: true }) res: Response) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.logout(req.cookies?.refreshToken);
     res.clearCookie('refreshToken');
-    return { message: 'Logged out successfully' };
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('me')
-  getProfile(@CurrentUser() user: any) {
-    return user;
+    return result;
   }
 }
-

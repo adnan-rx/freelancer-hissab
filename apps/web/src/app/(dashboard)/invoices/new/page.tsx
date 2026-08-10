@@ -9,11 +9,10 @@ import { Plus, Trash2, ArrowLeft, Save, FileText, Calculator, AlertCircle } from
 import Link from 'next/link';
 import { formatPKR, formatUSD, apiErrorMessage } from '@/lib/utils';
 import { useClients } from '@/hooks/use-clients';
-import { useCreateInvoice } from '@/hooks/use-invoices';
+import { useCreateInvoice, useNextInvoiceNumber } from '@/hooks/use-invoices';
 import { useExchangeRate } from '@/hooks/use-exchange-rate';
 import { useProfile } from '@/hooks/use-profile';
-
-import { Toast } from '@/components/ui/toast';
+import { useToast } from '@/providers/toast-provider';
 
 export default function NewInvoicePage() {
   const router = useRouter();
@@ -22,9 +21,10 @@ export default function NewInvoicePage() {
 
   const { data: clients = [] } = useClients();
   const { data: profile } = useProfile();
+  const { data: nextInvoiceNumber } = useNextInvoiceNumber();
   const createInvoiceMutation = useCreateInvoice();
+  const { showSuccess, showError } = useToast();
 
-  const [toast, setToast] = useState<{ type: 'error' | 'success'; title?: string; message: string } | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   const [clientId, setClientId] = useState('');
@@ -34,7 +34,9 @@ export default function NewInvoicePage() {
   const [invoiceNumberEdited, setInvoiceNumberEdited] = useState(false);
   const [dueDate, setDueDate] = useState(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10));
   const [currency, setCurrency] = useState('USD');
-  const [exchangeRate, setExchangeRate] = useState(280.5);
+  // No hardcoded seed value — starts unset and is populated by the live rate
+  // below, rather than silently defaulting to a stale-looking "280.5".
+  const [exchangeRate, setExchangeRate] = useState(0);
 
   const { data: liveRate, isLoading: isRateLoading } = useExchangeRate(currency);
 
@@ -56,12 +58,15 @@ export default function NewInvoicePage() {
     }
   }, [preselectedClientId, clients]);
 
-  // The invoice number preview follows the Settings prefix until the user types their own.
+  // The invoice number preview follows the server's next sequential number
+  // until the user types their own. This used to be a random 4-digit suffix,
+  // which tax authorities generally expect NOT to be — invoice numbering is
+  // meant to be sequential and gap-free for audit purposes — and could also
+  // collide with an existing number, only surfacing as a 409 at submit time.
   useEffect(() => {
-    if (invoiceNumberEdited) return;
-    const prefix = profile?.invoicePrefix || `FH-${new Date().getFullYear()}-`;
-    setInvoiceNumber(`${prefix}${Math.floor(1000 + Math.random() * 9000)}`);
-  }, [profile?.invoicePrefix, invoiceNumberEdited]);
+    if (invoiceNumberEdited || !nextInvoiceNumber) return;
+    setInvoiceNumber(nextInvoiceNumber);
+  }, [nextInvoiceNumber, invoiceNumberEdited]);
 
   const [taxRate, setTaxRate] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
@@ -93,11 +98,10 @@ export default function NewInvoicePage() {
   const subtotal = items.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.rate || 0), 0);
   const taxAmount = subtotal * (Number(taxRate || 0) / 100);
   const total = subtotal + taxAmount - Number(discountAmount || 0);
-  const totalPKR = total * Number(exchangeRate || 280.5);
+  const totalPKR = total * Number(exchangeRate || 0);
 
   const handleSubmit = async (e: React.FormEvent, targetStatus: string = 'sent') => {
     e.preventDefault();
-    setToast(null);
     setFormError(null);
 
     if (!clientName.trim()) {
@@ -116,7 +120,15 @@ export default function NewInvoicePage() {
       setFormError('The total is negative — check the discount amount against the subtotal.');
       return;
     }
+    if (!exchangeRate || exchangeRate <= 0) {
+      setFormError('Enter an exchange rate greater than zero.');
+      return;
+    }
 
+    // subtotal/total/totalPKR are NOT sent: the server recalculates them from
+    // items + taxRate + discountAmount + exchangeRate and always wins, so
+    // sending a client-computed figure was redundant at best and, since the
+    // API validates DTOs strictly, would now be rejected outright.
     const payload = {
       clientId: clientId || undefined,
       clientName: clientName.trim(),
@@ -127,9 +139,6 @@ export default function NewInvoicePage() {
       exchangeRate,
       taxRate,
       discountAmount,
-      subtotal,
-      total,
-      totalPKR,
       notes,
       status: targetStatus,
       items,
@@ -137,13 +146,13 @@ export default function NewInvoicePage() {
 
     try {
       await createInvoiceMutation.mutateAsync(payload);
+      // Raised before navigating away: the toast lives in a provider mounted
+      // above the router, so it survives the route change instead of
+      // unmounting with this page.
+      showSuccess(`Invoice ${invoiceNumber || ''} created.`.trim(), 'Invoice Created');
       router.push(`/invoices`);
     } catch (err: any) {
-      setToast({
-        type: 'error',
-        title: 'Could Not Create Invoice',
-        message: apiErrorMessage(err, 'Failed to create invoice.'),
-      });
+      showError(apiErrorMessage(err, 'Failed to create invoice.'), 'Could Not Create Invoice');
     }
   };
 
@@ -278,7 +287,7 @@ export default function NewInvoicePage() {
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-foreground">Exchange Rate (PKR / {currency})</label>
                   <span className="text-[11px] text-primary font-medium flex items-center gap-1">
-                    {isRateLoading ? "Fetching live rate..." : "Live Market Rate"}
+                    {isRateLoading ? "Fetching live rate..." : exchangeRate > 0 ? "Live Market Rate" : "Enter rate manually"}
                   </span>
                 </div>
                 <Input
@@ -286,7 +295,7 @@ export default function NewInvoicePage() {
                   step="0.01"
                   min="0"
                   value={exchangeRate || ""}
-                  placeholder="e.g. 280.50"
+                  placeholder="e.g. 280.00"
                   onChange={(e) => setExchangeRate(e.target.value === "" ? 0 : parseFloat(e.target.value))}
                   className="bg-background border-input text-primary font-mono font-bold"
                 />
@@ -449,15 +458,6 @@ export default function NewInvoicePage() {
           </Button>
         </div>
       </form>
-
-      {toast && (
-        <Toast
-          type={toast.type}
-          title={toast.title}
-          message={toast.message}
-          onClose={() => setToast(null)}
-        />
-      )}
     </div>
   );
 }

@@ -3,11 +3,42 @@ import { eq, and } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.module';
 import { income, expenses, taxRules } from '../../database/schema';
 import {
-  DEFAULT_TAX_YEAR,
+  getCurrentTaxYear,
   taxYearRange,
   incomeInTaxYear,
   expensesInTaxYear,
 } from '../../common/tax-year';
+import { round2 } from '../../common/money';
+
+export const EXPORT_INCOME_TYPES = {
+  pseb: 'IT_EXPORT_PSEB',
+  standard: 'IT_EXPORT_STANDARD',
+} as const;
+
+/** Slab rows live in `tax_rules` as incomeType = LOCAL_SLAB, threshold = lower bound. */
+export const LOCAL_SLAB_INCOME_TYPE = 'LOCAL_SLAB';
+
+/**
+ * Documented fallbacks, used only when the database has no rule for the year.
+ *
+ * These are NOT written back to `tax_rules`: `getExportTaxRate` used to INSERT a
+ * row from inside a GET, which meant any signed-in user mutated globally-shared
+ * configuration just by loading the tax page, and races produced duplicate rows
+ * that made the applied rate non-deterministic.
+ */
+const DEFAULT_EXPORT_RATES: Record<string, number> = {
+  [EXPORT_INCOME_TYPES.pseb]: 0.0025,
+  [EXPORT_INCOME_TYPES.standard]: 0.01,
+};
+
+/** Marginal slabs, ascending by lower bound. Override per year via `tax_rules`. */
+const DEFAULT_LOCAL_SLABS: Array<{ threshold: number; rate: number }> = [
+  { threshold: 0, rate: 0 },
+  { threshold: 600000, rate: 0.025 },
+  { threshold: 1200000, rate: 0.125 },
+  { threshold: 2400000, rate: 0.225 },
+  { threshold: 3600000, rate: 0.35 },
+];
 
 export interface TaxEstimateResult {
   taxYear: number;
@@ -26,6 +57,8 @@ export interface TaxEstimateResult {
   totalTaxLiabilityPKR: number;
   psebSavingsPKR: number;
   effectiveTaxRatePercentage: number;
+  /** True when no DB rule matched and the documented fallback was used. */
+  usingDefaultRates: boolean;
   fbrFilingDeadline: string;
   disclaimer: string;
 }
@@ -36,8 +69,8 @@ export class TaxService {
 
   async calculateTaxEstimate(
     userId: string,
-    isPsebRegistered = true,
-    taxYear: number = DEFAULT_TAX_YEAR,
+    isPsebRegistered = false,
+    taxYear: number = getCurrentTaxYear(),
   ): Promise<TaxEstimateResult> {
     const range = taxYearRange(taxYear);
 
@@ -62,40 +95,45 @@ export class TaxService {
       }
     });
 
-    const totalGrossIncomePKR = Math.round((exportIncomePKR + localIncomePKR) * 100) / 100;
-    const totalExpensesPKR =
-      Math.round(userExpenses.reduce((sum: number, exp: any) => sum + Number(exp.amountPKR || 0), 0) * 100) / 100;
-    const netProfitPKR = Math.max(0, Math.round((totalGrossIncomePKR - totalExpensesPKR) * 100) / 100);
+    exportIncomePKR = round2(exportIncomePKR);
+    localIncomePKR = round2(localIncomePKR);
 
-    const exportTaxRatePercentage = await this.getExportTaxRate(isPsebRegistered, range.label, taxYear);
-    const exportTaxLiabilityPKR = Math.round(exportIncomePKR * (exportTaxRatePercentage / 100) * 100) / 100;
+    const totalGrossIncomePKR = round2(exportIncomePKR + localIncomePKR);
+    const totalExpensesPKR = round2(
+      userExpenses.reduce((sum: number, exp: any) => sum + Number(exp.amountPKR || 0), 0),
+    );
+    const netProfitPKR = round2(totalGrossIncomePKR - totalExpensesPKR);
+
+    const exportRate = await this.getExportTaxRate(isPsebRegistered, range);
+    const exportTaxRatePercentage = exportRate.percentage;
+    const exportTaxLiabilityPKR = round2(exportIncomePKR * (exportTaxRatePercentage / 100));
 
     // Section 154A is a final tax on gross export proceeds, so business expenses are
     // only deductible against locally-sourced income taxed under the normal slabs.
     const localTaxableIncomePKR = Math.max(0, localIncomePKR - totalExpensesPKR);
-    const localTaxLiabilityPKR = Math.round(this.calculateLocalTaxSlabs(localTaxableIncomePKR) * 100) / 100;
+    const slabs = await this.getLocalSlabs(range);
+    const localTaxLiabilityPKR = round2(this.calculateLocalTaxSlabs(localTaxableIncomePKR, slabs.slabs));
 
-    const totalTaxLiabilityPKR = Math.round((exportTaxLiabilityPKR + localTaxLiabilityPKR) * 100) / 100;
+    const totalTaxLiabilityPKR = round2(exportTaxLiabilityPKR + localTaxLiabilityPKR);
 
-    const standardRate = await this.getExportTaxRate(false, range.label, taxYear);
+    const standardRate = await this.getExportTaxRate(false, range);
     const psebSavingsPKR = isPsebRegistered
-      ? Math.round(exportIncomePKR * ((standardRate - exportTaxRatePercentage) / 100) * 100) / 100
+      ? round2(exportIncomePKR * ((standardRate.percentage - exportTaxRatePercentage) / 100))
       : 0;
 
     const effectiveTaxRatePercentage =
-      totalGrossIncomePKR > 0
-        ? Math.round((totalTaxLiabilityPKR / totalGrossIncomePKR) * 100 * 100) / 100
-        : 0;
+      totalGrossIncomePKR > 0 ? round2((totalTaxLiabilityPKR / totalGrossIncomePKR) * 100) : 0;
 
     return {
-      taxYear,
+      taxYear: range.taxYear,
       taxYearLabel: range.label,
       periodStart: range.start.toISOString().split('T')[0],
       periodEnd: new Date(range.end.getTime() - 86400000).toISOString().split('T')[0],
       totalGrossIncomePKR,
-      exportIncomePKR: Math.round(exportIncomePKR * 100) / 100,
-      localIncomePKR: Math.round(localIncomePKR * 100) / 100,
+      exportIncomePKR,
+      localIncomePKR,
       totalExpensesPKR,
+      // A loss is reported as a loss; this used to be clamped to 0.
       netProfitPKR,
       isPsebRegistered,
       exportTaxRatePercentage,
@@ -104,57 +142,114 @@ export class TaxService {
       totalTaxLiabilityPKR,
       psebSavingsPKR,
       effectiveTaxRatePercentage,
-      fbrFilingDeadline: `September 30, ${taxYear}`,
+      usingDefaultRates: exportRate.isDefault || slabs.isDefault,
+      fbrFilingDeadline: `September 30, ${range.taxYear}`,
       disclaimer:
         'Estimates are calculated pursuant to Section 154A of the Income Tax Ordinance 2001. This report does not constitute legal or certified tax advice.',
     };
   }
 
-  private calculateLocalTaxSlabs(incomePKR: number): number {
-    if (incomePKR <= 600000) {
-      return 0;
-    } else if (incomePKR <= 1200000) {
-      return (incomePKR - 600000) * 0.025;
-    } else if (incomePKR <= 2400000) {
-      return 15000 + (incomePKR - 1200000) * 0.125;
-    } else if (incomePKR <= 3600000) {
-      return 165000 + (incomePKR - 2400000) * 0.225;
-    } else {
-      return 435000 + (incomePKR - 3600000) * 0.35;
+  /** Progressive marginal slabs — each bracket taxes only the income above its threshold. */
+  private calculateLocalTaxSlabs(incomePKR: number, slabs: Array<{ threshold: number; rate: number }>): number {
+    if (incomePKR <= 0 || slabs.length === 0) return 0;
+
+    const ordered = [...slabs].sort((a, b) => a.threshold - b.threshold);
+    let tax = 0;
+
+    for (let i = 0; i < ordered.length; i++) {
+      const { threshold, rate } = ordered[i];
+      if (incomePKR <= threshold) break;
+      const upperBound = i + 1 < ordered.length ? ordered[i + 1].threshold : Infinity;
+      const taxableInBracket = Math.min(incomePKR, upperBound) - threshold;
+      if (taxableInBracket > 0) tax += taxableInBracket * rate;
     }
+
+    return tax;
   }
 
-  private async getExportTaxRate(isPsebRegistered: boolean, yearLabel: string, taxYear: number): Promise<number> {
-    const incomeType = isPsebRegistered ? 'IT_EXPORT_PSEB' : 'IT_EXPORT_STANDARD';
+  /**
+   * Picks the rule in force for the tax year: latest `effectiveFrom` that has
+   * started by the year end, and not already superseded by `effectiveTo`.
+   * Previously this used `.limit(1)` with no ordering, so with duplicate rows
+   * present the applied rate varied between requests.
+   */
+  private async getExportTaxRate(
+    isPsebRegistered: boolean,
+    range: { label: string; end: Date },
+  ): Promise<{ percentage: number; isDefault: boolean }> {
+    const incomeType = isPsebRegistered ? EXPORT_INCOME_TYPES.pseb : EXPORT_INCOME_TYPES.standard;
 
-    let [rule] = await this.db
+    const rules = await this.db
       .select()
       .from(taxRules)
-      .where(and(eq(taxRules.taxYear, yearLabel), eq(taxRules.incomeType, incomeType)))
-      .limit(1);
+      .where(and(eq(taxRules.taxYear, range.label), eq(taxRules.incomeType, incomeType)));
+
+    const rule = this.pickEffectiveRule(rules, range.end);
 
     if (!rule) {
-      const rate = isPsebRegistered ? 0.0025 : 0.01;
-      [rule] = await this.db
-        .insert(taxRules)
-        .values({
-          taxYear: yearLabel,
-          incomeType,
-          rate: rate.toString(),
-          effectiveFrom: `${taxYear - 1}-07-01`,
-          notes: 'Auto-seeded default rate. Edit via the tax rules endpoints.',
-        })
-        .returning();
+      return { percentage: DEFAULT_EXPORT_RATES[incomeType] * 100, isDefault: true };
+    }
+    return { percentage: Number(rule.rate) * 100, isDefault: false };
+  }
+
+  private async getLocalSlabs(range: { label: string; end: Date }) {
+    const rows = await this.db
+      .select()
+      .from(taxRules)
+      .where(and(eq(taxRules.taxYear, range.label), eq(taxRules.incomeType, LOCAL_SLAB_INCOME_TYPE)));
+
+    const effective = rows.filter((r: any) => this.isRuleEffective(r, range.end));
+
+    if (effective.length === 0) {
+      return { slabs: DEFAULT_LOCAL_SLABS, isDefault: true };
     }
 
-    return Number(rule.rate) * 100;
+    return {
+      slabs: effective.map((r: any) => ({ threshold: Number(r.threshold || 0), rate: Number(r.rate) })),
+      isDefault: false,
+    };
+  }
+
+  private isRuleEffective(rule: any, asOf: Date): boolean {
+    const from = rule.effectiveFrom ? new Date(rule.effectiveFrom) : null;
+    const to = rule.effectiveTo ? new Date(rule.effectiveTo) : null;
+    if (from && from > asOf) return false;
+    if (to && to < asOf) return false;
+    return true;
+  }
+
+  private pickEffectiveRule(rules: any[], asOf: Date) {
+    return rules
+      .filter((r) => this.isRuleEffective(r, asOf))
+      .sort((a, b) => {
+        const af = a.effectiveFrom ? new Date(a.effectiveFrom).getTime() : 0;
+        const bf = b.effectiveFrom ? new Date(b.effectiveFrom).getTime() : 0;
+        if (bf !== af) return bf - af;
+        // Deterministic tiebreak so duplicates can never flip between requests.
+        return String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? ''));
+      })[0];
   }
 
   async listRules(yearLabel?: string) {
-    if (yearLabel) {
-      return this.db.select().from(taxRules).where(eq(taxRules.taxYear, yearLabel));
-    }
-    return this.db.select().from(taxRules);
+    const rows = yearLabel
+      ? await this.db.select().from(taxRules).where(eq(taxRules.taxYear, yearLabel))
+      : await this.db.select().from(taxRules);
+
+    return rows.sort(
+      (a: any, b: any) =>
+        String(a.taxYear).localeCompare(String(b.taxYear)) ||
+        String(a.incomeType).localeCompare(String(b.incomeType)) ||
+        Number(a.threshold || 0) - Number(b.threshold || 0),
+    );
+  }
+
+  /** The rates the engine falls back to when a year has no rules configured. */
+  getDefaultRates() {
+    return {
+      exportRates: Object.entries(DEFAULT_EXPORT_RATES).map(([incomeType, rate]) => ({ incomeType, rate })),
+      localSlabs: DEFAULT_LOCAL_SLABS,
+      note: 'Used only when no tax_rules row matches the requested tax year.',
+    };
   }
 
   async createRule(data: {
@@ -192,6 +287,12 @@ export class TaxService {
     if (data.effectiveTo !== undefined) updateData.effectiveTo = data.effectiveTo;
     if (data.notes !== undefined) updateData.notes = data.notes;
 
+    if (Object.keys(updateData).length === 0) {
+      const [current] = await this.db.select().from(taxRules).where(eq(taxRules.id, id)).limit(1);
+      return current;
+    }
+
+    updateData.updatedAt = new Date();
     const [rule] = await this.db.update(taxRules).set(updateData).where(eq(taxRules.id, id)).returning();
     return rule;
   }
@@ -210,8 +311,8 @@ export class TaxService {
     userId: string,
     hypotheticalIncomePKR: number,
     hypotheticalExpensesPKR = 0,
-    taxYear: number = DEFAULT_TAX_YEAR,
-    isPsebRegistered = true,
+    taxYear: number = getCurrentTaxYear(),
+    isPsebRegistered = false,
     hypotheticalLocalIncomePKR = 0,
   ) {
     const current = await this.calculateTaxEstimate(userId, isPsebRegistered, taxYear);
@@ -221,17 +322,18 @@ export class TaxService {
     const localIncome = Math.max(0, hypotheticalLocalIncomePKR);
     const expensesPKR = Math.max(0, hypotheticalExpensesPKR);
 
-    const exportTaxRatePercentage = await this.getExportTaxRate(isPsebRegistered, range.label, taxYear);
-    const exportTaxLiabilityPKR = Math.round(exportIncome * (exportTaxRatePercentage / 100) * 100) / 100;
+    const exportRate = await this.getExportTaxRate(isPsebRegistered, range);
+    const exportTaxLiabilityPKR = round2(exportIncome * (exportRate.percentage / 100));
 
     const localTaxableIncomePKR = Math.max(0, localIncome - expensesPKR);
-    const localTaxLiabilityPKR = Math.round(this.calculateLocalTaxSlabs(localTaxableIncomePKR) * 100) / 100;
+    const slabs = await this.getLocalSlabs(range);
+    const localTaxLiabilityPKR = round2(this.calculateLocalTaxSlabs(localTaxableIncomePKR, slabs.slabs));
 
-    const scenarioTaxPKR = Math.round((exportTaxLiabilityPKR + localTaxLiabilityPKR) * 100) / 100;
-    const scenarioGrossIncome = exportIncome + localIncome;
+    const scenarioTaxPKR = round2(exportTaxLiabilityPKR + localTaxLiabilityPKR);
+    const scenarioGrossIncome = round2(exportIncome + localIncome);
 
     return {
-      taxYear,
+      taxYear: range.taxYear,
       taxYearLabel: range.label,
       current: {
         incomePKR: current.totalGrossIncomePKR,
@@ -249,8 +351,9 @@ export class TaxService {
         localTaxPKR: localTaxLiabilityPKR,
         taxPKR: scenarioTaxPKR,
       },
-      differencePKR: Math.round((scenarioTaxPKR - current.totalTaxLiabilityPKR) * 100) / 100,
-      exportTaxRatePercentage,
+      differencePKR: round2(scenarioTaxPKR - current.totalTaxLiabilityPKR),
+      exportTaxRatePercentage: exportRate.percentage,
+      usingDefaultRates: exportRate.isDefault || slabs.isDefault,
       notes:
         'Export proceeds are taxed on gross value under Section 154A, so business expenses reduce only locally-sourced income.',
     };

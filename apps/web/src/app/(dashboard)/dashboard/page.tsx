@@ -6,7 +6,6 @@ import { DollarSign, FileText, ArrowUpRight, ArrowDownRight, Wallet, Plus, Trend
 import { formatPKR } from '@/lib/utils';
 import { useDashboardSummary } from '@/hooks/use-dashboard';
 import { useTransactions } from '@/hooks/use-transactions';
-import { useInvoices } from '@/hooks/use-invoices';
 import { useIncomeConsolidation } from '@/hooks/use-reports';
 import { useReadinessScore } from '@/hooks/use-filing';
 import { PieChart as PieIcon, ShieldAlert, ShieldCheck } from 'lucide-react';
@@ -15,7 +14,6 @@ import Link from 'next/link';
 export default function DashboardPage() {
   const { data: summary, isLoading: isSummaryLoading } = useDashboardSummary();
   const { data: transactions, isLoading: isTxLoading } = useTransactions({ pageSize: 5 });
-  const { data: invoices } = useInvoices();
   const { data: incomeConsolidation } = useIncomeConsolidation();
   const { data: readiness } = useReadinessScore();
 
@@ -41,7 +39,7 @@ export default function DashboardPage() {
         </div>
         <Link href="/invoices/new">
           <Button className="rounded-full shadow-sm px-6 font-semibold" size="lg">
-            <Plus className="h-4 w-4 mr-2" /> New Payment
+            <Plus className="h-4 w-4 mr-2" /> New Invoice
           </Button>
         </Link>
       </div>
@@ -56,7 +54,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  "Can I File?" Readiness Score
+                  &quot;Can I File?&quot; Readiness Score
                   <span className={`text-sm font-mono px-2 py-0.5 rounded-full ${readiness.score >= 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                     {readiness.score}%
                   </span>
@@ -170,11 +168,10 @@ export default function DashboardPage() {
         <div className="lg:col-span-2">
           <Card className="rounded-3xl border-border/50 shadow-sm overflow-hidden">
             <div className="flex items-center justify-between p-6 pb-2">
-              <h3 className="text-lg font-bold text-foreground">Transactions</h3>
-              <select className="text-sm font-medium bg-transparent text-foreground focus:outline-none cursor-pointer">
-                <option>Monthly</option>
-                <option>Weekly</option>
-              </select>
+              <h3 className="text-lg font-bold text-foreground">Recent Transactions</h3>
+              <Link href="/transactions" className="text-xs font-medium text-primary hover:underline">
+                View all
+              </Link>
             </div>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
@@ -185,21 +182,20 @@ export default function DashboardPage() {
                       <th className="px-6 py-4 font-medium">Type</th>
                       <th className="px-6 py-4 font-medium">Date</th>
                       <th className="px-6 py-4 font-medium text-right">Amount</th>
-                      <th className="px-6 py-4 font-medium text-center"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
                     {isTxLoading ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">Loading transactions...</td>
+                        <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">Loading transactions...</td>
                       </tr>
                     ) : recentTransactions.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">No recent transactions found.</td>
+                        <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">No recent transactions found.</td>
                       </tr>
                     ) : (
                       recentTransactions.map((tx) => (
-                        <tr key={tx.id} className="hover:bg-muted/30 transition-colors group">
+                        <tr key={tx.id} className="hover:bg-muted/30 transition-colors">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center text-primary font-bold text-xs shrink-0">
@@ -224,13 +220,6 @@ export default function DashboardPage() {
                                 - {formatPKR(tx.amount)}
                               </span>
                             )}
-                          </td>
-                          <td className="px-6 py-4 text-center">
-                            <Link href="/transactions">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                                <span className="text-lg leading-none pb-2">...</span>
-                              </Button>
-                            </Link>
                           </td>
                         </tr>
                       ))

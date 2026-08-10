@@ -5,19 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { 
-  BookOpen, 
-  Search, 
-  Sparkles, 
-  FileText, 
-  Users, 
-  DollarSign, 
-  Wallet, 
-  PieChart, 
-  ShieldCheck, 
-  Upload, 
-  Download,
-  HelpCircle,
+import {
+  BookOpen,
+  Search,
+  Sparkles,
+  FileText,
+  Wallet,
+  PieChart,
+  ShieldCheck,
+  Upload,
   ChevronRight,
   CheckCircle2
 } from "lucide-react";
@@ -127,10 +123,15 @@ export default function UserGuidePage() {
 
   const filteredSections = guideSections.filter(sec => {
     const matchesTab = activeTab === "all" || sec.category.toLowerCase().includes(activeTab);
-    const matchesSearch = sec.title.toLowerCase().includes(search.toLowerCase()) || 
+    const matchesSearch = sec.title.toLowerCase().includes(search.toLowerCase()) ||
                           sec.description.toLowerCase().includes(search.toLowerCase());
     return matchesTab && matchesSearch;
   });
+
+  // The category state and filter above existed with no control to drive
+  // them, so `activeTab` could never be anything but "all" — these pills are
+  // that missing control, not a new feature.
+  const categories = Array.from(new Set(guideSections.map((sec) => sec.category)));
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-12">
@@ -165,6 +166,33 @@ export default function UserGuidePage() {
           onChange={(e) => setSearch(e.target.value)} 
           className="pl-10 bg-background border-border text-foreground text-sm focus:border-primary"
         />
+      </div>
+
+      {/* Category Filter */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <button
+          onClick={() => setActiveTab("all")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            activeTab === "all"
+              ? "bg-primary text-primary-foreground shadow"
+              : "bg-card border border-border text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          All Topics
+        </button>
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setActiveTab(cat.toLowerCase())}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === cat.toLowerCase()
+                ? "bg-primary text-primary-foreground shadow"
+                : "bg-card border border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
       </div>
 
       {/* Quick Summary Cards */}

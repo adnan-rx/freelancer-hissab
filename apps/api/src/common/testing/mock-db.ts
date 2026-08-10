@@ -87,6 +87,12 @@ export function createMockDb(rowsByTable: Map<any, any[]> = new Map()) {
       deleted.push({ table });
       return { where: () => ({ returning: async () => rowsFor(table).slice(0, 1) }) };
     },
+    /**
+     * Services now wrap multi-table writes in `db.transaction(async (tx) => …)`.
+     * The mock has no rollback semantics — it just runs the callback against the
+     * same handle, which is enough for specs that assert what was written.
+     */
+    transaction: async (fn: (tx: any) => Promise<any>) => fn(db),
     _inserted: inserted,
     _updated: updated,
     _deleted: deleted,

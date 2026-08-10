@@ -1,10 +1,12 @@
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { UploadCloud, FileText, Trash2, Loader2, Image as ImageIcon } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth.store";
+import { useToast } from "@/providers/toast-provider";
+import { apiErrorMessage, unwrapApi } from "@/lib/utils";
 
 interface EvidenceVaultModalProps {
   isOpen: boolean;
@@ -18,14 +20,16 @@ export function EvidenceVaultModal({ isOpen, onClose, recordId, recordType, reco
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [openingDocId, setOpeningDocId] = useState<string | null>(null);
   const accessToken = useAuthStore((state) => state.accessToken);
+  const { showSuccess, showError } = useToast();
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ['evidence', recordType, recordId, accessToken],
     queryFn: async () => {
-      if (!recordId || !accessToken) return [];
       const res = await apiClient.get(`/evidence/${recordType}/${recordId}`);
-      return res.data?.data || res.data || [];
+      const list = unwrapApi<any[]>(res);
+      return Array.isArray(list) ? list : [];
     },
     enabled: isOpen && !!recordId && !!accessToken,
   });
@@ -36,19 +40,22 @@ export function EvidenceVaultModal({ isOpen, onClose, recordId, recordType, reco
       formData.append('file', file);
       formData.append('documentType', recordType === 'income' ? 'PRC' : 'RECEIPT');
       formData.append(recordType === 'income' ? 'incomeId' : 'expenseId', recordId!);
-      
+
       const res = await apiClient.post('/evidence/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      return res.data;
+      return unwrapApi(res);
     },
-    onSuccess: () => {
+    // Handled locally so the message can be paired with clearing the upload spinner.
+    meta: { suppressErrorToast: true },
+    onSuccess: (doc: any) => {
       queryClient.invalidateQueries({ queryKey: ['evidence', recordType, recordId] });
       setIsUploading(false);
+      showSuccess(`"${doc?.fileName || 'Document'}" uploaded.`, "Evidence Uploaded");
     },
-    onError: () => {
+    onError: (err) => {
       setIsUploading(false);
-      alert("Failed to upload file");
+      showError(apiErrorMessage(err, "Failed to upload file."), "Upload Failed");
     }
   });
 
@@ -56,15 +63,43 @@ export function EvidenceVaultModal({ isOpen, onClose, recordId, recordType, reco
     mutationFn: async (docId: string) => {
       await apiClient.delete(`/evidence/${docId}`);
     },
+    meta: { suppressErrorToast: true },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['evidence', recordType, recordId] });
-    }
+      showSuccess("Document removed.", "Evidence Deleted");
+    },
+    onError: (err) => {
+      // Previously had no onError at all — a failed delete left the document
+      // listed with no explanation.
+      showError(apiErrorMessage(err, "Failed to delete the document."), "Delete Failed");
+    },
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setIsUploading(true);
       uploadMutation.mutate(e.target.files[0]);
+    }
+  };
+
+  /**
+   * Evidence is stored as a private blob (see H-19), so it can no longer be
+   * linked to directly — a plain <a href> would hit an authenticated download
+   * route with no Authorization header and 401. Fetch it through the shared
+   * axios client instead and open the result as a local blob URL.
+   */
+  const handleView = async (doc: any) => {
+    setOpeningDocId(doc.id);
+    try {
+      const res = await apiClient.get(`/evidence/${doc.id}/download`, { responseType: 'blob' });
+      const blobUrl = URL.createObjectURL(res.data);
+      window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      // Give the new tab time to load the object URL before revoking it.
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch (err) {
+      showError(apiErrorMessage(err, "Failed to open the document."), "Could Not Open Document");
+    } finally {
+      setOpeningDocId(null);
     }
   };
 
@@ -82,15 +117,15 @@ export function EvidenceVaultModal({ isOpen, onClose, recordId, recordType, reco
 
         <div className="p-6 space-y-6">
           {/* Upload Area */}
-          <div 
+          <div
             className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-colors cursor-pointer
               ${isUploading ? 'border-primary/50 bg-primary/5' : 'border-border/60 hover:border-primary/50 hover:bg-muted/30'}`}
             onClick={() => !isUploading && fileInputRef.current?.click()}
           >
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
               accept=".pdf,.jpg,.jpeg,.png"
               onChange={handleFileChange}
             />
@@ -113,7 +148,7 @@ export function EvidenceVaultModal({ isOpen, onClose, recordId, recordType, reco
           {/* Document List */}
           <div>
             <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">Attached Documents</h4>
-            
+
             {isLoading ? (
               <div className="text-center py-4 text-sm text-muted-foreground">Loading documents...</div>
             ) : documents.length === 0 ? (
@@ -129,16 +164,21 @@ export function EvidenceVaultModal({ isOpen, onClose, recordId, recordType, reco
                         {doc.fileType.includes('image') ? <ImageIcon className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
                       </div>
                       <div className="min-w-0">
-                        <a href={doc.blobUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-foreground hover:text-primary truncate block">
-                          {doc.fileName}
-                        </a>
+                        <button
+                          type="button"
+                          onClick={() => handleView(doc)}
+                          disabled={openingDocId === doc.id}
+                          className="text-sm font-semibold text-foreground hover:text-primary truncate block text-left disabled:opacity-60"
+                        >
+                          {openingDocId === doc.id ? "Opening…" : doc.fileName}
+                        </button>
                         <p className="text-xs text-muted-foreground">
                           {Math.round(doc.fileSize / 1024)} KB • {new Date(doc.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       size="icon"
                       className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
                       onClick={() => deleteMutation.mutate(doc.id)}
