@@ -84,3 +84,70 @@ export class UpdateInvoiceStatusDto {
   @IsEnum(INVOICE_STATUSES, { message: `status must be one of: ${INVOICE_STATUSES.join(', ')}` })
   status!: string;
 }
+
+export class UpdateInvoiceDto {
+  @IsString()
+  @IsOptional()
+  clientId?: string;
+
+  @IsString()
+  @IsOptional()
+  clientName?: string;
+
+  @IsString()
+  @IsOptional()
+  clientEmail?: string;
+
+  @IsString()
+  @IsOptional()
+  invoiceNumber?: string;
+
+  @Type(() => Date)
+  @IsOptional()
+  dueDate?: Date;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
+  @IsNumber()
+  @IsOptional()
+  exchangeRate?: number;
+
+  @IsNumber()
+  @IsOptional()
+  taxRate?: number;
+
+  @IsNumber()
+  @IsOptional()
+  discountAmount?: number;
+
+  @IsNumber()
+  @IsOptional()
+  subtotal?: number;
+
+  @IsNumber()
+  @IsOptional()
+  total?: number;
+
+  @IsNumber()
+  @IsOptional()
+  totalPKR?: number;
+
+  @IsString()
+  @IsOptional()
+  @IsEnum(INVOICE_STATUSES, { message: `status must be one of: ${INVOICE_STATUSES.join(', ')}` })
+  status?: string;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
+
+  @IsArray()
+  @IsOptional()
+  @ArrayMinSize(1, { message: 'An invoice must contain at least one line item' })
+  @ValidateNested({ each: true })
+  @Type(() => CreateInvoiceItemDto)
+  items?: CreateInvoiceItemDto[];
+}
+

@@ -95,7 +95,7 @@ export default function NewInvoicePage() {
   const total = subtotal + taxAmount - Number(discountAmount || 0);
   const totalPKR = total * Number(exchangeRate || 280.5);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, targetStatus: string = 'sent') => {
     e.preventDefault();
     setToast(null);
     setFormError(null);
@@ -131,6 +131,7 @@ export default function NewInvoicePage() {
       total,
       totalPKR,
       notes,
+      status: targetStatus,
       items,
     };
 
@@ -149,7 +150,7 @@ export default function NewInvoicePage() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
       {/* Top Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
             <Link href="/invoices"><ArrowLeft className="h-5 w-5" /></Link>
@@ -160,9 +161,19 @@ export default function NewInvoicePage() {
           </div>
         </div>
 
-        <Button onClick={handleSubmit} disabled={createInvoiceMutation.isPending}>
-          <Save className="mr-2 h-4 w-4" /> Save & Send Invoice
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={(e) => handleSubmit(e, 'draft')}
+            disabled={createInvoiceMutation.isPending}
+          >
+            Save as Draft
+          </Button>
+          <Button onClick={(e) => handleSubmit(e, 'sent')} disabled={createInvoiceMutation.isPending}>
+            <Save className="mr-2 h-4 w-4" /> Save & Send Invoice
+          </Button>
+        </div>
       </div>
 
       {formError && (
@@ -417,16 +428,24 @@ export default function NewInvoicePage() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-end gap-4">
+        <div className="flex justify-end gap-3">
           <Button asChild type="button" variant="outline">
             <Link href="/invoices">Cancel</Link>
           </Button>
           <Button
+            type="button"
+            variant="outline"
+            onClick={(e) => handleSubmit(e, 'draft')}
+            disabled={createInvoiceMutation.isPending}
+          >
+            Save as Draft
+          </Button>
+          <Button
             type="submit"
             disabled={createInvoiceMutation.isPending}
-            className="px-8 h-11"
+            className="px-8"
           >
-            {createInvoiceMutation.isPending ? "Creating Invoice..." : "Save & Generate Invoice"}
+            {createInvoiceMutation.isPending ? "Creating Invoice..." : "Save & Send Invoice"}
           </Button>
         </div>
       </form>

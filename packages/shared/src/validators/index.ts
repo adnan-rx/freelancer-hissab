@@ -41,6 +41,21 @@ export const createInvoiceSchema = z.object({
   items: z.array(invoiceItemSchema).min(1, 'At least one item is required'),
 });
 
+export const updateInvoiceSchema = z.object({
+  clientId: z.string().optional(),
+  clientName: z.string().optional(),
+  clientEmail: z.string().email().optional().nullable(),
+  invoiceNumber: z.string().optional(),
+  dueDate: z.string().refine((val) => !isNaN(Date.parse(val)), 'Invalid date format').optional().nullable(),
+  currency: z.enum(['PKR', 'USD', 'EUR', 'GBP', 'AED', 'SAR', 'CAD', 'AUD']).optional(),
+  exchangeRate: z.number().min(0).optional(),
+  taxRate: z.number().min(0).optional(),
+  discountAmount: z.number().min(0).optional(),
+  status: z.enum(['draft', 'sent', 'viewed', 'paid', 'overdue', 'cancelled']).optional(),
+  notes: z.string().optional().nullable(),
+  items: z.array(invoiceItemSchema).min(1, 'At least one item is required').optional(),
+});
+
 export const createIncomeSchema = z.object({
   amount: z.number().min(0.01, 'Amount must be greater than 0'),
   currency: z.enum(['PKR', 'USD', 'EUR', 'GBP', 'AED', 'SAR', 'CAD', 'AUD']),

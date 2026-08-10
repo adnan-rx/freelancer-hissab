@@ -69,6 +69,23 @@ export function useDeleteInvoice() {
   });
 }
 
+export function useUpdateInvoice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: any }) => {
+      const res = await apiClient.patch(`/invoices/${id}`, payload);
+      const resData = res.data;
+      return resData?.data?.data || resData?.data || resData;
+    },
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["invoice", id] });
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["filing-readiness"] });
+    },
+  });
+}
+
 export function useUpdateInvoiceStatus() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -85,3 +102,4 @@ export function useUpdateInvoiceStatus() {
     },
   });
 }
+

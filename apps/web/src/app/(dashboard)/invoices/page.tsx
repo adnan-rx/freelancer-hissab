@@ -12,7 +12,7 @@ import { PaginationBar } from '@/components/ui/pagination-bar';
 import { BulkActionsBar } from '@/components/ui/bulk-actions-bar';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { Toast } from '@/components/ui/toast';
-import { Plus, Search, Eye, FileText, CheckCircle2, Clock, DollarSign, Trash2 } from 'lucide-react';
+import { Plus, Search, Eye, FileText, CheckCircle2, Clock, DollarSign, Trash2, Pencil, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { formatPKR, formatUSD, apiErrorMessage } from '@/lib/utils';
 import { useInvoices, useDeleteInvoice } from '@/hooks/use-invoices';
@@ -139,7 +139,7 @@ export default function InvoicesPage() {
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         {/* Status Filter Tabs */}
         <div className="flex items-center gap-1.5 p-1 bg-card border border-border rounded-xl overflow-x-auto shadow-sm">
-          {["all", "draft", "sent", "paid", "overdue"].map((st) => (
+          {["all", "draft", "sent", "paid", "overdue", "cancelled"].map((st) => (
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
@@ -205,64 +205,90 @@ export default function InvoicesPage() {
                 <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No invoices match your filter criteria.</TableCell>
               </TableRow>
             ) : (
-              table.paged.map((inv: any) => (
-                <TableRow key={inv.id} className="transition-colors" data-state={table.selected.has(inv.id) ? "selected" : undefined}>
-                  <TableCell>
-                    <Checkbox
-                      checked={table.selected.has(inv.id)}
-                      onChange={() => table.toggleSelect(inv.id)}
-                      aria-label={`Select ${inv.invoiceNumber}`}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium text-primary">
-                    <Link href={`/invoices/${inv.id}`} className="hover:underline flex items-center gap-1.5 font-mono">
-                      <FileText className="h-4 w-4" /> {inv.invoiceNumber}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-foreground font-medium">
-                    {inv.client?.name || inv.clientName || "Direct Client"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-xs font-mono">{inv.dueDate || "—"}</TableCell>
-                  <TableCell className="font-medium text-foreground">
-                    {inv.currency === "USD" ? formatUSD(inv.total) : `${inv.currency || 'USD'} ${Number(inv.total || 0).toFixed(2)}`}
-                  </TableCell>
-                  <TableCell className="font-bold text-primary font-mono">
-                    {formatPKR(inv.totalPKR || 0)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={`capitalize ${
-                        inv.status === "paid"
-                          ? "border-primary/30 text-primary bg-primary/10"
-                          : inv.status === "overdue"
-                          ? "border-destructive/30 text-destructive bg-destructive/10"
-                          : "border-blue-500/30 text-blue-500 bg-blue-500/10"
-                      }`}
-                    >
-                      {inv.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button asChild size="sm" variant="ghost" className="text-muted-foreground hover:text-primary hover:bg-muted">
-                        <Link href={`/invoices/${inv.id}`}>
-                          <Eye className="mr-1.5 h-3.5 w-3.5" /> Export PDF
-                        </Link>
-                      </Button>
-                      <Button
-                        onClick={() => setDeleteTarget({ id: inv.id, invoiceNumber: inv.invoiceNumber })}
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-muted"
-                        title="Delete Invoice"
+              table.paged.map((inv: any) => {
+                const canEdit = inv.status !== 'paid' && inv.status !== 'cancelled';
+                return (
+                  <TableRow key={inv.id} className="transition-colors" data-state={table.selected.has(inv.id) ? "selected" : undefined}>
+                    <TableCell>
+                      <Checkbox
+                        checked={table.selected.has(inv.id)}
+                        onChange={() => table.toggleSelect(inv.id)}
+                        aria-label={`Select ${inv.invoiceNumber}`}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium text-primary">
+                      <Link href={`/invoices/${inv.id}`} className="hover:underline flex items-center gap-1.5 font-mono">
+                        <FileText className="h-4 w-4" /> {inv.invoiceNumber}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-foreground font-medium">
+                      {inv.client?.name || inv.clientName || "Direct Client"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs font-mono">{inv.dueDate || "—"}</TableCell>
+                    <TableCell className="font-medium text-foreground">
+                      {inv.currency === "USD" ? formatUSD(inv.total) : `${inv.currency || 'USD'} ${Number(inv.total || 0).toFixed(2)}`}
+                    </TableCell>
+                    <TableCell className="font-bold text-primary font-mono">
+                      {formatPKR(inv.totalPKR || 0)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={`capitalize ${
+                          inv.status === "paid"
+                            ? "border-primary/30 text-primary bg-primary/10"
+                            : inv.status === "overdue"
+                            ? "border-destructive/30 text-destructive bg-destructive/10"
+                            : inv.status === "cancelled"
+                            ? "border-muted-foreground/30 text-muted-foreground bg-muted"
+                            : "border-blue-500/30 text-blue-500 bg-blue-500/10"
+                        }`}
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+                        {inv.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {canEdit ? (
+                          <Button asChild size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-muted" title="Edit Invoice">
+                            <Link href={`/invoices/${inv.id}/edit`}>
+                              <Pencil className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        ) : (
+                          <Button
+                            disabled
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 text-muted-foreground/40 cursor-not-allowed opacity-60"
+                            title={
+                              inv.status === 'paid'
+                                ? "Paid invoices are legally locked to protect tax compliance & PRC records."
+                                : "Cancelled invoices are archived and cannot be edited."
+                            }
+                          >
+                            <Lock className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        <Button asChild size="sm" variant="ghost" className="text-muted-foreground hover:text-primary hover:bg-muted">
+                          <Link href={`/invoices/${inv.id}`}>
+                            <Eye className="mr-1.5 h-3.5 w-3.5" /> Export PDF
+                          </Link>
+                        </Button>
+                        <Button
+                          onClick={() => setDeleteTarget({ id: inv.id, invoiceNumber: inv.invoiceNumber })}
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-muted"
+                          title="Delete Invoice"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

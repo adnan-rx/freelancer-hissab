@@ -4,7 +4,7 @@ import { use, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Printer, CheckCircle2, ArrowLeft, Landmark, AlertTriangle, Loader2 } from "lucide-react";
+import { Printer, CheckCircle2, ArrowLeft, Landmark, AlertTriangle, Loader2, Pencil, Lock } from "lucide-react";
 import Link from "next/link";
 import { formatPKR, formatUSD, apiErrorMessage } from "@/lib/utils";
 import { useInvoice, useUpdateInvoiceStatus } from "@/hooks/use-invoices";
@@ -87,6 +87,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
   };
 
   const currentStatus = invoice.status;
+  const canEdit = currentStatus !== "paid" && currentStatus !== "cancelled";
   const bankName = profile?.bankName;
   const iban = profile?.iban;
   const businessName = profile?.businessName || user?.businessName;
@@ -107,18 +108,33 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                 className={`capitalize text-xs font-semibold ${
                   currentStatus === "paid"
                     ? "border-primary/40 text-primary bg-primary/10"
+                    : currentStatus === "cancelled"
+                    ? "border-muted-foreground/40 text-muted-foreground bg-muted"
                     : "border-blue-500/40 text-blue-500 bg-blue-500/10"
                 }`}
               >
                 {currentStatus}
               </Badge>
+              {!canEdit && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Lock className="h-3 w-3 text-muted-foreground/70" />
+                  {currentStatus === "paid" ? "Locked (Paid)" : "Archived (Cancelled)"}
+                </span>
+              )}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Issued to {invoice.clientName}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          {currentStatus !== "paid" && (
+        <div className="flex items-center gap-3 flex-wrap">
+          {canEdit && (
+            <Button asChild variant="outline" className="border-border hover:bg-muted text-foreground">
+              <Link href={`/invoices/${invoice.id}/edit`}>
+                <Pencil className="mr-2 h-4 w-4" /> Edit Invoice
+              </Link>
+            </Button>
+          )}
+          {currentStatus !== "paid" && currentStatus !== "cancelled" && (
             <Button
               onClick={handleMarkAsPaid}
               variant="outline"

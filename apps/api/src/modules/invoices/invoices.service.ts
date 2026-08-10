@@ -2,7 +2,7 @@ import { Injectable, Inject, NotFoundException, ConflictException, BadRequestExc
 import { eq, and, or, ilike } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.module';
 import { invoices, invoiceItems, clients, users } from '../../database/schema';
-import { CreateInvoiceDto } from './dto/invoice.dto';
+import { CreateInvoiceDto, UpdateInvoiceDto } from './dto/invoice.dto';
 
 @Injectable()
 export class InvoicesService {
@@ -50,7 +50,11 @@ export class InvoicesService {
       throw new NotFoundException('Invoice not found');
     }
 
-    const items = await this.db.select().from(invoiceItems).where(eq(invoiceItems.invoiceId, id));
+    const items = await this.db
+      .select()
+      .from(invoiceItems)
+      .where(eq(invoiceItems.invoiceId, id))
+      .orderBy(invoiceItems.sortOrder);
 
     return { ...invoiceResult[0].invoice, client: invoiceResult[0].client, items };
   }
@@ -114,7 +118,13 @@ export class InvoicesService {
 
     let subtotal = 0;
     dto.items.forEach((item) => {
-      subtotal += item.quantity * item.rate;
+      if (Number(item.quantity) <= 0) {
+        throw new BadRequestException('Item quantity must be greater than zero');
+      }
+      if (Number(item.rate) < 0) {
+        throw new BadRequestException('Item rate cannot be negative');
+      }
+      subtotal += Number(item.quantity) * Number(item.rate);
     });
 
     const taxAmount = subtotal * ((dto.taxRate || 0) / 100);
@@ -126,6 +136,7 @@ export class InvoicesService {
 
     const exchangeRate = dto.exchangeRate || 280;
     const totalPKR = total * exchangeRate;
+    const initialStatus = dto.status === 'draft' ? 'draft' : 'sent';
 
     const [invoice] = await this.db.insert(invoices).values({
       userId,
@@ -141,21 +152,154 @@ export class InvoicesService {
       total: total.toString(),
       totalPKR: totalPKR.toString(),
       notes: dto.notes,
-      status: 'sent',
+      status: initialStatus,
     }).returning();
 
     if (dto.items && dto.items.length > 0) {
-      const itemsToInsert = dto.items.map((item) => ({
+      const itemsToInsert = dto.items.map((item, idx) => ({
         invoiceId: invoice.id,
         description: item.description,
         quantity: item.quantity.toString(),
         rate: item.rate.toString(),
-        amount: (item.quantity * item.rate).toString(),
+        amount: (Number(item.quantity) * Number(item.rate)).toString(),
+        sortOrder: idx,
       }));
       await this.db.insert(invoiceItems).values(itemsToInsert);
     }
 
-    return invoice;
+    return this.findOne(userId, invoice.id);
+  }
+
+  async update(userId: string, id: string, dto: UpdateInvoiceDto) {
+    const existing = await this.findOne(userId, id);
+
+    if (existing.status === 'paid') {
+      throw new BadRequestException('Paid invoices are legally locked to maintain tax compliance & PRC audit records and cannot be edited.');
+    }
+
+    if (existing.status === 'cancelled') {
+      throw new BadRequestException('Cancelled invoices are archived for audit trail purposes and cannot be edited.');
+    }
+
+    const isDraft = existing.status === 'draft';
+
+    let targetClientId = existing.clientId;
+    if (isDraft && dto.clientId && dto.clientId !== existing.clientId) {
+      targetClientId = dto.clientId;
+    }
+
+    let invoiceNumber = existing.invoiceNumber;
+    if (isDraft && dto.invoiceNumber && dto.invoiceNumber.trim() !== existing.invoiceNumber) {
+      const trimmed = dto.invoiceNumber.trim();
+      const existingWithSameNumber = await this.db
+        .select({ id: invoices.id })
+        .from(invoices)
+        .where(and(eq(invoices.userId, userId), eq(invoices.invoiceNumber, trimmed)))
+        .limit(1);
+
+      if (existingWithSameNumber.length > 0 && existingWithSameNumber[0].id !== id) {
+        throw new ConflictException(`Invoice number "${trimmed}" already exists. Choose a different number.`);
+      }
+      invoiceNumber = trimmed;
+    }
+
+    const currency = dto.currency || existing.currency || 'USD';
+    const exchangeRate = dto.exchangeRate !== undefined ? Number(dto.exchangeRate) : Number(existing.exchangeRate || 1);
+    const taxRate = dto.taxRate !== undefined ? Number(dto.taxRate) : Number(existing.taxRate || 0);
+    const discountAmount = dto.discountAmount !== undefined ? Number(dto.discountAmount) : Number(existing.discountAmount || 0);
+    const dueDate = dto.dueDate !== undefined
+      ? (dto.dueDate ? (typeof dto.dueDate === 'string' ? dto.dueDate : (dto.dueDate as any).toISOString().split('T')[0]) : null)
+      : (existing.dueDate || null);
+    const notes = dto.notes !== undefined ? dto.notes : existing.notes;
+
+    // Status transition rules
+    let newStatus = existing.status;
+    if (dto.status) {
+      if (dto.status === 'paid') {
+        throw new BadRequestException('Use the status update endpoint or record income remittance to mark an invoice as paid.');
+      }
+      if (!isDraft && dto.status === 'draft') {
+        throw new BadRequestException('Issued invoices cannot be reverted to draft status.');
+      }
+      newStatus = dto.status as any;
+    }
+
+    // Line items & recalculation
+    if (dto.items && dto.items.length === 0) {
+      throw new BadRequestException('An invoice must contain at least one line item');
+    }
+
+    const itemsToProcess: Array<{ description: string; quantity: number; rate: number }> =
+      dto.items && dto.items.length > 0
+        ? dto.items.map((it) => ({
+            description: it.description,
+            quantity: Number(it.quantity),
+            rate: Number(it.rate),
+          }))
+        : (existing.items || []).map((it: any) => ({
+            description: it.description,
+            quantity: Number(it.quantity),
+            rate: Number(it.rate),
+          }));
+
+    if (itemsToProcess.length === 0) {
+      throw new BadRequestException('An invoice must contain at least one line item');
+    }
+
+    let subtotal = 0;
+    itemsToProcess.forEach((item) => {
+      if (Number(item.quantity) <= 0) {
+        throw new BadRequestException('Item quantity must be greater than zero');
+      }
+      if (Number(item.rate) < 0) {
+        throw new BadRequestException('Item rate cannot be negative');
+      }
+      subtotal += Number(item.quantity) * Number(item.rate);
+    });
+
+    const taxAmount = subtotal * (taxRate / 100);
+    const total = subtotal + taxAmount - discountAmount;
+
+    if (total < 0) {
+      throw new BadRequestException('Invoice total cannot be negative — check the discount amount');
+    }
+
+    const totalPKR = total * exchangeRate;
+
+    await this.db
+      .update(invoices)
+      .set({
+        clientId: targetClientId,
+        invoiceNumber,
+        dueDate,
+        currency,
+        exchangeRate: exchangeRate.toString(),
+        subtotal: subtotal.toString(),
+        taxRate: taxRate.toString(),
+        taxAmount: taxAmount.toString(),
+        discountAmount: discountAmount.toString(),
+        total: total.toString(),
+        totalPKR: totalPKR.toString(),
+        status: newStatus,
+        notes,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(invoices.id, id), eq(invoices.userId, userId)));
+
+    if (dto.items && dto.items.length > 0) {
+      await this.db.delete(invoiceItems).where(eq(invoiceItems.invoiceId, id));
+      const itemsToInsert = dto.items.map((item, idx) => ({
+        invoiceId: id,
+        description: item.description,
+        quantity: item.quantity.toString(),
+        rate: item.rate.toString(),
+        amount: (Number(item.quantity) * Number(item.rate)).toString(),
+        sortOrder: idx,
+      }));
+      await this.db.insert(invoiceItems).values(itemsToInsert);
+    }
+
+    return this.findOne(userId, id);
   }
 
   async updateStatus(userId: string, id: string, status: string) {
@@ -178,7 +322,7 @@ export class InvoicesService {
 
   async delete(userId: string, id: string) {
     await this.db.delete(invoiceItems).where(eq(invoiceItems.invoiceId, id));
-    
+
     const result = await this.db
       .delete(invoices)
       .where(and(eq(invoices.id, id), eq(invoices.userId, userId)))
@@ -190,3 +334,4 @@ export class InvoicesService {
     return result[0];
   }
 }
+
