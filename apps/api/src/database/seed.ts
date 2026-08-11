@@ -5,7 +5,7 @@ import {
 } from './schema';
 import { eq, inArray } from 'drizzle-orm';
 import * as bcrypt from 'bcrypt';
-import { getCurrentTaxYear, taxYearRange } from '../common/tax-year';
+import { getCurrentTaxYear, taxYearRange, incomeInTaxYear, expensesInTaxYear } from '../common/tax-year';
 
 /**
  * Demo fixtures for local development only.
@@ -258,12 +258,7 @@ async function seed() {
 
   const expenseRows = await db.insert(expenses).values(expenseValues).returning();
 
-  // 7. Wealth statement, assets and liabilities — current and previous tax year.
-  await db.insert(wealthStatements).values([
-    { userId: user.id, taxYear: String(TAX_YEAR), openingWealthPKR: '4850000.00', otherAdjustmentsPKR: '-120000.00' },
-    { userId: user.id, taxYear: PREV_YEAR, openingWealthPKR: '3100000.00', otherAdjustmentsPKR: '0.00' },
-  ]);
-
+  // 7. Assets, liabilities and the wealth statement — current and previous tax year.
   const assetSpecs = [
     { name: 'Meezan Bank Current Account', type: 'CASH', description: 'Primary business account (PKR)', currency: 'PKR', balance: '1850000.00', valuePKR: '1850000.00' },
     { name: 'Payoneer USD Balance', type: 'CASH', description: 'Platform payout balance held in USD', currency: 'USD', balance: '3200.00', valuePKR: '896000.00' },
@@ -273,7 +268,7 @@ async function seed() {
     { name: 'Gold (tola x 12)', type: 'OTHER', description: 'Held as savings', currency: 'PKR', balance: '0.00', valuePKR: '3600000.00' },
   ];
 
-  await db.insert(assets).values([
+  const assetValues = [
     ...assetSpecs.map((a) => ({ userId: user.id, taxYear: String(TAX_YEAR), ...a })),
     // Previous year snapshot: same holdings, lower valuations.
     ...assetSpecs.slice(0, 4).map((a) => ({
@@ -282,13 +277,70 @@ async function seed() {
       ...a,
       valuePKR: (Number(a.valuePKR) * 0.85).toFixed(2),
     })),
+  ];
+
+  await db.insert(assets).values(assetValues);
+
+  const liabilitySpecs = [
+    { taxYear: String(TAX_YEAR), description: 'Car loan — Meezan Bank (remaining principal)', amountPKR: '1850000.00' },
+    { taxYear: String(TAX_YEAR), description: 'Credit card outstanding balance', amountPKR: '145000.00' },
+    { taxYear: PREV_YEAR, description: 'Car loan — Meezan Bank (remaining principal)', amountPKR: '2600000.00' },
+  ];
+
+  await db.insert(liabilities).values(liabilitySpecs.map((l) => ({ userId: user.id, ...l })));
+
+  /**
+   * Opening wealth is derived, never hardcoded.
+   *
+   * The reconciliation checks `opening + income - expenses + adjustments` against
+   * `assets - liabilities` for the SAME tax year. Assets are lifetime holdings
+   * (property, car, gold) while income is only the months elapsed in this tax
+   * year, so any fixed opening figure shows a red "doesn't reconcile" banner that
+   * drifts further every month. Solving for opening keeps the demo green on any
+   * run date. Mirrors WealthService.getReconciliation.
+   */
+  const openingFor = (year: number, declaredNetPKR: number, adjustmentsPKR: number) => {
+    const range = taxYearRange(year);
+    const inc = incomeInTaxYear(incomeRows, range).reduce((s, r: any) => s + Number(r.amountPKR || 0), 0);
+    const exp = expensesInTaxYear(expenseRows, range).reduce((s, r: any) => s + Number(r.amountPKR || 0), 0);
+    return declaredNetPKR - inc + exp - adjustmentsPKR;
+  };
+
+  const netFor = (year: string) =>
+    assetValues.filter((a) => a.taxYear === year).reduce((s, a) => s + Number(a.valuePKR), 0) -
+    liabilitySpecs.filter((l) => l.taxYear === year).reduce((s, l) => s + Number(l.amountPKR), 0);
+
+  const CURRENT_ADJUSTMENTS = -120000; // e.g. personal draws not booked as an expense
+  await db.insert(wealthStatements).values([
+    {
+      userId: user.id,
+      taxYear: String(TAX_YEAR),
+      openingWealthPKR: openingFor(TAX_YEAR, netFor(String(TAX_YEAR)), CURRENT_ADJUSTMENTS).toFixed(2),
+      otherAdjustmentsPKR: CURRENT_ADJUSTMENTS.toFixed(2),
+    },
+    {
+      userId: user.id,
+      taxYear: PREV_YEAR,
+      openingWealthPKR: openingFor(TAX_YEAR - 1, netFor(PREV_YEAR), 0).toFixed(2),
+      otherAdjustmentsPKR: '0.00',
+    },
   ]);
 
-  await db.insert(liabilities).values([
-    { userId: user.id, taxYear: String(TAX_YEAR), description: 'Car loan — Meezan Bank (remaining principal)', amountPKR: '1850000.00' },
-    { userId: user.id, taxYear: String(TAX_YEAR), description: 'Credit card outstanding balance', amountPKR: '145000.00' },
-    { userId: user.id, taxYear: PREV_YEAR, description: 'Car loan — Meezan Bank (remaining principal)', amountPKR: '2600000.00' },
-  ]);
+  // Re-derive the reconciliation the way the API does and fail loudly if the
+  // fixtures would land the user on a red "wealth doesn't reconcile" banner.
+  const TOLERANCE = Number(process.env.WEALTH_RECONCILE_TOLERANCE_PKR || 50000);
+  for (const [year, adjustments] of [[TAX_YEAR, CURRENT_ADJUSTMENTS], [TAX_YEAR - 1, 0]] as const) {
+    const range = taxYearRange(year);
+    const declared = netFor(String(year));
+    const opening = openingFor(year, declared, adjustments);
+    const inc = incomeInTaxYear(incomeRows, range).reduce((s, r: any) => s + Number(r.amountPKR || 0), 0);
+    const exp = expensesInTaxYear(expenseRows, range).reduce((s, r: any) => s + Number(r.amountPKR || 0), 0);
+    const difference = declared - (opening + inc - exp + adjustments);
+    if (Math.abs(difference) > TOLERANCE) {
+      throw new Error(`Wealth for ${range.label} is out by ${difference.toFixed(2)} PKR (tolerance ${TOLERANCE}).`);
+    }
+    console.log(`  wealth ${range.label}: opening ${opening.toFixed(2)}, declared ${declared.toFixed(2)}, out by ${difference.toFixed(2)} — reconciles`);
+  }
 
   // 8. Evidence vault — PRCs against income, receipts against expenses.
   // ponytail: blobUrl points at a placeholder host; upload real files through the
