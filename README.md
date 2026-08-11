@@ -9,7 +9,7 @@
 ### 1. Install Dependencies
 ```bash
 npm install
-```
+``` 
 
 ### 2. Configure Environment Variables (`apps/api/.env`)
 Create or update `apps/api/.env`:
