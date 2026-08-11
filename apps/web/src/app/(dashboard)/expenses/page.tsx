@@ -1,24 +1,29 @@
 "use client";
 
 import { useState } from 'react';
+import { Paperclip, Pencil, Plus, Trash2, Wallet } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { PaginationBar } from '@/components/ui/pagination-bar';
 import { BulkActionsBar } from '@/components/ui/bulk-actions-bar';
-import { Plus, Pencil, Trash2, Wallet } from 'lucide-react';
-import { formatPKR, apiErrorMessage } from '@/lib/utils';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
+import { EmptyState, ErrorState } from '@/components/ui/empty-state';
+import { TableSkeleton } from '@/components/ui/skeleton';
+import { DataToolbar, ToolbarFilter } from '@/components/ui/data-toolbar';
+import { formatPKR, formatDate, apiErrorMessage } from '@/lib/utils';
 import { useExpenses, useDeleteExpense, EXPENSE_CATEGORIES } from '@/hooks/use-expenses';
 import { useDataTable } from '@/hooks/use-data-table';
 import { AddExpenseModal } from '@/components/features/add-expense-modal';
 import { EvidenceVaultModal } from '@/components/features/evidence-vault-modal';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 import { useToast } from '@/providers/toast-provider';
-
-const PAGE_SIZE = 10;
 
 export default function ExpensesPage() {
   const { data: expensesList = [], isLoading, isError, error } = useExpenses();
@@ -40,7 +45,6 @@ export default function ExpensesPage() {
 
   const table = useDataTable(displayExpenses, {
     getId: (exp: any) => exp.id,
-    pageSize: PAGE_SIZE,
     sortAccessors: {
       date: (exp: any) => exp.expenseDate || "",
       description: (exp: any) => (exp.description || "").toLowerCase(),
@@ -50,14 +54,21 @@ export default function ExpensesPage() {
   });
 
   const totalPKR = displayExpenses.reduce((sum: number, exp: any) => sum + Number(exp.amountPKR ?? exp.amount ?? 0), 0);
+  const largestCategory = Object.entries(
+    displayExpenses.reduce((acc: Record<string, number>, exp: any) => {
+      const key = exp.category || "other";
+      acc[key] = (acc[key] || 0) + Number(exp.amountPKR ?? exp.amount ?? 0);
+      return acc;
+    }, {})
+  ).sort((a, b) => (b[1] as number) - (a[1] as number))[0];
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     try {
       await deleteExpenseMutation.mutateAsync(deleteTarget.id);
-      showSuccess("The expense has been removed.", "Expense Deleted");
+      showSuccess("The expense has been removed.", "Expense deleted");
     } catch (err) {
-      showError(apiErrorMessage(err), "Delete Failed");
+      showError(apiErrorMessage(err), "Couldn't delete expense");
     } finally {
       setDeleteTarget(null);
     }
@@ -74,177 +85,261 @@ export default function ExpensesPage() {
     const failed = results.filter((r) => r.status === "rejected").length;
     const deleted = ids.length - failed;
     if (failed === 0) {
-      showSuccess(`${deleted} expense(s) removed.`, "Expenses Deleted");
+      showSuccess(`${deleted} expense${deleted === 1 ? "" : "s"} removed.`, "Expenses deleted");
     } else {
-      showError(`${deleted} deleted, ${failed} failed.`, "Some Deletes Failed");
+      showError(`${deleted} deleted, ${failed} could not be removed.`, "Some deletes failed");
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Expenses</h1>
-          <p className="text-sm text-muted-foreground mt-1">Track business expenses, internet bills, hardware, and subscriptions.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {EXPENSE_CATEGORIES.map((c) => (
-                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button onClick={() => { setEditingExpense(null); setIsAddOpen(true); }}>
-            <Plus className="mr-2 h-4 w-4" /> Add Expense
+    <div className="space-y-6 lg:space-y-8">
+      <PageHeader
+        title="Expenses"
+        description="Internet, software, hardware and subscriptions — the costs that reduce your taxable income."
+        actions={
+          <Button
+            onClick={() => {
+              setEditingExpense(null);
+              setIsAddOpen(true);
+            }}
+          >
+            <Plus /> Add expense
           </Button>
-        </div>
-      </div>
+        }
+      />
 
-      {isError && (
-        <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-sm">
-          {apiErrorMessage(error, "Could not load your expenses.")}
-        </div>
-      )}
+      {isError ? (
+        <Card>
+          <ErrorState description={apiErrorMessage(error, "Could not load your expenses.")} />
+        </Card>
+      ) : (
+        <>
+          <section aria-label="Expense totals" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <StatCard
+              label="Total expenses"
+              value={formatPKR(totalPKR)}
+              icon={Wallet}
+              emphasis
+              hint={categoryFilter === "all" ? "All categories" : "Current category only"}
+              isLoading={isLoading}
+            />
+            <StatCard
+              label="Entries"
+              value={displayExpenses.length}
+              unit={displayExpenses.length === 1 ? "record" : "records"}
+              icon={Wallet}
+              hint="Matching the current filter"
+              isLoading={isLoading}
+            />
+            <StatCard
+              label="Largest category"
+              value={largestCategory ? formatPKR(largestCategory[1] as number) : formatPKR(0)}
+              icon={Wallet}
+              hint={
+                largestCategory
+                  ? (EXPENSE_CATEGORIES.find((c) => c.value === largestCategory[0])?.label ?? largestCategory[0])
+                  : "Nothing logged yet"
+              }
+              isLoading={isLoading}
+            />
+          </section>
 
-      <div className="border border-border rounded-xl overflow-hidden bg-card shadow-sm">
-        <BulkActionsBar
-          count={table.selected.size}
-          onDelete={() => setBulkConfirmOpen(true)}
-          onClear={table.clearSelection}
-          isDeleting={isBulkDeleting}
-          label="expense"
-        />
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow className="border-border">
-              <TableHead className="w-10">
-                <Checkbox
-                  checked={table.allSelectedOnPage}
-                  indeterminate={table.someSelectedOnPage && !table.allSelectedOnPage}
-                  onChange={table.toggleSelectAll}
-                  aria-label="Select all expenses on this page"
-                />
-              </TableHead>
-              <SortableTableHead sortKey="date" sort={table.sort} onSort={table.toggleSort} className="text-muted-foreground font-medium">Date</SortableTableHead>
-              <SortableTableHead sortKey="description" sort={table.sort} onSort={table.toggleSort} className="text-muted-foreground font-medium">Description / Vendor</SortableTableHead>
-              <SortableTableHead sortKey="category" sort={table.sort} onSort={table.toggleSort} className="text-muted-foreground font-medium">Category</SortableTableHead>
-              <TableHead className="text-muted-foreground font-medium">Payment Method</TableHead>
-              <SortableTableHead sortKey="amount" sort={table.sort} onSort={table.toggleSort} className="text-muted-foreground font-medium text-right">Amount (PKR)</SortableTableHead>
-              <TableHead className="text-muted-foreground font-medium text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading expenses...</TableCell>
-              </TableRow>
-            ) : displayExpenses.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
-                  <div className="flex flex-col items-center justify-center space-y-2">
-                    <Wallet className="h-8 w-8 text-muted-foreground/60" />
-                    <p className="font-semibold text-foreground">
-                      {expensesList.length === 0 ? "No expenses recorded yet" : "No expenses in this category"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {expensesList.length === 0
-                        ? "Log your internet, software and equipment costs to reduce taxable local income."
-                        : "Try a different category filter."}
-                    </p>
-                  </div>
-                </TableCell>
-              </TableRow>
+          <Card className="overflow-hidden">
+            {table.selected.size > 0 ? (
+              <BulkActionsBar
+                count={table.selected.size}
+                onDelete={() => setBulkConfirmOpen(true)}
+                onClear={table.clearSelection}
+                isDeleting={isBulkDeleting}
+                label="expense"
+              />
             ) : (
-              table.paged.map((exp: any) => {
-                const amountPKR = Number(exp.amountPKR ?? exp.amount ?? 0);
-                const isForeign = exp.currency && exp.currency !== "PKR";
-                return (
-                  <TableRow key={exp.id} className="transition-colors" data-state={table.selected.has(exp.id) ? "selected" : undefined}>
-                    <TableCell>
-                      <Checkbox
-                        checked={table.selected.has(exp.id)}
-                        onChange={() => table.toggleSelect(exp.id)}
-                        aria-label={`Select ${exp.description || "expense"}`}
-                      />
-                    </TableCell>
-                    <TableCell className="text-muted-foreground font-mono text-xs">
-                      {exp.expenseDate ? String(exp.expenseDate).substring(0, 10) : "—"}
-                    </TableCell>
-                    <TableCell className="font-medium text-foreground">
-                      {exp.description} {exp.vendor ? <span className="text-xs text-muted-foreground ml-1">({exp.vendor})</span> : null}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="capitalize">
-                        {exp.category || "other"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="capitalize text-muted-foreground text-xs">
-                      {(exp.paymentMethod || "bank_transfer").replace("_", " ")}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="font-bold text-destructive">{formatPKR(amountPKR)}</div>
-                      {isForeign && (
-                        <div className="text-[11px] text-muted-foreground font-mono">
-                          {exp.currency} {Number(exp.amount).toFixed(2)} @ {Number(exp.exchangeRate).toFixed(2)}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          onClick={() => setEvidenceTarget({ id: exp.id, title: exp.description || "Expense Entry" })}
-                          size="sm"
-                          variant="outline"
-                          className="h-8 text-xs font-semibold rounded-lg hover:text-primary transition-colors"
-                        >
-                          Evidence
-                        </Button>
-                        <Button
-                          onClick={() => { setEditingExpense(exp); setIsAddOpen(true); }}
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-muted"
-                          title="Edit Expense"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          onClick={() => setDeleteTarget({ id: exp.id, description: exp.description || "Expense Entry" })}
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-muted"
-                          title="Delete Expense"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
+              <DataToolbar>
+                <ToolbarFilter label="Category">
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <SelectTrigger className="w-[13rem]">
+                      <SelectValue placeholder="All categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All categories</SelectItem>
+                      {EXPENSE_CATEGORIES.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </ToolbarFilter>
+              </DataToolbar>
             )}
-          </TableBody>
-          {displayExpenses.length > 0 && (
-            <tfoot className="bg-muted/30 border-t border-border">
-              <tr>
-                <td colSpan={5} className="px-4 py-3 text-sm font-semibold text-foreground">Total ({displayExpenses.length})</td>
-                <td className="px-4 py-3 text-right font-bold text-destructive font-mono">{formatPKR(totalPKR)}</td>
-                <td />
-              </tr>
-            </tfoot>
-          )}
-        </Table>
-        <PaginationBar page={table.page} pageSize={PAGE_SIZE} total={table.total} onPageChange={table.setPage} />
-      </div>
+
+            {isLoading ? (
+              <TableSkeleton rows={6} columns={6} />
+            ) : displayExpenses.length === 0 ? (
+              <EmptyState
+                icon={Wallet}
+                title={expensesList.length === 0 ? "No expenses recorded yet" : "Nothing in this category"}
+                description={
+                  expensesList.length === 0
+                    ? "Log internet, software and equipment costs and they'll be deducted in your tax estimate."
+                    : "Switch back to all categories to see every expense."
+                }
+                action={
+                  expensesList.length === 0 ? (
+                    <Button
+                      onClick={() => {
+                        setEditingExpense(null);
+                        setIsAddOpen(true);
+                      }}
+                    >
+                      <Plus /> Add your first expense
+                    </Button>
+                  ) : (
+                    <Button variant="outline" onClick={() => setCategoryFilter("all")}>
+                      Show all categories
+                    </Button>
+                  )
+                }
+              />
+            ) : (
+              <>
+                <Table className="min-w-[50rem]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>
+                        <Checkbox
+                          checked={table.allSelectedOnPage}
+                          indeterminate={table.someSelectedOnPage && !table.allSelectedOnPage}
+                          onChange={table.toggleSelectAll}
+                          aria-label="Select all expenses on this page"
+                        />
+                      </TableHead>
+                      <SortableTableHead sortKey="date" sort={table.sort} onSort={table.toggleSort}>
+                        Date
+                      </SortableTableHead>
+                      <SortableTableHead sortKey="description" sort={table.sort} onSort={table.toggleSort}>
+                        Description
+                      </SortableTableHead>
+                      <SortableTableHead sortKey="category" sort={table.sort} onSort={table.toggleSort}>
+                        Category
+                      </SortableTableHead>
+                      <TableHead>Paid via</TableHead>
+                      <SortableTableHead sortKey="amount" sort={table.sort} onSort={table.toggleSort} align="right">
+                        Amount
+                      </SortableTableHead>
+                      <TableHead className="text-right">
+                        <span className="sr-only">Actions</span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {table.paged.map((exp: any) => {
+                      const amountPKR = Number(exp.amountPKR ?? exp.amount ?? 0);
+                      const isForeign = exp.currency && exp.currency !== "PKR";
+                      return (
+                        <TableRow key={exp.id} data-state={table.selected.has(exp.id) ? "selected" : undefined}>
+                          <TableCell>
+                            <Checkbox
+                              checked={table.selected.has(exp.id)}
+                              onChange={() => table.toggleSelect(exp.id)}
+                              aria-label={`Select ${exp.description || "expense"}`}
+                            />
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-muted-foreground tabular">
+                            {exp.expenseDate ? formatDate(String(exp.expenseDate).substring(0, 10)) : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <span className="block font-medium text-foreground">{exp.description}</span>
+                            {exp.vendor && <span className="block text-xs text-muted-foreground">{exp.vendor}</span>}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="neutral" className="capitalize">
+                              {EXPENSE_CATEGORIES.find((c) => c.value === exp.category)?.label ?? exp.category ?? "other"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs capitalize text-muted-foreground">
+                            {(exp.paymentMethod || "bank_transfer").replace(/_/g, " ")}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="block font-mono text-sm font-medium tabular-nums text-foreground">
+                              {formatPKR(amountPKR)}
+                            </span>
+                            {isForeign && (
+                              <span className="block font-mono text-xs tabular-nums text-muted-foreground">
+                                {exp.currency} {Number(exp.amount).toFixed(2)} @ {Number(exp.exchangeRate).toFixed(2)}
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="flex items-center justify-end gap-0.5">
+                              <Button
+                                onClick={() => setEvidenceTarget({ id: exp.id, title: exp.description || "Expense" })}
+                                size="icon-sm"
+                                variant="ghost"
+                                title="Evidence and receipts"
+                              >
+                                <Paperclip />
+                                <span className="sr-only">Evidence for {exp.description || "this expense"}</span>
+                              </Button>
+                              <Button
+                                onClick={() => {
+                                  setEditingExpense(exp);
+                                  setIsAddOpen(true);
+                                }}
+                                size="icon-sm"
+                                variant="ghost"
+                                title="Edit expense"
+                              >
+                                <Pencil />
+                                <span className="sr-only">Edit {exp.description || "this expense"}</span>
+                              </Button>
+                              <Button
+                                onClick={() => setDeleteTarget({ id: exp.id, description: exp.description || "Expense" })}
+                                size="icon-sm"
+                                variant="ghost"
+                                className="hover:bg-destructive-surface hover:text-destructive"
+                                title="Delete expense"
+                              >
+                                <Trash2 />
+                                <span className="sr-only">Delete {exp.description || "this expense"}</span>
+                              </Button>
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-sm font-medium text-foreground">
+                        Total · {displayExpenses.length} {displayExpenses.length === 1 ? "entry" : "entries"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-sm font-semibold tabular-nums text-foreground">
+                        {formatPKR(totalPKR)}
+                      </TableCell>
+                      <TableCell />
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+                <PaginationBar
+                  page={table.page}
+                  pageSize={table.pageSize}
+                  total={table.total}
+                  onPageChange={table.setPage}
+                  onPageSizeChange={table.setPageSize}
+                />
+              </>
+            )}
+          </Card>
+        </>
+      )}
 
       <AddExpenseModal
         isOpen={isAddOpen}
-        onClose={() => { setIsAddOpen(false); setEditingExpense(null); }}
+        onClose={() => {
+          setIsAddOpen(false);
+          setEditingExpense(null);
+        }}
         expense={editingExpense}
       />
 
@@ -260,9 +355,9 @@ export default function ExpensesPage() {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleConfirmDelete}
-        title="Delete Expense?"
-        description={deleteTarget ? `Are you sure you want to delete "${deleteTarget.description}"? This cannot be undone.` : ""}
-        confirmText="Delete Expense"
+        title="Delete this expense?"
+        description={deleteTarget ? `"${deleteTarget.description}" will be removed. This cannot be undone.` : ""}
+        confirmText="Delete expense"
         isLoading={deleteExpenseMutation.isPending}
       />
 
@@ -270,9 +365,9 @@ export default function ExpensesPage() {
         isOpen={bulkConfirmOpen}
         onClose={() => setBulkConfirmOpen(false)}
         onConfirm={handleBulkDelete}
-        title={`Delete ${table.selected.size} Expense(s)?`}
+        title={`Delete ${table.selected.size} expense${table.selected.size === 1 ? "" : "s"}?`}
         description="This cannot be undone."
-        confirmText="Delete Selected"
+        confirmText="Delete selected"
         isLoading={isBulkDeleting}
       />
     </div>

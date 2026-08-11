@@ -1,315 +1,349 @@
 "use client";
 
-import { Card, CardContent } from '@/components/ui/card';
+import Link from 'next/link';
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Clock,
+  FileText,
+  Plus,
+  Receipt,
+  ShieldAlert,
+  ShieldCheck,
+  TrendingUp,
+  UserPlus,
+  Wallet,
+} from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
-import { DollarSign, FileText, ArrowUpRight, ArrowDownRight, Wallet, Plus, TrendingUp, Clock } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardTitle, CardToolbar } from '@/components/ui/card';
+import { GroupedBarChart, BreakdownBars } from '@/components/ui/charts';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
+import { Skeleton, StatCardSkeleton, TableSkeleton } from '@/components/ui/skeleton';
+import { StatCard } from '@/components/ui/stat-card';
+import { Table, TableAmountCell, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatPKR } from '@/lib/utils';
+import { platformLabel } from '@/lib/platforms';
+import { getCurrentTaxYear, taxYearLabel } from '@/lib/tax-year';
 import { useDashboardSummary } from '@/hooks/use-dashboard';
 import { useTransactions } from '@/hooks/use-transactions';
-import { useIncomeConsolidation } from '@/hooks/use-reports';
+import { useIncomeConsolidation, useIncomeVsExpensesReport } from '@/hooks/use-reports';
 import { useReadinessScore } from '@/hooks/use-filing';
-import { PieChart as PieIcon, ShieldAlert, ShieldCheck } from 'lucide-react';
-import Link from 'next/link';
+
+const QUICK_ACTIONS = [
+  { href: '/invoices/new', label: 'Create an invoice', icon: FileText },
+  { href: '/expenses', label: 'Log an expense', icon: Receipt },
+  { href: '/clients', label: 'Add a client', icon: UserPlus },
+];
 
 export default function DashboardPage() {
   const { data: summary, isLoading: isSummaryLoading } = useDashboardSummary();
-  const { data: transactions, isLoading: isTxLoading } = useTransactions({ pageSize: 5 });
-  const { data: incomeConsolidation } = useIncomeConsolidation();
+  const { data: transactions, isLoading: isTxLoading } = useTransactions({ pageSize: 6 });
+  const { data: incomeConsolidation, isLoading: isConsolidationLoading } = useIncomeConsolidation();
+  const { data: trendData = [], isLoading: isTrendLoading } = useIncomeVsExpensesReport();
   const { data: readiness } = useReadinessScore();
 
   const totalIncome = summary?.totalIncome ?? 0;
   const totalExpenses = summary?.totalExpenses ?? 0;
   const netProfit = summary?.netProfit ?? (totalIncome - totalExpenses);
   const pendingInvoices = summary?.pendingInvoices ?? 0;
+  const pendingAmount = summary?.pendingAmount ?? 0;
   // Derived from this month vs last month; null when there's no prior-month data to compare against.
   const incomeGrowth: number | null = summary?.monthlyGrowth ?? null;
   const expenseGrowth: number | null = summary?.expenseGrowth ?? null;
 
-  // Server already returns the 5 most recent transactions (newest-first, page size 5)
+  const periodLabel = summary?.taxYearLabel ?? taxYearLabel(getCurrentTaxYear());
+
+  // Server already returns the most recent transactions (newest-first)
   const recentTransactions = transactions?.data || [];
 
-  return (
-    <div className="space-y-8 max-w-7xl mx-auto px-2 md:px-0">
-      
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Overview</h1>
-          <p className="text-sm text-muted-foreground mt-1">Here is the summary of your overall financial data.</p>
-        </div>
-        <Link href="/invoices/new">
-          <Button className="rounded-full shadow-sm px-6 font-semibold" size="lg">
-            <Plus className="h-4 w-4 mr-2" /> New Invoice
-          </Button>
-        </Link>
-      </div>
+  const chartData = trendData.map((m: any) => ({
+    label: m.month,
+    values: [Number(m.income) || 0, Number(m.expenses) || 0],
+  }));
+  const hasChartData = chartData.some((d) => d.values.some((v) => v > 0));
 
-      {/* Readiness Score Banner */}
+  const platforms = incomeConsolidation?.byPlatform ?? [];
+  const isReady = (readiness?.score ?? 0) >= 100;
+
+  return (
+    <div className="space-y-6 lg:space-y-8">
+      <PageHeader
+        title="Overview"
+        description={`Your financial position for tax year ${periodLabel} — 1 July to 30 June.`}
+        actions={
+          <Button asChild>
+            <Link href="/invoices/new">
+              <Plus /> New invoice
+            </Link>
+          </Button>
+        }
+      />
+
+      {/* Filing readiness — the one thing this product exists to answer. */}
       {readiness && (
-        <Card className={`rounded-3xl border-border/50 shadow-sm overflow-hidden ${readiness.score >= 100 ? 'bg-gradient-to-r from-emerald-500/10' : 'bg-gradient-to-r from-amber-500/10'}`}>
-          <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 ${readiness.score >= 100 ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
-                {readiness.score >= 100 ? <ShieldCheck className="h-6 w-6" /> : <ShieldAlert className="h-6 w-6" />}
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  &quot;Can I File?&quot; Readiness Score
-                  <span className={`text-sm font-mono px-2 py-0.5 rounded-full ${readiness.score >= 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+        <Card className={isReady ? 'border-success/20 bg-success-surface' : 'border-warning/20 bg-warning-surface'}>
+          <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <div className="flex items-start gap-4">
+              <span
+                className={`flex size-10 shrink-0 items-center justify-center rounded-md ${
+                  isReady ? 'bg-success text-success-foreground' : 'bg-warning text-warning-foreground'
+                }`}
+                aria-hidden="true"
+              >
+                {isReady ? <ShieldCheck className="size-5" /> : <ShieldAlert className="size-5" />}
+              </span>
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-base font-semibold tracking-[-0.01em] text-foreground">Filing readiness</h2>
+                  <span
+                    className={`rounded-full px-2 py-0.5 font-mono text-xs font-semibold tabular-nums ${
+                      isReady ? 'bg-success text-success-foreground' : 'bg-warning text-warning-foreground'
+                    }`}
+                  >
                     {readiness.score}%
                   </span>
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {readiness.score >= 100 
-                    ? "You are ready to generate your filing package!"
-                    : `You have ${readiness.issues?.length || 0} issues remaining before you can file taxes.`}
+                </div>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {isReady
+                    ? 'Your records are complete. You can generate the filing package.'
+                    : `${readiness.issues?.length || 0} item${readiness.issues?.length === 1 ? '' : 's'} still need attention before you can file.`}
                 </p>
               </div>
             </div>
-            <Link href="/filing">
-              <Button variant={readiness.score >= 100 ? "default" : "outline"} className="rounded-xl font-semibold">
-                {readiness.score >= 100 ? "Generate Filing Package" : "Fix Issues"}
-              </Button>
-            </Link>
-          </CardContent>
+            <Button asChild variant={isReady ? 'default' : 'outline'} className="shrink-0">
+              <Link href="/filing">
+                {isReady ? 'Generate package' : 'Review issues'} <ArrowRight />
+              </Link>
+            </Button>
+          </div>
         </Card>
       )}
-      
-      {/* KPI Cards Section */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {/* Total Income */}
-        <Card className="rounded-3xl border-border/50 shadow-sm overflow-hidden">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-foreground">Total Income</h3>
-              <div className="h-8 w-8 rounded-full bg-emerald-50 flex items-center justify-center">
-                <DollarSign className="h-4 w-4 text-emerald-600" />
-              </div>
+
+      {/* KPIs */}
+      <section aria-label="Key figures" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {isSummaryLoading ? (
+          Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
+        ) : (
+          <>
+            <StatCard
+              label="Total income"
+              value={formatPKR(totalIncome)}
+              icon={ArrowUpRight}
+              delta={incomeGrowth}
+              hint="Gross earnings this tax year"
+            />
+            <StatCard
+              label="Total expenses"
+              value={formatPKR(totalExpenses)}
+              icon={Wallet}
+              delta={expenseGrowth}
+              deltaGoodDirection="down"
+              hint="Deductible business spend"
+            />
+            <StatCard
+              label="Net profit"
+              value={formatPKR(netProfit)}
+              icon={TrendingUp}
+              emphasis
+              hint="Income less expenses"
+            />
+            <StatCard
+              label="Pending invoices"
+              value={pendingInvoices}
+              unit={pendingInvoices === 1 ? 'invoice' : 'invoices'}
+              icon={Clock}
+              hint={pendingAmount > 0 ? `${formatPKR(pendingAmount)} outstanding` : 'Nothing outstanding'}
+            />
+          </>
+        )}
+      </section>
+
+      {/* Cash flow + income sources */}
+      <section className="grid gap-4 lg:grid-cols-3 lg:gap-6">
+        <Card className="lg:col-span-2">
+          <CardToolbar>
+            <div className="space-y-1">
+              <CardTitle>Income vs expenses</CardTitle>
+              <CardDescription>Monthly totals in PKR across tax year {periodLabel}.</CardDescription>
             </div>
-            <div className="text-3xl font-bold text-foreground font-mono tracking-tight">
-              {isSummaryLoading ? "..." : formatPKR(totalIncome)}
-            </div>
-            <div className="flex items-center mt-3 gap-2">
-              <span className="text-xs text-muted-foreground">Since Last Month</span>
-              {incomeGrowth !== null && (
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${incomeGrowth >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"}`}>
-                  {incomeGrowth >= 0 ? <ArrowUpRight className="h-3 w-3 mr-0.5" /> : <ArrowDownRight className="h-3 w-3 mr-0.5" />}
-                  {incomeGrowth >= 0 ? "+" : ""}{incomeGrowth}%
-                </span>
-              )}
-            </div>
+          </CardToolbar>
+          <CardContent className="pt-5 sm:pt-6">
+            {isTrendLoading ? (
+              <Skeleton className="h-[240px] w-full" />
+            ) : hasChartData ? (
+              <GroupedBarChart
+                data={chartData}
+                caption={`Monthly income and expenses for tax year ${periodLabel}`}
+                series={[
+                  { key: 'income', label: 'Income', color: 'bg-chart-1' },
+                  { key: 'expenses', label: 'Expenses', color: 'bg-chart-2' },
+                ]}
+              />
+            ) : (
+              <EmptyState
+                icon={TrendingUp}
+                size="sm"
+                title="No monthly activity yet"
+                description="Log income or an expense and this chart starts tracking your cash flow month by month."
+                action={
+                  <Button asChild variant="outline" size="sm">
+                    <Link href="/income">Log income</Link>
+                  </Button>
+                }
+              />
+            )}
           </CardContent>
         </Card>
 
-        {/* Total Expenses */}
-        <Card className="rounded-3xl border-border/50 shadow-sm overflow-hidden">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-foreground">Total Expenses</h3>
-              <div className="h-8 w-8 rounded-full bg-rose-50 flex items-center justify-center">
-                <Wallet className="h-4 w-4 text-rose-500" />
+        <Card>
+          <CardToolbar>
+            <div className="space-y-1">
+              <CardTitle>Income sources</CardTitle>
+              <CardDescription>Share of earnings by platform.</CardDescription>
+            </div>
+          </CardToolbar>
+          <CardContent className="space-y-5 pt-5 sm:pt-6">
+            {isConsolidationLoading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-8 w-40" />
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-8 w-full" />
+                ))}
               </div>
-            </div>
-            <div className="text-3xl font-bold text-foreground font-mono tracking-tight">
-              {isSummaryLoading ? "..." : formatPKR(totalExpenses)}
-            </div>
-            <div className="flex items-center mt-3 gap-2">
-              <span className="text-xs text-muted-foreground">Since Last Month</span>
-              {expenseGrowth !== null && (
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${expenseGrowth <= 0 ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"}`}>
-                  {expenseGrowth <= 0 ? <ArrowDownRight className="h-3 w-3 mr-0.5" /> : <ArrowUpRight className="h-3 w-3 mr-0.5" />}
-                  {expenseGrowth >= 0 ? "+" : ""}{expenseGrowth}%
-                </span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Net Profit */}
-        <Card className="rounded-3xl border-border/50 shadow-sm overflow-hidden bg-gradient-to-br from-background to-emerald-50/20">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-foreground">Net Profit</h3>
-              <div className="h-8 w-8 rounded-full bg-emerald-50 flex items-center justify-center border border-emerald-100">
-                <TrendingUp className="h-4 w-4 text-emerald-600" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold text-emerald-700 font-mono tracking-tight">
-              {isSummaryLoading ? "..." : formatPKR(netProfit)}
-            </div>
-            <div className="flex items-center mt-3 gap-2">
-              <span className="text-xs text-muted-foreground">Take-home revenue</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Pending Invoices */}
-        <Card className="rounded-3xl border-border/50 shadow-sm overflow-hidden">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-foreground">Pending Invoices</h3>
-              <div className="h-8 w-8 rounded-full bg-amber-50 flex items-center justify-center">
-                <Clock className="h-4 w-4 text-amber-500" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold text-foreground font-mono tracking-tight flex items-baseline gap-2">
-              {isSummaryLoading ? "..." : pendingInvoices}
-              <span className="text-sm font-medium text-muted-foreground font-sans">total</span>
-            </div>
-            <div className="flex items-center mt-3 gap-2">
-              <span className="text-xs text-muted-foreground">Requires attention</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Transactions Section */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <Card className="rounded-3xl border-border/50 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between p-6 pb-2">
-              <h3 className="text-lg font-bold text-foreground">Recent Transactions</h3>
-              <Link href="/transactions" className="text-xs font-medium text-primary hover:underline">
-                View all
-              </Link>
-            </div>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-muted-foreground bg-background border-b border-border/50">
-                    <tr>
-                      <th className="px-6 py-4 font-medium">Name</th>
-                      <th className="px-6 py-4 font-medium">Type</th>
-                      <th className="px-6 py-4 font-medium">Date</th>
-                      <th className="px-6 py-4 font-medium text-right">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/50">
-                    {isTxLoading ? (
-                      <tr>
-                        <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">Loading transactions...</td>
-                      </tr>
-                    ) : recentTransactions.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">No recent transactions found.</td>
-                      </tr>
-                    ) : (
-                      recentTransactions.map((tx) => (
-                        <tr key={tx.id} className="hover:bg-muted/30 transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center text-primary font-bold text-xs shrink-0">
-                                {tx.entity.substring(0, 2).toUpperCase()}
-                              </div>
-                              <span className="font-semibold text-foreground">{tx.entity}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-muted-foreground">
-                            {tx.category || (tx.type === 'INCOME' ? 'Income' : 'Withdrawal')}
-                          </td>
-                          <td className="px-6 py-4 text-muted-foreground whitespace-nowrap">
-                            {new Date(tx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                          </td>
-                          <td className="px-6 py-4 text-right font-mono font-medium">
-                            {tx.type === 'INCOME' ? (
-                              <span className="text-foreground">
-                                + {formatPKR(tx.amount)}
-                              </span>
-                            ) : (
-                              <span className="text-foreground">
-                                - {formatPKR(tx.amount)}
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column: Quick Actions */}
-        <div className="space-y-6">
-          <Card className="rounded-3xl border-border/50 shadow-sm overflow-hidden">
-             <CardContent className="p-6">
-               <h3 className="text-sm font-bold text-foreground mb-4">Quick Actions</h3>
-               <div className="space-y-3">
-                 <Link href="/invoices/new" className="block">
-                   <Button variant="outline" className="w-full justify-start rounded-xl h-11 text-muted-foreground hover:text-foreground hover:bg-muted/50 border-border/50">
-                     <FileText className="h-4 w-4 mr-3 text-emerald-600" />
-                     Create New Invoice
-                   </Button>
-                 </Link>
-                 <Link href="/expenses" className="block">
-                   <Button variant="outline" className="w-full justify-start rounded-xl h-11 text-muted-foreground hover:text-foreground hover:bg-muted/50 border-border/50">
-                     <Wallet className="h-4 w-4 mr-3 text-rose-500" />
-                     Log an Expense
-                   </Button>
-                 </Link>
-                 <Link href="/clients" className="block">
-                   <Button variant="outline" className="w-full justify-start rounded-xl h-11 text-muted-foreground hover:text-foreground hover:bg-muted/50 border-border/50">
-                     <Plus className="h-4 w-4 mr-3 text-blue-500" />
-                     Add New Client
-                   </Button>
-                 </Link>
-               </div>
-             </CardContent>
-          </Card>
-
-          {/* Income Consolidation Card */}
-          <Card className="rounded-3xl border-border/50 shadow-sm overflow-hidden">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <PieIcon className="h-5 w-5 text-primary" />
-                <h3 className="text-sm font-bold text-foreground">Income Consolidation</h3>
-              </div>
-              
-              {!incomeConsolidation ? (
-                <div className="text-xs text-muted-foreground text-center py-4">Loading data...</div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="text-2xl font-bold font-mono tracking-tight text-foreground">
+            ) : platforms.length === 0 ? (
+              <EmptyState
+                size="sm"
+                title="No platform income logged"
+                description="Tag income with its platform to see where your earnings come from."
+              />
+            ) : (
+              <>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total tracked</p>
+                  <p className="mt-1 font-mono text-2xl font-semibold tracking-[-0.03em] tabular-nums text-foreground">
                     {formatPKR(incomeConsolidation.totalPKR)}
-                  </div>
-                  <div className="flex items-center gap-4 text-xs font-medium">
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
-                      <span className="text-foreground">Tracked ({incomeConsolidation.trackedPercentage}%)</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2 w-2 rounded-full bg-amber-500"></div>
-                      <span className="text-muted-foreground">Unmatched ({incomeConsolidation.unmatchedPercentage}%)</span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3 mt-2">
-                    {(incomeConsolidation.byPlatform || []).map((plat: any) => {
-                      // pick a color based on platform
-                      const colorClass = plat.platform.toLowerCase() === 'upwork' ? 'bg-primary' : 
-                                         plat.platform.toLowerCase() === 'fiverr' ? 'bg-green-500' :
-                                         plat.platform.toLowerCase() === 'direct' ? 'bg-teal-500' : 'bg-blue-500';
-                      return (
-                        <div key={plat.platform}>
-                          <div className="flex justify-between text-xs mb-1">
-                            <span className="text-foreground font-medium">{plat.platform}</span>
-                            <span className="font-bold font-mono text-primary">{plat.percentage}%</span>
-                          </div>
-                          <div className="w-full bg-secondary rounded-full h-1.5 overflow-hidden">
-                            <div className={`h-1.5 rounded-full ${colorClass}`} style={{ width: `${plat.percentage}%` }}></div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  </p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+                <BreakdownBars
+                  items={platforms.map((p: any) => ({
+                    label: platformLabel(p.platform),
+                    value: p.amountPKR,
+                    percentage: p.percentage,
+                  }))}
+                />
+                {incomeConsolidation.unmatchedPercentage > 0 && (
+                  <p className="rounded-md border border-warning/15 bg-warning-surface px-3 py-2 text-xs leading-relaxed text-warning">
+                    {incomeConsolidation.unmatchedPercentage}% of income has no platform or client attached. Tag it so
+                    your filing package reconciles.
+                  </p>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Recent activity + quick actions */}
+      <section className="grid gap-4 lg:grid-cols-3 lg:gap-6">
+        <Card className="overflow-hidden lg:col-span-2">
+          <CardToolbar>
+            <CardTitle>Recent activity</CardTitle>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/transactions">
+                View all <ArrowRight />
+              </Link>
+            </Button>
+          </CardToolbar>
+
+          {isTxLoading ? (
+            <TableSkeleton rows={5} columns={4} />
+          ) : recentTransactions.length === 0 ? (
+            <EmptyState
+              icon={Receipt}
+              size="sm"
+              title="No transactions yet"
+              description="Income and expenses you record will appear here, newest first."
+              action={
+                <Button asChild size="sm">
+                  <Link href="/income">Log your first entry</Link>
+                </Button>
+              }
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentTransactions.map((tx) => (
+                  <TableRow key={tx.id}>
+                    <TableCell>
+                      <span className="flex items-center gap-3">
+                        <span
+                          className={`flex size-8 shrink-0 items-center justify-center rounded-sm text-2xs font-semibold ${
+                            tx.type === 'INCOME' ? 'bg-brand-50 text-brand-800' : 'bg-muted text-muted-foreground'
+                          }`}
+                          aria-hidden="true"
+                        >
+                          {tx.entity.substring(0, 2).toUpperCase()}
+                        </span>
+                        <span className="min-w-0 truncate font-medium text-foreground">{tx.entity}</span>
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {tx.category || (tx.type === 'INCOME' ? 'Income' : 'Expense')}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground tabular">
+                      {new Date(tx.date).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </TableCell>
+                    <TableAmountCell tone={tx.type === 'INCOME' ? 'positive' : 'default'}>
+                      {tx.type === 'INCOME' ? '+' : '−'} {formatPKR(tx.amount)}
+                    </TableAmountCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </Card>
+
+        <Card>
+          <CardToolbar>
+            <CardTitle>Quick actions</CardTitle>
+          </CardToolbar>
+          <CardContent className="pt-4 sm:pt-5">
+            <ul className="space-y-1">
+              {QUICK_ACTIONS.map((action) => (
+                <li key={action.href}>
+                  <Link
+                    href={action.href}
+                    className="group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-foreground transition-colors duration-150 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70"
+                  >
+                    <span
+                      className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-brand-50 text-brand-700"
+                      aria-hidden="true"
+                    >
+                      <action.icon className="size-4" />
+                    </span>
+                    {action.label}
+                    <ArrowRight className="ml-auto size-4 shrink-0 text-subtle transition-transform duration-200 ease-smooth group-hover:translate-x-0.5 group-hover:text-foreground" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }

@@ -1,7 +1,15 @@
 "use client";
 
-import { AlertTriangle, Trash2, X, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 export interface ConfirmModalProps {
   isOpen: boolean;
@@ -15,71 +23,64 @@ export interface ConfirmModalProps {
   isLoading?: boolean;
 }
 
+/**
+ * Built on the shared Dialog so it inherits the app's focus trap, Escape
+ * handling and scroll lock instead of being a second hand-rolled modal.
+ */
 export function ConfirmModal({
   isOpen,
   onClose,
   onConfirm,
   title = "Are you sure?",
   description = "This action cannot be undone.",
-  confirmText = "Confirm Delete",
+  confirmText = "Delete",
   cancelText = "Cancel",
   variant = "destructive",
   isLoading = false,
 }: ConfirmModalProps) {
-  if (!isOpen) return null;
+  const isDestructive = variant === "destructive";
+  const Icon = isDestructive ? Trash2 : AlertTriangle;
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-background border border-border rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95">
-        <div className="flex items-start justify-between p-6 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl border ${
-              variant === "destructive" 
-                ? "bg-destructive/10 border-destructive/30 text-destructive" 
-                : "bg-amber-500/10 border-amber-500/30 text-amber-500"
-            }`}>
-              {variant === "destructive" ? <Trash2 className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-foreground">{title}</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-            </div>
-          </div>
-          <button 
-            onClick={onClose} 
-            type="button"
-            className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted transition-colors"
+    <Dialog open={isOpen} onOpenChange={(open) => !open && !isLoading && onClose()}>
+      <DialogContent className="sm:max-w-md" hideClose>
+        <div className="flex items-start gap-4 px-5 py-6 sm:px-6">
+          <span
+            className={cn(
+              "flex size-10 shrink-0 items-center justify-center rounded-md",
+              isDestructive ? "bg-destructive-surface text-destructive" : "bg-warning-surface text-warning"
+            )}
+            aria-hidden="true"
           >
-            <X className="h-4 w-4" />
-          </button>
+            <Icon className="size-5" />
+          </span>
+          <div className="min-w-0 space-y-1.5">
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>{description}</DialogDescription>
+          </div>
         </div>
 
-        <div className="p-6 bg-muted/40 flex justify-end gap-3">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={onClose} 
-            disabled={isLoading}
-          >
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
             {cancelText}
           </Button>
-          <Button 
+          <Button
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            variant={variant === "destructive" ? "destructive" : "default"}
-            className={variant === "warning" ? "bg-amber-600 hover:bg-amber-500 text-white font-semibold" : ""}
+            variant={isDestructive ? "destructive" : "default"}
+            className={cn(!isDestructive && "bg-warning text-warning-foreground hover:bg-warning/90")}
           >
             {isLoading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
+                <Loader2 className="size-4 animate-spin" /> Working…
               </>
             ) : (
               confirmText
             )}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

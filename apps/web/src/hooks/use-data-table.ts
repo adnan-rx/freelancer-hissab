@@ -14,10 +14,17 @@ export interface UseDataTableOptions<T> {
  * sorting and bulk-select behave identically everywhere.
  */
 export function useDataTable<T>(items: T[], opts: UseDataTableOptions<T>) {
-  const { getId, pageSize = 10, sortAccessors } = opts;
+  const { getId, pageSize: initialPageSize = 10, sortAccessors } = opts;
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSizeState] = useState(initialPageSize);
   const [sort, setSort] = useState<SortState | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  /** Changing page size re-flows the rows, so the old page number is meaningless. */
+  function setPageSize(size: number) {
+    setPageSizeState(size);
+    setPage(1);
+  }
 
   const sorted = useMemo(() => {
     const accessor = sort && sortAccessors?.[sort.key];
@@ -77,6 +84,8 @@ export function useDataTable<T>(items: T[], opts: UseDataTableOptions<T>) {
   return {
     page: currentPage,
     setPage,
+    pageSize,
+    setPageSize,
     totalPages,
     paged,
     total: sorted.length,

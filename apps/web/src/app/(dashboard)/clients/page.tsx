@@ -1,26 +1,51 @@
 "use client";
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { Building, DollarSign, Edit, FilePlus, Loader2, Mail, Phone, Plus, Trash2, Upload, Users } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input, Textarea } from '@/components/ui/input';
+import { Field } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { PaginationBar } from '@/components/ui/pagination-bar';
 import { BulkActionsBar } from '@/components/ui/bulk-actions-bar';
-import { Search, Plus, Users, DollarSign, Building, Mail, Phone, Edit, Trash2, FilePlus, X, Check, Sparkles } from 'lucide-react';
-import Link from 'next/link';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { TableSkeleton } from '@/components/ui/skeleton';
+import { DataToolbar, SearchInput } from '@/components/ui/data-toolbar';
+import { SegmentedFilter } from '@/components/ui/segmented-filter';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '@/hooks/use-clients';
 import { useDataTable } from '@/hooks/use-data-table';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
-import { formatPKR, formatUSD, apiErrorMessage } from '@/lib/utils';
+import { formatPKR, formatMoney, apiErrorMessage } from '@/lib/utils';
 import { CSVImportModal } from '@/components/features/csv-import-modal';
 import { useToast } from '@/providers/toast-provider';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 
-const PAGE_SIZE = 10;
+const PLATFORMS = [
+  { value: 'all', label: 'All' },
+  { value: 'upwork', label: 'Upwork' },
+  { value: 'fiverr', label: 'Fiverr' },
+  { value: 'direct', label: 'Direct' },
+  { value: 'freelancer', label: 'Freelancer' },
+  { value: 'other', label: 'Other' },
+];
 
 export default function ClientsPage() {
   const [search, setSearch] = useState("");
@@ -74,7 +99,6 @@ export default function ClientsPage() {
 
   const table = useDataTable(displayClients, {
     getId: (c: any) => c.id,
-    pageSize: PAGE_SIZE,
     sortAccessors: {
       name: (c: any) => (c.name || "").toLowerCase(),
       platform: (c: any) => (c.platform || "").toLowerCase(),
@@ -86,6 +110,9 @@ export default function ClientsPage() {
   const totalClientsCount = rawList.length;
   const activeClientsCount = rawList.filter((c: any) => c.status !== "archived").length;
   const totalLifetimePKR = rawList.reduce((sum: number, c: any) => sum + Number(c.totalEarningsPKR || 0), 0);
+
+  const isSaving = createClientMutation.isPending || updateClientMutation.isPending;
+  const hasFilters = !!search || platformFilter !== "all";
 
   const handleOpenAdd = () => {
     setName("");
@@ -129,14 +156,14 @@ export default function ClientsPage() {
     try {
       if (editingClient) {
         await updateClientMutation.mutateAsync({ id: editingClient.id, ...payload });
-        showSuccess(`"${name}" has been updated.`, "Client Updated");
+        showSuccess(`"${name}" has been updated.`, "Client updated");
       } else {
         await createClientMutation.mutateAsync(payload);
-        showSuccess(`"${name}" has been added.`, "Client Added");
+        showSuccess(`"${name}" has been added.`, "Client added");
       }
       setIsAddOpen(false);
     } catch (err: any) {
-      showError(apiErrorMessage(err, "Failed to save client profile."), "Client Save Failed");
+      showError(apiErrorMessage(err, "Failed to save client profile."), "Couldn't save client");
     }
   };
 
@@ -150,14 +177,14 @@ export default function ClientsPage() {
     try {
       await deleteClientMutation.mutateAsync({ id: deleteTarget.id, force: alreadyWarned });
       setDeleteTarget(null);
-      showSuccess(`"${deleteTarget.name}" has been removed.`, "Client Deleted");
+      showSuccess(`"${deleteTarget.name}" has been removed.`, "Client deleted");
     } catch (err: any) {
       const apiErr = err?.response?.data?.error;
       if (apiErr?.details?.requiresForce) {
         setDeleteTarget({ ...deleteTarget, warning: apiErrorMessage(err) });
         return;
       }
-      showError(apiErrorMessage(err), "Delete Client Failed");
+      showError(apiErrorMessage(err), "Couldn't delete client");
       setDeleteTarget(null);
     }
   };
@@ -177,352 +204,367 @@ export default function ClientsPage() {
     const failed = results.filter((r) => r.status === "rejected").length;
     const deleted = ids.length - failed;
     if (failed === 0) {
-      showSuccess(`${deleted} client(s) removed.`, "Clients Deleted");
+      showSuccess(`${deleted} client${deleted === 1 ? "" : "s"} removed.`, "Clients deleted");
     } else {
-      showError(`${deleted} client(s) deleted, ${failed} failed.`, "Some Deletes Failed");
+      showError(`${deleted} deleted, ${failed} could not be removed.`, "Some deletes failed");
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Clients Directory</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage your international and local client roster, platforms, and contact details.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button 
-            onClick={() => setIsImportOpen(true)}
-            variant="outline" 
-          >
-            <Sparkles className="mr-2 h-4 w-4 text-primary" /> Auto-Import Clients via CSV
-          </Button>
-          <Button onClick={handleOpenAdd}>
-            <Plus className="mr-2 h-4 w-4" /> Add New Client
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-6 lg:space-y-8">
+      <PageHeader
+        title="Clients"
+        description="Everyone you bill, the platform they come through, and what they've paid you to date."
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+              <Upload /> Import CSV
+            </Button>
+            <Button onClick={handleOpenAdd}>
+              <Plus /> Add client
+            </Button>
+          </>
+        }
+      />
 
-      {/* KPI Cards Banner */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Total Clients</CardTitle>
-            <Users className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{totalClientsCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Registered Client Accounts</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Active Clients</CardTitle>
-            <Users className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">{activeClientsCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Excludes archived clients</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Converted Lifetime Earnings (PKR)</CardTitle>
-            <DollarSign className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">{formatPKR(totalLifetimePKR)}</div>
-            <p className="text-xs text-primary mt-1 font-medium">Converted at each entry's own exchange rate</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters & Search */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-        {/* Platform Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-card border border-border rounded-xl overflow-x-auto shadow-sm">
-          {["all", "upwork", "fiverr", "direct", "freelancer", "other"].map((pl) => (
-            <button
-              key={pl}
-              onClick={() => setPlatformFilter(pl)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${
-                platformFilter === pl 
-                  ? "bg-primary text-primary-foreground shadow" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}
-            >
-              {pl}
-            </button>
-          ))}
-        </div>
-
-        {/* Search Input */}
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search clients by name, company, email..." 
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 bg-background border-border text-foreground"
-          />
-        </div>
-      </div>
-
-      {/* Clients Table */}
-      <div className="border border-border rounded-xl overflow-hidden bg-card shadow-sm">
-        <BulkActionsBar
-          count={table.selected.size}
-          onDelete={() => setBulkConfirmOpen(true)}
-          onClear={table.clearSelection}
-          isDeleting={isBulkDeleting}
-          label="client"
+      <section aria-label="Client totals" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard label="Total clients" value={totalClientsCount} icon={Users} hint="Everyone on record" isLoading={isLoading} />
+        <StatCard
+          label="Active clients"
+          value={activeClientsCount}
+          icon={Users}
+          hint="Archived clients excluded"
+          isLoading={isLoading}
         />
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow className="border-border">
-              <TableHead className="w-10">
-                <Checkbox
-                  checked={table.allSelectedOnPage}
-                  indeterminate={table.someSelectedOnPage && !table.allSelectedOnPage}
-                  onChange={table.toggleSelectAll}
-                  aria-label="Select all clients on this page"
-                />
-              </TableHead>
-              <SortableTableHead sortKey="name" sort={table.sort} onSort={table.toggleSort} className="text-muted-foreground font-medium">
-                Client / Company Name
-              </SortableTableHead>
-              <SortableTableHead sortKey="platform" sort={table.sort} onSort={table.toggleSort} className="text-muted-foreground font-medium">
-                Platform
-              </SortableTableHead>
-              <TableHead className="text-muted-foreground font-medium">Email & Contact</TableHead>
-              <SortableTableHead sortKey="total" sort={table.sort} onSort={table.toggleSort} className="text-muted-foreground font-medium">
-                Total Billed
-              </SortableTableHead>
-              <SortableTableHead sortKey="status" sort={table.sort} onSort={table.toggleSort} className="text-muted-foreground font-medium">
-                Status
-              </SortableTableHead>
-              <TableHead className="text-right text-muted-foreground font-medium">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading client directory...</TableCell>
-              </TableRow>
-            ) : displayClients.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No clients found matching your search.</TableCell>
-              </TableRow>
-            ) : (
-              table.paged.map((client: any) => {
-                // This client's own billed total, in their own billing
-                // currency — formatting it as USD regardless of that currency
-                // used to mislabel EUR/GBP clients' totals with a "$" sign.
-                const lifetimeNative = Number(client.totalEarnings || client.totalIncome || 0);
-                const lifetimePKR = Number(client.totalEarningsPKR || 0);
-                return (
-                  <TableRow key={client.id} className="transition-colors" data-state={table.selected.has(client.id) ? "selected" : undefined}>
-                    <TableCell>
-                      <Checkbox
-                        checked={table.selected.has(client.id)}
-                        onChange={() => table.toggleSelect(client.id)}
-                        aria-label={`Select ${client.name}`}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-semibold text-foreground">{client.name}</div>
-                      {client.company && <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"><Building className="h-3 w-3" /> {client.company}</div>}
-                    </TableCell>
+        <StatCard
+          label="Lifetime billed"
+          value={formatPKR(totalLifetimePKR)}
+          icon={DollarSign}
+          emphasis
+          hint="Converted at each entry's own rate"
+          isLoading={isLoading}
+        />
+      </section>
 
-                    <TableCell>
-                      <Badge
-                        variant="secondary"
-                        className="capitalize font-medium"
-                      >
-                        {client.platform || "direct"}
-                      </Badge>
-                    </TableCell>
+      <Card className="overflow-hidden">
+        {table.selected.size > 0 ? (
+          <BulkActionsBar
+            count={table.selected.size}
+            onDelete={() => setBulkConfirmOpen(true)}
+            onClear={table.clearSelection}
+            isDeleting={isBulkDeleting}
+            label="client"
+          />
+        ) : (
+          <DataToolbar>
+            <SearchInput
+              value={search}
+              onValueChange={setSearch}
+              placeholder="Search name, company or email"
+              aria-label="Search clients"
+              className="sm:w-72"
+            />
+            <SegmentedFilter
+              options={PLATFORMS}
+              value={platformFilter}
+              onChange={setPlatformFilter}
+              ariaLabel="Filter by platform"
+            />
+          </DataToolbar>
+        )}
 
-                    <TableCell className="text-xs space-y-0.5">
-                      <div className="text-foreground flex items-center gap-1.5"><Mail className="h-3 w-3 text-muted-foreground" /> {client.email || "No email"}</div>
-                      {client.phone && <div className="text-muted-foreground flex items-center gap-1.5"><Phone className="h-3 w-3" /> {client.phone}</div>}
-                    </TableCell>
-
-                    <TableCell className="font-mono">
-                      <div className="font-bold text-primary">
-                        {client.currency === "USD"
-                          ? formatUSD(lifetimeNative)
-                          : `${client.currency || "USD"} ${lifetimeNative.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground">{formatPKR(lifetimePKR)}</div>
-                    </TableCell>
-
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={
-                          client.status === "archived"
-                            ? "border-muted-foreground/30 text-muted-foreground bg-muted font-medium"
-                            : "border-primary/30 text-primary bg-primary/10 font-medium"
-                        }
-                      >
-                        {client.status || "active"}
-                      </Badge>
-                    </TableCell>
-
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button asChild size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-muted" title="Create Invoice for Client">
-                          <Link href={`/invoices/new?client=${client.id}`}>
-                            <FilePlus className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        <Button onClick={() => handleOpenEdit(client)} size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted" title="Edit Client">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button onClick={() => setDeleteTarget({ id: client.id, name: client.name })} size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-muted" title="Delete Client">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-        <PaginationBar page={table.page} pageSize={PAGE_SIZE} total={table.total} onPageChange={table.setPage} />
-      </div>
-
-      {/* Add / Edit Client Modal Overlay */}
-      {isAddOpen && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-lg overflow-hidden shadow-xl animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between p-6 border-b border-border">
-              <h2 className="text-xl font-bold text-foreground">
-                {editingClient ? "Edit Client Details" : "Add New Client"}
-              </h2>
-              <button onClick={() => setIsAddOpen(false)} className="text-muted-foreground hover:text-foreground">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSave} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Client Contact Name *</label>
-                  <Input 
-                    placeholder="John Doe" 
-                    value={name} 
-                    onChange={(e) => setName(e.target.value)} 
-                    required 
-                    className="bg-background border-input text-foreground"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Company Name</label>
-                  <Input 
-                    placeholder="TechFlow Inc." 
-                    value={company} 
-                    onChange={(e) => setCompany(e.target.value)} 
-                    className="bg-background border-input text-foreground"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Email Address</label>
-                  <Input 
-                    type="email" 
-                    placeholder="billing@techflow.com" 
-                    value={email} 
-                    onChange={(e) => setEmail(e.target.value)} 
-                    className="bg-background border-input text-foreground"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Phone Number</label>
-                  <Input 
-                    placeholder="+1 415 555 0199" 
-                    value={phone} 
-                    onChange={(e) => setPhone(e.target.value)} 
-                    className="bg-background border-input text-foreground"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Platform</label>
-                  <select 
-                    value={platform} 
-                    onChange={(e) => setPlatform(e.target.value)} 
-                    className="w-full h-10 px-3 rounded-md bg-background border border-input text-foreground text-sm focus:border-primary focus:outline-none"
-                  >
-                    <option value="upwork">Upwork Escrow</option>
-                    <option value="fiverr">Fiverr Orders</option>
-                    <option value="direct">Direct Client (Bank / Wise)</option>
-                    <option value="freelancer">Freelancer.com</option>
-                    <option value="other">Other Platform</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Billing Currency</label>
-                  <select
-                    value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
-                    className="w-full h-10 px-3 rounded-md bg-background border border-input text-foreground text-sm focus:border-primary focus:outline-none"
-                  >
-                    <option value="USD">USD ($)</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="GBP">GBP (£)</option>
-                    <option value="PKR">PKR (Rs.)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Status</label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full h-10 px-3 rounded-md bg-background border border-input text-foreground text-sm focus:border-primary focus:outline-none"
+        {isLoading ? (
+          <TableSkeleton rows={6} columns={6} />
+        ) : displayClients.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title={hasFilters ? "No clients match those filters" : "No clients yet"}
+            description={
+              hasFilters
+                ? "Try a different search term, or clear the platform filter."
+                : "Add the people and companies you invoice, then bill them in a couple of clicks."
+            }
+            action={
+              hasFilters ? (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearch("");
+                    setPlatformFilter("all");
+                  }}
                 >
-                  <option value="active">Active</option>
-                  <option value="archived">Archived</option>
-                </select>
+                  Clear filters
+                </Button>
+              ) : (
+                <Button onClick={handleOpenAdd}>
+                  <Plus /> Add your first client
+                </Button>
+              )
+            }
+          />
+        ) : (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>
+                    <Checkbox
+                      checked={table.allSelectedOnPage}
+                      indeterminate={table.someSelectedOnPage && !table.allSelectedOnPage}
+                      onChange={table.toggleSelectAll}
+                      aria-label="Select all clients on this page"
+                    />
+                  </TableHead>
+                  <SortableTableHead sortKey="name" sort={table.sort} onSort={table.toggleSort}>
+                    Client
+                  </SortableTableHead>
+                  <SortableTableHead sortKey="platform" sort={table.sort} onSort={table.toggleSort}>
+                    Platform
+                  </SortableTableHead>
+                  <TableHead>Contact</TableHead>
+                  <SortableTableHead sortKey="total" sort={table.sort} onSort={table.toggleSort} align="right">
+                    Total billed
+                  </SortableTableHead>
+                  <SortableTableHead sortKey="status" sort={table.sort} onSort={table.toggleSort}>
+                    Status
+                  </SortableTableHead>
+                  <TableHead className="text-right">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {table.paged.map((client: any) => {
+                  // This client's own billed total, in their own billing
+                  // currency — formatting it as USD regardless of that currency
+                  // used to mislabel EUR/GBP clients' totals with a "$" sign.
+                  const lifetimeNative = Number(client.totalEarnings || client.totalIncome || 0);
+                  const lifetimePKR = Number(client.totalEarningsPKR || 0);
+                  const isArchived = client.status === "archived";
+                  return (
+                    <TableRow key={client.id} data-state={table.selected.has(client.id) ? "selected" : undefined}>
+                      <TableCell>
+                        <Checkbox
+                          checked={table.selected.has(client.id)}
+                          onChange={() => table.toggleSelect(client.id)}
+                          aria-label={`Select ${client.name}`}
+                        />
+                      </TableCell>
+
+                      <TableCell>
+                        <span className="block font-medium text-foreground">{client.name}</span>
+                        {client.company && (
+                          <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Building className="size-3 shrink-0" aria-hidden="true" /> {client.company}
+                          </span>
+                        )}
+                      </TableCell>
+
+                      <TableCell>
+                        <Badge variant="neutral" className="capitalize">
+                          {client.platform || "direct"}
+                        </Badge>
+                      </TableCell>
+
+                      <TableCell>
+                        <span className="flex items-center gap-1.5 text-xs text-foreground">
+                          <Mail className="size-3 shrink-0 text-subtle" aria-hidden="true" />
+                          {client.email || <span className="text-subtle">No email</span>}
+                        </span>
+                        {client.phone && (
+                          <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Phone className="size-3 shrink-0 text-subtle" aria-hidden="true" /> {client.phone}
+                          </span>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="text-right">
+                        <span className="block font-mono text-sm font-medium tabular-nums text-foreground">
+                          {formatMoney(lifetimeNative, client.currency)}
+                        </span>
+                        <span className="block font-mono text-xs tabular-nums text-muted-foreground">
+                          {formatPKR(lifetimePKR)}
+                        </span>
+                      </TableCell>
+
+                      <TableCell>
+                        <Badge variant={isArchived ? "neutral" : "success"} dot className="capitalize">
+                          {client.status || "active"}
+                        </Badge>
+                      </TableCell>
+
+                      <TableCell className="text-right">
+                        <span className="flex items-center justify-end gap-0.5">
+                          <Button
+                            asChild
+                            size="icon-sm"
+                            variant="ghost"
+                            title={`Create an invoice for ${client.name}`}
+                          >
+                            <Link href={`/invoices/new?client=${client.id}`}>
+                              <FilePlus />
+                              <span className="sr-only">Create invoice for {client.name}</span>
+                            </Link>
+                          </Button>
+                          <Button
+                            onClick={() => handleOpenEdit(client)}
+                            size="icon-sm"
+                            variant="ghost"
+                            title={`Edit ${client.name}`}
+                          >
+                            <Edit />
+                            <span className="sr-only">Edit {client.name}</span>
+                          </Button>
+                          <Button
+                            onClick={() => setDeleteTarget({ id: client.id, name: client.name })}
+                            size="icon-sm"
+                            variant="ghost"
+                            className="hover:bg-destructive-surface hover:text-destructive"
+                            title={`Delete ${client.name}`}
+                          >
+                            <Trash2 />
+                            <span className="sr-only">Delete {client.name}</span>
+                          </Button>
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+            <PaginationBar
+              page={table.page}
+              pageSize={table.pageSize}
+              total={table.total}
+              onPageChange={table.setPage}
+              onPageSizeChange={table.setPageSize}
+            />
+          </>
+        )}
+      </Card>
+
+      {/* Add / edit client */}
+      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{editingClient ? "Edit client" : "Add client"}</DialogTitle>
+            <DialogDescription>
+              {editingClient
+                ? "Update contact details, platform or billing currency."
+                : "Only a name is required — you can fill in the rest later."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSave} className="contents">
+            <DialogBody className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Contact name" htmlFor="client-name" required>
+                  <Input
+                    id="client-name"
+                    placeholder="Ayesha Tariq"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </Field>
+
+                <Field label="Company" htmlFor="client-company">
+                  <Input
+                    id="client-company"
+                    placeholder="Northwind Studio"
+                    value={company}
+                    onChange={(e) => setCompany(e.target.value)}
+                  />
+                </Field>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Client Notes</label>
-                <textarea 
-                  placeholder="e.g. Pays via Wise or Upwork direct contract on 1st of every month." 
-                  value={notes} 
-                  onChange={(e) => setNotes(e.target.value)} 
-                  rows={3} 
-                  className="w-full rounded-md border border-input bg-background p-2.5 text-xs text-foreground focus:border-primary focus:outline-none"
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Email" htmlFor="client-email">
+                  <Input
+                    id="client-email"
+                    type="email"
+                    placeholder="billing@northwind.co"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </Field>
+
+                <Field label="Phone" htmlFor="client-phone">
+                  <Input
+                    id="client-phone"
+                    placeholder="+1 415 555 0199"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                </Field>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Platform" htmlFor="client-platform">
+                  <Select value={platform} onValueChange={setPlatform}>
+                    <SelectTrigger id="client-platform">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="upwork">Upwork escrow</SelectItem>
+                      <SelectItem value="fiverr">Fiverr orders</SelectItem>
+                      <SelectItem value="direct">Direct (bank / Wise)</SelectItem>
+                      <SelectItem value="freelancer">Freelancer.com</SelectItem>
+                      <SelectItem value="other">Other platform</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+
+                <Field label="Billing currency" htmlFor="client-currency">
+                  <Select value={currency} onValueChange={setCurrency}>
+                    <SelectTrigger id="client-currency">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD ($)</SelectItem>
+                      <SelectItem value="EUR">EUR (€)</SelectItem>
+                      <SelectItem value="GBP">GBP (£)</SelectItem>
+                      <SelectItem value="PKR">PKR (Rs)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+
+              <Field label="Status" htmlFor="client-status" hint="Archived clients stay on record but drop out of active counts.">
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger id="client-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+
+              <Field label="Notes" htmlFor="client-notes">
+                <Textarea
+                  id="client-notes"
+                  placeholder="Pays via Wise on the 1st of each month."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
                 />
-              </div>
+              </Field>
+            </DialogBody>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-border">
-                <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  <Check className="mr-1.5 h-4 w-4" /> {editingClient ? "Update Client" : "Save Client"}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)} disabled={isSaving}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving && <Loader2 className="animate-spin" />}
+                {editingClient ? "Save changes" : "Add client"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <CSVImportModal isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} />
 
@@ -530,15 +572,15 @@ export default function ClientsPage() {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleConfirmDelete}
-        title={deleteTarget?.warning ? "This will delete related records too" : "Delete Client Profile?"}
+        title={deleteTarget?.warning ? "This deletes related records too" : "Delete this client?"}
         description={
           deleteTarget?.warning
             ? deleteTarget.warning
             : deleteTarget
-              ? `Delete "${deleteTarget.name}"? This cannot be undone.`
+              ? `"${deleteTarget.name}" will be removed. This cannot be undone.`
               : ""
         }
-        confirmText={deleteTarget?.warning ? "Delete Anyway" : "Delete Client"}
+        confirmText={deleteTarget?.warning ? "Delete anyway" : "Delete client"}
         isLoading={deleteClientMutation.isPending}
       />
 
@@ -546,9 +588,9 @@ export default function ClientsPage() {
         isOpen={bulkConfirmOpen}
         onClose={() => setBulkConfirmOpen(false)}
         onConfirm={handleBulkDelete}
-        title={`Delete ${table.selected.size} Client(s)?`}
-        description="This also permanently deletes any invoices or income records linked to these clients. This cannot be undone."
-        confirmText="Delete Selected"
+        title={`Delete ${table.selected.size} client${table.selected.size === 1 ? "" : "s"}?`}
+        description="Any invoices or income records linked to these clients are permanently deleted too. This cannot be undone."
+        confirmText="Delete selected"
         isLoading={isBulkDeleting}
       />
     </div>

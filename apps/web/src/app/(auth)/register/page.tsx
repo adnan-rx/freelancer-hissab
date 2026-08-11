@@ -2,9 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import Link from 'next/link';
+import { Field } from '@/components/ui/label';
+import { PasswordInput } from '@/components/ui/password-input';
 import { useAuthStore } from '@/stores/auth.store';
 import { apiClient } from '@/lib/api-client';
 
@@ -42,73 +46,98 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-secondary/50 text-foreground p-4 py-12">
-      <div className="w-full max-w-md bg-card p-8 rounded-2xl border border-border shadow-sm">
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center font-bold text-primary-foreground text-xl shadow-sm mb-4">
-            Rs
-          </div>
-          <h2 className="text-2xl font-bold text-foreground tracking-tight">Create an account</h2>
-          <p className="text-muted-foreground mt-2 text-sm">Start managing your freelancing finances today.</p>
-        </div>
-
-        {error && (
-          <div className="mb-6 p-3 text-sm rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-center">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Full Name</label>
-            <Input 
-              placeholder="Muhammad Ahmed" 
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Business Name (Optional)</label>
-            <Input 
-              placeholder="Ahmed Web Solutions" 
-              value={businessName}
-              onChange={(e) => setBusinessName(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Email Address</label>
-            <Input 
-              type="email" 
-              placeholder="you@example.com" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Password</label>
-            <Input 
-              type="password" 
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <Button 
-            type="submit" 
-            disabled={loading}
-            className="w-full h-11 mt-6"
-          >
-            {loading ? "Creating Account..." : "Create Account"}
-          </Button>
-        </form>
-
-        <div className="mt-8 text-center text-sm text-muted-foreground">
-          Already have an account? <Link href="/login" className="text-primary hover:underline font-medium">Sign in</Link>
-        </div>
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-[-0.02em] text-foreground">Create your account</h1>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          Free to start. No card needed.
+        </p>
       </div>
+
+      {error && (
+        <div
+          role="alert"
+          className="flex items-start gap-2.5 rounded-md border border-destructive/15 bg-destructive-surface p-3 text-sm text-destructive"
+        >
+          <AlertCircle className="mt-0.5 size-4 shrink-0" />
+          <span className="leading-relaxed">{error}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        <Field label="Full name" htmlFor="name" required>
+          <Input
+            id="name"
+            name="name"
+            autoComplete="name"
+            placeholder="Ayesha Tariq"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </Field>
+
+        <Field label="Business name" htmlFor="businessName" hint="Optional — appears on the invoices you send.">
+          <Input
+            id="businessName"
+            name="businessName"
+            autoComplete="organization"
+            placeholder="Tariq Design Studio"
+            value={businessName}
+            onChange={(e) => setBusinessName(e.target.value)}
+          />
+        </Field>
+
+        <Field label="Email address" htmlFor="email" required>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            invalid={!!error}
+            required
+          />
+        </Field>
+
+        <Field label="Password" htmlFor="password" required hint="At least 8 characters.">
+          <PasswordInput
+            id="password"
+            name="password"
+            autoComplete="new-password"
+            placeholder="Choose a password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={8}
+            invalid={!!error}
+            required
+          />
+        </Field>
+
+        <Button type="submit" disabled={loading} size="lg" className="mt-2 w-full">
+          {loading ? (
+            <>
+              <Loader2 className="animate-spin" /> Creating account…
+            </>
+          ) : (
+            <>
+              Create account <ArrowRight />
+            </>
+          )}
+        </Button>
+      </form>
+
+      <p className="text-sm text-muted-foreground">
+        Already have an account?{' '}
+        <Link
+          href="/login"
+          className="font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70"
+        >
+          Sign in
+        </Link>
+      </p>
     </div>
   );
 }

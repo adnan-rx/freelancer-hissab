@@ -1,9 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AlertCircle, Loader2 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Check, DollarSign, AlertCircle } from "lucide-react";
+import { Field } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateIncome, useUpdateIncome } from "@/hooks/use-income";
 import { useClients } from "@/hooks/use-clients";
 import { useExchangeRate } from "@/hooks/use-exchange-rate";
@@ -49,8 +61,6 @@ export function AddIncomeModal({ isOpen, onClose, income }: AddIncomeModalProps)
     setPrcReferenceNumber(income?.prcReferenceNumber || "");
   }, [isOpen, income]);
 
-  if (!isOpen) return null;
-
   const isPending = createIncomeMutation.isPending || updateIncomeMutation.isPending;
   const parsedAmount = parseFloat(amount);
   const previewPKR =
@@ -80,10 +90,10 @@ export function AddIncomeModal({ isOpen, onClose, income }: AddIncomeModalProps)
     try {
       if (isEditing) {
         await updateIncomeMutation.mutateAsync({ id: income.id, ...payload });
-        showSuccess("Income entry updated.", "Income Updated");
+        showSuccess("Income entry updated.", "Income updated");
       } else {
         await createIncomeMutation.mutateAsync(payload);
-        showSuccess(`"${payload.description}" logged.`, "Income Added");
+        showSuccess(`"${payload.description}" logged.`, "Income added");
       }
       onClose();
     } catch (err) {
@@ -92,168 +102,174 @@ export function AddIncomeModal({ isOpen, onClose, income }: AddIncomeModalProps)
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-background border border-border rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 max-h-[92vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <div className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-bold text-foreground">
-              {isEditing ? "Edit Income Entry" : "Log Manual Foreign / Local Income"}
-            </h2>
-          </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground" type="button">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>{isEditing ? "Edit income entry" : "Log income"}</DialogTitle>
+          <DialogDescription>
+            Foreign or local — the PKR value is worked out from the rate on the day it arrived.
+          </DialogDescription>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && (
-            <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">Date Received *</label>
-              <Input
-                type="date"
-                value={receivedAt}
-                onChange={(e) => setReceivedAt(e.target.value)}
-                required
-                className="bg-background border-input text-foreground"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">Platform / Channel</label>
-              <select
-                value={platform}
-                onChange={(e) => setPlatform(e.target.value)}
-                className="w-full h-10 px-3 rounded-md bg-background border border-input text-foreground text-sm focus:border-primary focus:outline-none"
+        <form onSubmit={handleSubmit} className="contents">
+          <DialogBody className="space-y-4">
+            {error && (
+              <div
+                role="alert"
+                className="flex items-start gap-2.5 rounded-md border border-destructive/15 bg-destructive-surface p-3 text-sm text-destructive"
               >
-                <option value="upwork">Upwork Escrow</option>
-                <option value="fiverr">Fiverr Orders</option>
-                <option value="direct">Direct Bank Transfer / Wise</option>
-                <option value="freelancer">Freelancer.com</option>
-                <option value="other">Local PKR Client</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground">Transaction Description *</label>
-            <Input
-              placeholder="e.g. Web Development Milestone Payment"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              maxLength={500}
-              required
-              className="bg-background border-input text-foreground"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">Client Profile (Optional)</label>
-              <select
-                value={clientId}
-                onChange={(e) => setClientId(e.target.value)}
-                className="w-full h-10 px-3 rounded-md bg-background border border-input text-foreground text-sm focus:border-primary focus:outline-none"
-              >
-                <option value="">-- Select Client --</option>
-                {clientsList.map((c: any) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({c.company || c.platform})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Amount *</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  placeholder="1000"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  required
-                  className="bg-background border-input text-foreground font-mono"
-                />
+                <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                <span className="leading-relaxed">{error}</span>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Currency</label>
-                <select
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                  className="w-full h-10 px-2 rounded-md bg-background border border-input text-foreground text-sm focus:border-primary focus:outline-none"
-                >
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="GBP">GBP (£)</option>
-                  <option value="PKR">PKR (Rs.)</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {previewPKR !== null && (
-            <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-between text-xs">
-              <span className="text-primary font-semibold">Converts to</span>
-              <span className="font-bold text-primary font-mono">
-                {formatPKR(previewPKR)}
-                {isForeign && liveRate ? ` @ ${liveRate.toFixed(2)} PKR/${currency}` : ""}
-              </span>
-            </div>
-          )}
-
-          <div className="p-4 rounded-xl border border-border bg-muted/50 space-y-3">
-            <h4 className="text-xs font-bold text-foreground">SBP PRC & Remittance Compliance</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-muted-foreground">SBP Purpose Code</label>
-                <Input
-                  value={sbpPurposeCode}
-                  onChange={(e) => setSbpPurposeCode(e.target.value)}
-                  className="bg-background border-input text-foreground text-xs font-mono"
-                  placeholder="9100"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-muted-foreground">
-                  Bank PRC Ref # {isForeign && <span className="text-amber-600">(needed to file)</span>}
-                </label>
-                <Input
-                  value={prcReferenceNumber}
-                  onChange={(e) => setPrcReferenceNumber(e.target.value)}
-                  className="bg-background border-input text-foreground text-xs font-mono"
-                  placeholder="PRC-2026-X1"
-                />
-              </div>
-            </div>
-            {isForeign && !prcReferenceNumber.trim() && (
-              <p className="text-[11px] text-amber-600">
-                Export income without a PRC reference will be flagged on your filing readiness score.
-              </p>
             )}
-          </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Date received" htmlFor="inc-date" required>
+                <Input
+                  id="inc-date"
+                  type="date"
+                  value={receivedAt}
+                  onChange={(e) => setReceivedAt(e.target.value)}
+                  required
+                />
+              </Field>
+
+              <Field label="Platform" htmlFor="inc-platform">
+                <Select value={platform} onValueChange={setPlatform}>
+                  <SelectTrigger id="inc-platform">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="upwork">Upwork escrow</SelectItem>
+                    <SelectItem value="fiverr">Fiverr orders</SelectItem>
+                    <SelectItem value="direct">Direct (bank / Wise)</SelectItem>
+                    <SelectItem value="freelancer">Freelancer.com</SelectItem>
+                    <SelectItem value="other">Local PKR client</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+
+            <Field label="Description" htmlFor="inc-desc" required>
+              <Input
+                id="inc-desc"
+                placeholder="Web development milestone payment"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                maxLength={500}
+                required
+              />
+            </Field>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Client" htmlFor="inc-client" hint="Optional — links this payment to a client.">
+                <Select value={clientId || "none"} onValueChange={(v) => setClientId(v === "none" ? "" : v)}>
+                  <SelectTrigger id="inc-client">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No client</SelectItem>
+                    {clientsList.map((c: any) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Amount" htmlFor="inc-amount" required>
+                  <Input
+                    id="inc-amount"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="1000"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    required
+                    className="font-mono tabular-nums"
+                  />
+                </Field>
+                <Field label="Currency" htmlFor="inc-currency">
+                  <Select value={currency} onValueChange={setCurrency}>
+                    <SelectTrigger id="inc-currency">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD ($)</SelectItem>
+                      <SelectItem value="EUR">EUR (€)</SelectItem>
+                      <SelectItem value="GBP">GBP (£)</SelectItem>
+                      <SelectItem value="PKR">PKR (Rs)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+            </div>
+
+            {previewPKR !== null && (
+              <div className="flex items-center justify-between gap-3 rounded-md border border-brand-200 bg-brand-50 px-3 py-2.5">
+                <span className="text-sm font-medium text-brand-800">Converts to</span>
+                <span className="text-right">
+                  <span className="block font-mono text-sm font-semibold tabular-nums text-brand-900">
+                    {formatPKR(previewPKR)}
+                  </span>
+                  {isForeign && liveRate && (
+                    <span className="block font-mono text-2xs tabular-nums text-brand-700">
+                      at {liveRate.toFixed(2)} PKR/{currency}
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
+
+            <div className="space-y-4 rounded-md border border-border bg-muted/50 p-4">
+              <p className="text-sm font-medium text-foreground">Remittance evidence</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="SBP purpose code" htmlFor="inc-sbp">
+                  <Input
+                    id="inc-sbp"
+                    value={sbpPurposeCode}
+                    onChange={(e) => setSbpPurposeCode(e.target.value)}
+                    className="font-mono"
+                    placeholder="9100"
+                  />
+                </Field>
+
+                <Field
+                  label="Bank PRC reference"
+                  htmlFor="inc-prc"
+                  hint={isForeign ? "Required before you can file export income." : undefined}
+                >
+                  <Input
+                    id="inc-prc"
+                    value={prcReferenceNumber}
+                    onChange={(e) => setPrcReferenceNumber(e.target.value)}
+                    className="font-mono"
+                    placeholder="PRC-2026-X1"
+                  />
+                </Field>
+              </div>
+              {isForeign && !prcReferenceNumber.trim() && (
+                <p className="rounded-md border border-warning/15 bg-warning-surface px-3 py-2 text-xs leading-relaxed text-warning">
+                  Export income without a PRC reference gets flagged on your filing readiness score.
+                </p>
+              )}
+            </div>
+          </DialogBody>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
               Cancel
             </Button>
             <Button type="submit" disabled={isPending}>
-              <Check className="mr-1.5 h-4 w-4" />
-              {isPending ? "Saving..." : isEditing ? "Update Income" : "Log Income Entry"}
+              {isPending && <Loader2 className="animate-spin" />}
+              {isEditing ? "Save changes" : "Log income"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

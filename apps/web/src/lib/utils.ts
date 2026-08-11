@@ -15,6 +15,43 @@ export function formatPKR(amount: number | string) {
   }).format(valid);
 }
 
+/**
+ * Axis-and-chip sized PKR: "Rs 1.2M" instead of "PKR 1,240,880". Full precision
+ * still belongs in tables and tooltips — this is only for cramped labels.
+ */
+export function formatCompactPKR(amount: number | string) {
+  const numeric = typeof amount === "number" ? amount : parseFloat(String(amount || 0));
+  const valid = isNaN(numeric) ? 0 : numeric;
+  if (valid === 0) return "Rs 0";
+  return `Rs ${new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(valid)}`;
+}
+
+/**
+ * Any billing currency, formatted the same way. The pages used to special-case
+ * USD and fall through to a bare `${code} ${amount}` for everything else, so a
+ * EUR total printed as "EUR 2870.00" beside "$4,180.00" — same table, two
+ * different conventions, and no thousands separator on one of them.
+ */
+export function formatMoney(amount: number | string, currency = "USD") {
+  const numeric = typeof amount === "number" ? amount : parseFloat(String(amount || 0));
+  const valid = isNaN(numeric) ? 0 : numeric;
+  const code = (currency || "USD").toUpperCase();
+  try {
+    return new Intl.NumberFormat(code === "PKR" ? "en-PK" : "en-US", {
+      style: "currency",
+      currency: code,
+      maximumFractionDigits: code === "PKR" ? 0 : 2,
+    }).format(valid);
+  } catch {
+    // Unknown/non-ISO code: still print grouped digits rather than a raw float.
+    return `${code} ${valid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+}
+
+/** @deprecated Prefer `formatMoney(amount, currency)` — kept for external callers. */
 export function formatUSD(amount: number | string) {
   const numeric = typeof amount === "number" ? amount : parseFloat(String(amount || 0));
   const valid = isNaN(numeric) ? 0 : numeric;

@@ -2,59 +2,265 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+   FreelancerHisab design tokens
+   White-first premium fintech. One neutral family (a whisper of green so it
+   sits under the brand without reading as "tinted"), one accent scale anchored
+   on Pakistan green #01411C, and semantic colours reserved for meaning only.
+   Every token is HSL triplet so Tailwind can apply opacity modifiers.
+--------------------------------------------------------------------------- */
+
+@layer base {
+  :root {
+    /* --- Brand: Pakistan green, 900 is the flag green #01411C --- */
+    --brand-50: 140 47% 96%;
+    --brand-100: 143 45% 92%;
+    --brand-200: 145 44% 83%;
+    --brand-300: 146 44% 69%;
+    --brand-400: 146 42% 54%;
+    --brand-500: 146 58% 39%;
+    --brand-600: 146 65% 31%;
+    --brand-700: 145 68% 25%;
+    --brand-800: 145 78% 18%;
+    --brand-900: 145 97% 13%;
+    --brand-950: 146 96% 9%;
+
+    /* --- Surfaces --- */
+    --background: 150 20% 98%;
+    --foreground: 170 10% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 170 10% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 170 10% 12%;
+
+    /* --- Accent roles --- */
+    --primary: var(--brand-900);
+    --primary-foreground: 0 0% 100%;
+    --secondary: var(--brand-50);
+    --secondary-foreground: var(--brand-900);
+    --accent: var(--brand-50);
+    --accent-foreground: var(--brand-900);
+
+    /* --- Neutral roles --- */
+    --muted: 150 16% 96%;
+    --muted-foreground: 158 8% 40%;
+    --subtle: 155 10% 55%;
+    --border: 152 14% 91%;
+    --border-strong: 152 12% 84%;
+    --input: 152 14% 88%;
+    --ring: var(--brand-600);
+
+    /* --- Semantic --- */
+    --success: 146 65% 31%;
+    --success-foreground: 0 0% 100%;
+    --success-surface: 140 47% 96%;
+    --warning: 23 92% 37%;
+    --warning-foreground: 0 0% 100%;
+    --warning-surface: 45 100% 96%;
+    --destructive: 4 76% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-surface: 6 78% 97%;
+    --info: 218 80% 46%;
+    --info-foreground: 0 0% 100%;
+    --info-surface: 220 100% 97%;
+
+    /* --- Data visualisation ---
+       Fixed categorical order, never cycled. Validated as a set against the
+       lightness band, chroma floor, CVD separation (protan/deutan/tritan) and
+       3:1 contrast on this surface:
+         1 #1C8449 income   2 #3B5FA8 expenses   3 #B8722A   4 #93375C   5 #0E8FA0
+       Green/gray and green/red both fail CVD separation as a pair, which is why
+       expenses are blue rather than the reflexive red. Slots 4↔5 sit in the
+       tritan floor band, so breakdown charts always carry direct labels. */
+    --chart-1: 146 65% 31%;
+    --chart-2: 220 48% 45%;
+    --chart-3: 30 63% 44%;
+    --chart-4: 336 46% 40%;
+    --chart-5: 187 84% 34%;
+    --chart-grid: 152 14% 92%;
+
+    /* --- Shape: one documented scale.
+       cards/panels 14px, controls 10px, inner tiles 8px, badges pill. --- */
+    --radius: 0.875rem;
+
+    /* --- Elevation: diffuse, tinted to the neutral hue, never pure black --- */
+    --shadow-xs: 0 1px 2px 0 hsl(160 20% 12% / 0.04);
+    --shadow-sm: 0 1px 2px 0 hsl(160 20% 12% / 0.04), 0 1px 3px 0 hsl(160 20% 12% / 0.03);
+    --shadow-md: 0 2px 4px -2px hsl(160 20% 12% / 0.05), 0 8px 16px -6px hsl(160 20% 12% / 0.07);
+    --shadow-lg: 0 4px 8px -4px hsl(160 20% 12% / 0.06), 0 16px 32px -12px hsl(160 20% 12% / 0.10);
+    --shadow-pop: 0 8px 12px -6px hsl(160 20% 12% / 0.08), 0 24px 48px -16px hsl(160 20% 12% / 0.14);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Financial figures must align vertically in every table and KPI card. */
+  .tabular,
+  table td,
+  table th {
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1, h2, h3, h4 {
+    @apply text-balance;
+  }
+
+  /* One focus treatment for the whole app: a brand ring with a page-coloured
+     gap, visible on keyboard navigation only. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring/70 ring-offset-2 ring-offset-background;
+  }
+
+  ::selection {
+    background-color: hsl(var(--brand-100));
+    color: hsl(var(--brand-900));
+  }
+
+  /* Native date/number inputs shouldn't ship browser-blue chrome. */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 150ms;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
+
+@layer components {
+  /* Skeleton block — matches the shape of the content it stands in for. */
+  .skeleton {
+    @apply relative overflow-hidden rounded-md bg-muted;
+  }
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      hsl(0 0% 100% / 0.65),
+      transparent
+    );
+    animation: shimmer 1.6s infinite;
+  }
+}
+
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
   .no-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Slim, neutral scrollbars for panes that legitimately scroll. */
+  .thin-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border-strong)) transparent;
+  }
+  .thin-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .thin-scrollbar::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border-strong));
+    border-radius: 9999px;
+  }
+  .thin-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Fades the right edge of a horizontally scrollable table so the cut-off
+     is legible as "there is more" instead of looking clipped. */
+  .scroll-fade-x {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent 100%);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
   }
 }
 
-@layer base {
-  :root {
-    --background: 210 20% 98%; /* Very light slate background #f8fafc */
-    --foreground: 0 0% 7%;
-    --card: 0 0% 100%; /* Pure white cards */
-    --card-foreground: 0 0% 7%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 7%;
-    --primary: 145 97% 13%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 140 33% 97%;
-    --secondary-foreground: 145 97% 13%;
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 16.3% 46.9%;
-    --accent: 140 33% 97%;
-    --accent-foreground: 145 97% 13%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 214 32% 91%; /* #e2e8f0 */
-    --input: 214 32% 91%;
-    --ring: 145 97% 13%;
-    --radius: 1rem; /* Softer, larger radius for cards */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
   }
 }
 
-body {
-  @apply bg-background text-foreground antialiased;
+/* Depleting rail under a toast — shows how long it has left. */
+@keyframes toast-timer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Motion is a courtesy, never a requirement. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @media print {
-  aside, header, nav, button, .print\:hidden {
+  aside,
+  header,
+  nav,
+  button,
+  .print\:hidden {
     display: none !important;
     width: 0 !important;
     height: 0 !important;
     visibility: hidden !important;
   }
 
-  body, main {
+  body,
+  main {
     background-color: white !important;
     color: black !important;
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+  }
+
+  .print\:break-inside-avoid {
+    break-inside: avoid;
   }
 }

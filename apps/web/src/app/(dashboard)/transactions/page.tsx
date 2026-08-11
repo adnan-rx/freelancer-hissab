@@ -2,31 +2,34 @@
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { Search, Loader2, ArrowUpRight, ArrowDownRight, Filter, X } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Receipt } from "lucide-react";
+
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SortableTableHead, SortState } from "@/components/ui/sortable-table-head";
 import { PaginationBar } from "@/components/ui/pagination-bar";
 import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { TableSkeleton } from "@/components/ui/skeleton";
+import { DataToolbar, SearchInput } from "@/components/ui/data-toolbar";
+import { SegmentedFilter } from "@/components/ui/segmented-filter";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
 import { useToast } from "@/providers/toast-provider";
 import { useTransactions, TransactionType, TransactionSortKey, UnifiedTransaction } from "@/hooks/use-transactions";
 import { useDeleteIncome } from "@/hooks/use-income";
 import { useDeleteExpense } from "@/hooks/use-expenses";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 
-const PAGE_SIZE = 20;
+const TYPE_FILTERS = [
+  { value: "ALL", label: "All" },
+  { value: "INCOME", label: "Income" },
+  { value: "EXPENSE", label: "Expenses" },
+];
 
 /** Selection key: a transaction's id is only unique within its own (income/expense) table. */
 const txKey = (tx: UnifiedTransaction) => `${tx.type}:${tx.id}`;
@@ -37,6 +40,7 @@ export default function TransactionsPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [sort, setSort] = useState<SortState | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
@@ -55,7 +59,7 @@ export default function TransactionsPage() {
   // avoids landing on a now-empty page (e.g. filtering to a date range with fewer rows).
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, typeFilter, startDate, endDate, sort]);
+  }, [debouncedSearch, typeFilter, startDate, endDate, sort, pageSize]);
 
   const { data, isLoading, isFetching } = useTransactions({
     search: debouncedSearch,
@@ -63,7 +67,7 @@ export default function TransactionsPage() {
     startDate: startDate || undefined,
     endDate: endDate || undefined,
     page,
-    pageSize: PAGE_SIZE,
+    pageSize,
     // Sorted server-side now: this used to only reorder the 20 rows already
     // on the current page, so "sort by amount" looked plausible but was
     // actually sorting a date-sorted slice, not the full result set.
@@ -75,6 +79,7 @@ export default function TransactionsPage() {
   const hasDateFilter = !!(startDate || endDate);
   const dateRangeInvalid = !!(startDate && endDate && startDate > endDate);
   const transactions = data?.data ?? [];
+  const hasFilters = !!search || typeFilter !== "ALL" || hasDateFilter;
 
   function toggleSort(key: string) {
     setSort((prev) => {
@@ -122,90 +127,28 @@ export default function TransactionsPage() {
     const failed = results.filter((r) => r.status === "rejected").length;
     const deleted = keys.length - failed;
     if (failed === 0) {
-      showSuccess(`${deleted} transaction(s) removed.`, "Transactions Deleted");
+      showSuccess(`${deleted} transaction${deleted === 1 ? "" : "s"} removed.`, "Transactions deleted");
     } else {
-      showError(`${deleted} deleted, ${failed} failed.`, "Some Deletes Failed");
+      showError(`${deleted} deleted, ${failed} could not be removed.`, "Some deletes failed");
     }
   };
 
-  const clearDateFilter = () => {
+  const clearAllFilters = () => {
+    setSearch("");
+    setTypeFilter("ALL");
     setStartDate("");
     setEndDate("");
   };
 
   return (
-    <div className="space-y-6 max-w-7xl">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Unified Ledger</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Track all your business income and expenses chronologically in one place.
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6 lg:space-y-8">
+      <PageHeader
+        title="Ledger"
+        description="Income and expenses in one chronological feed, across every platform and account."
+      />
 
-      <Card>
-        <CardHeader className="border-b border-border pb-4 space-y-4">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <CardTitle className="text-lg font-bold text-foreground hidden md:block">Transaction Feed</CardTitle>
-
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-              <div className="relative w-full md:w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search entity, description..."
-                  className="pl-9 bg-background border-input text-foreground"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-
-              <div className="relative">
-                <select
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value as TransactionType | "ALL")}
-                  className="appearance-none bg-background border border-input text-foreground text-sm rounded-md px-3 py-2 pr-8 focus:outline-none focus:border-primary"
-                >
-                  <option value="ALL">All Types</option>
-                  <option value="INCOME">Income Only</option>
-                  <option value="EXPENSE">Expenses Only</option>
-                </select>
-                <Filter className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-muted-foreground">Date range:</span>
-            <Input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-auto bg-background border-input text-foreground text-sm h-9"
-              aria-label="Start date"
-            />
-            <span className="text-xs text-muted-foreground">to</span>
-            <Input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-auto bg-background border-input text-foreground text-sm h-9"
-              aria-label="End date"
-            />
-            {hasDateFilter && (
-              <Button variant="ghost" size="sm" onClick={clearDateFilter} className="h-9 px-2 text-xs text-muted-foreground">
-                <X className="h-3.5 w-3.5 mr-1" /> Clear
-              </Button>
-            )}
-          </div>
-
-          {dateRangeInvalid && (
-            <p className="text-xs text-destructive">Start date must be before the end date.</p>
-          )}
-        </CardHeader>
-
-        <CardContent className="p-0">
+      <Card className="overflow-hidden">
+        {selected.size > 0 ? (
           <BulkActionsBar
             count={selected.size}
             onDelete={() => setBulkConfirmOpen(true)}
@@ -213,11 +156,66 @@ export default function TransactionsPage() {
             isDeleting={isBulkDeleting}
             label="transaction"
           />
-          <div className="overflow-x-auto">
+        ) : (
+          <DataToolbar>
+            <SearchInput
+              value={search}
+              onValueChange={setSearch}
+              placeholder="Search entity or description"
+              aria-label="Search transactions"
+              className="sm:w-64"
+            />
+            <SegmentedFilter
+              options={TYPE_FILTERS}
+              value={typeFilter}
+              onChange={(v) => setTypeFilter(v as TransactionType | "ALL")}
+              ariaLabel="Filter by transaction type"
+            />
+            <DateRangeFilter
+              startDate={startDate}
+              endDate={endDate}
+              onStartChange={setStartDate}
+              onEndChange={setEndDate}
+              onClear={() => {
+                setStartDate("");
+                setEndDate("");
+              }}
+              invalid={dateRangeInvalid}
+            />
+          </DataToolbar>
+        )}
+
+        {isLoading ? (
+          <TableSkeleton rows={8} columns={5} />
+        ) : dateRangeInvalid ? (
+          <EmptyState
+            title="That date range doesn't work"
+            description="The start date is after the end date. Adjust either end to see results."
+            size="sm"
+          />
+        ) : transactions.length === 0 ? (
+          <EmptyState
+            icon={Receipt}
+            title={hasFilters ? "No transactions match those filters" : "No transactions yet"}
+            description={
+              hasFilters
+                ? "Widen the date range or clear the filters to see more."
+                : "Log income or an expense and every entry lands here, newest first."
+            }
+            action={
+              hasFilters ? (
+                <Button variant="outline" onClick={clearAllFilters}>
+                  Clear filters
+                </Button>
+              ) : undefined
+            }
+          />
+        ) : (
+          <>
             <Table>
-              <TableHeader className="bg-muted/50">
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="w-10 pl-6">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>
                     <Checkbox
                       checked={allSelectedOnPage}
                       indeterminate={someSelectedOnPage && !allSelectedOnPage}
@@ -225,84 +223,81 @@ export default function TransactionsPage() {
                       aria-label="Select all transactions on this page"
                     />
                   </TableHead>
-                  <SortableTableHead sortKey="date" sort={sort} onSort={toggleSort} className="text-muted-foreground font-medium py-4">Date</SortableTableHead>
-                  <SortableTableHead sortKey="entity" sort={sort} onSort={toggleSort} className="text-muted-foreground font-medium py-4">Entity</SortableTableHead>
-                  <TableHead className="text-muted-foreground font-medium py-4">Description</TableHead>
-                  <SortableTableHead sortKey="category" sort={sort} onSort={toggleSort} className="text-muted-foreground font-medium py-4">Category</SortableTableHead>
-                  <SortableTableHead sortKey="amount" sort={sort} onSort={toggleSort} className="text-muted-foreground font-medium py-4 text-right pr-6">Amount</SortableTableHead>
+                  <SortableTableHead sortKey="date" sort={sort} onSort={toggleSort}>
+                    Date
+                  </SortableTableHead>
+                  <SortableTableHead sortKey="entity" sort={sort} onSort={toggleSort}>
+                    Entity
+                  </SortableTableHead>
+                  <TableHead>Description</TableHead>
+                  <SortableTableHead sortKey="category" sort={sort} onSort={toggleSort}>
+                    Category
+                  </SortableTableHead>
+                  <SortableTableHead sortKey="amount" sort={sort} onSort={toggleSort} align="right">
+                    Amount
+                  </SortableTableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center">
-                      <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
-                      <p className="text-sm text-muted-foreground mt-2">Loading transactions...</p>
-                    </TableCell>
-                  </TableRow>
-                ) : dateRangeInvalid || transactions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center">
-                      <p className="text-sm text-muted-foreground">
-                        {dateRangeInvalid
-                          ? "Fix the date range above to see results."
-                          : "No transactions found matching your criteria."}
-                      </p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  transactions.map((tx) => {
-                    const isIncome = tx.type === "INCOME";
-                    const key = txKey(tx);
-                    return (
-                      <TableRow key={key} className="transition-colors" data-state={selected.has(key) ? "selected" : undefined}>
-                        <TableCell className="pl-6">
-                          <Checkbox
-                            checked={selected.has(key)}
-                            onChange={() => toggleSelect(key)}
-                            aria-label={`Select ${tx.entity || "transaction"}`}
-                          />
-                        </TableCell>
-                        <TableCell className="text-foreground whitespace-nowrap">
-                          {format(new Date(tx.date), "MMM dd, yyyy")}
-                        </TableCell>
-                        <TableCell className="font-medium text-foreground">{tx.entity}</TableCell>
-                        <TableCell className="text-muted-foreground max-w-[200px] truncate">{tx.description}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className="font-mono font-medium">
-                            {tx.category}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right whitespace-nowrap pr-6">
-                          <div
-                            className={`font-mono font-semibold flex items-center justify-end gap-1 ${
-                              isIncome ? "text-primary" : "text-destructive"
-                            }`}
-                          >
-                            {isIncome ? <ArrowDownRight className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
-                            {isIncome ? "+" : "-"} {tx.currency}{" "}
-                            {tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
+                {transactions.map((tx) => {
+                  const isIncome = tx.type === "INCOME";
+                  const key = txKey(tx);
+                  return (
+                    <TableRow key={key} data-state={selected.has(key) ? "selected" : undefined}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selected.has(key)}
+                          onChange={() => toggleSelect(key)}
+                          aria-label={`Select ${tx.entity || "transaction"}`}
+                        />
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-muted-foreground tabular">
+                        {format(new Date(tx.date), "dd MMM yyyy")}
+                      </TableCell>
+                      <TableCell className="font-medium text-foreground">{tx.entity}</TableCell>
+                      <TableCell className="max-w-[16rem] truncate text-muted-foreground" title={tx.description}>
+                        {tx.description || "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="neutral" className="capitalize">
+                          {String(tx.category || "").replace(/_/g, " ")}
+                        </Badge>
+                      </TableCell>
+                      {/* Sign and colour carry the direction; an arrow on top of a
+                          +/− was one cue too many and read as contradictory. */}
+                      <TableCell
+                        className={`whitespace-nowrap text-right font-mono text-sm font-medium tabular-nums ${
+                          isIncome ? "text-success" : "text-foreground"
+                        }`}
+                      >
+                        {isIncome ? "+" : "−"} {tx.currency}{" "}
+                        {tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
-          </div>
 
-          <PaginationBar page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} isFetching={isFetching} />
-        </CardContent>
+            <PaginationBar
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+              isFetching={isFetching}
+            />
+          </>
+        )}
       </Card>
 
       <ConfirmModal
         isOpen={bulkConfirmOpen}
         onClose={() => setBulkConfirmOpen(false)}
         onConfirm={handleBulkDelete}
-        title={`Delete ${selected.size} Transaction(s)?`}
+        title={`Delete ${selected.size} transaction${selected.size === 1 ? "" : "s"}?`}
         description="Each selected row is removed from its underlying income or expense log. This cannot be undone."
-        confirmText="Delete Selected"
+        confirmText="Delete selected"
         isLoading={isBulkDeleting}
       />
     </div>

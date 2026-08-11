@@ -1,15 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Field } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardTitle, CardToolbar } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Pencil, Check, Loader2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { TableSkeleton } from "@/components/ui/skeleton";
 import { useTaxRules, useCreateTaxRule, useUpdateTaxRule, useDeleteTaxRule } from "@/hooks/use-tax";
 import { useToast } from "@/providers/toast-provider";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { formatDate } from "@/lib/utils";
 import { taxYearLabel } from "@/lib/tax-year";
 
 export function TaxRulesTab() {
@@ -66,10 +71,10 @@ export function TaxRulesTab() {
     // successful one.
     if (editingId) {
       await updateRuleMutation.mutateAsync({ id: editingId, data: payload });
-      showSuccess("Tax rule updated.", "Rule Updated");
+      showSuccess("Tax rule updated.", "Rule updated");
     } else {
       await createRuleMutation.mutateAsync(payload);
-      showSuccess("Tax rule created.", "Rule Created");
+      showSuccess("Tax rule created.", "Rule created");
     }
 
     resetForm();
@@ -79,7 +84,7 @@ export function TaxRulesTab() {
     if (!deleteTarget) return;
     try {
       await deleteRuleMutation.mutateAsync(deleteTarget.id);
-      showSuccess("Tax rule deleted.", "Rule Deleted");
+      showSuccess("Tax rule deleted.", "Rule deleted");
     } finally {
       // Closes the modal either way; a failure is already reported by the
       // global mutation-error toast.
@@ -87,122 +92,160 @@ export function TaxRulesTab() {
     }
   };
 
+  const isSaving = createRuleMutation.isPending || updateRuleMutation.isPending;
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="text-lg font-bold text-foreground">Tax Rules Configuration</CardTitle>
-          <CardDescription>Manage the underlying tax slabs and export rates for the platform.</CardDescription>
+    <Card className="overflow-hidden">
+      <CardToolbar>
+        <div className="space-y-1">
+          <CardTitle>Tax rules</CardTitle>
+          <CardDescription>Slabs and export rates applied across every account.</CardDescription>
         </div>
         {!isAdding && (
           <Button onClick={() => setIsAdding(true)} size="sm">
-            <Plus className="mr-2 h-4 w-4" /> Add Rule
+            <Plus /> Add rule
           </Button>
         )}
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {isAdding && (
-          <div className="p-4 border border-border rounded-xl bg-muted/30">
-            <h3 className="text-sm font-bold mb-4">{editingId ? "Edit Tax Rule" : "Create New Tax Rule"}</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold">Tax Year (e.g. 2026-27)</label>
-                  <Input value={taxYear} onChange={(e) => setTaxYear(e.target.value)} required />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold">Income Type</label>
-                  <Select value={incomeType} onValueChange={setIncomeType}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="IT_EXPORT_PSEB">IT Export (PSEB)</SelectItem>
-                      <SelectItem value="IT_EXPORT_STANDARD">IT Export (Standard)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold">Rate (e.g. 0.01 for 1%)</label>
-                  <Input type="number" step="0.0001" value={rate} onChange={(e) => setRate(e.target.value)} required />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold">Effective From</label>
-                  <Input type="date" value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} required />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold">Notes</label>
-                <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. Budget 2026 update" />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="ghost" onClick={resetForm}>Cancel</Button>
-                <Button type="submit" disabled={createRuleMutation.isPending || updateRuleMutation.isPending}>
-                  {createRuleMutation.isPending || updateRuleMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
-                  Save Rule
-                </Button>
-              </div>
-            </form>
-          </div>
-        )}
+      </CardToolbar>
 
-        <div className="border border-border rounded-xl overflow-hidden">
-          <Table>
-            <TableHeader className="bg-muted/50">
-              <TableRow>
-                <TableHead>Tax Year</TableHead>
-                <TableHead>Income Type</TableHead>
-                <TableHead className="text-right">Rate</TableHead>
-                <TableHead>Effective From</TableHead>
-                <TableHead className="w-[100px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground">Loading rules...</TableCell></TableRow>
-              ) : rules?.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground">No tax rules configured.</TableCell></TableRow>
-              ) : (
-                rules?.map((rule: any) => (
-                  <TableRow key={rule.id}>
-                    <TableCell className="font-medium">{rule.taxYear}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{rule.incomeType}</TableCell>
-                    <TableCell className="text-right font-mono text-destructive">{(Number(rule.rate) * 100).toFixed(2)}%</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{rule.effectiveFrom ? String(rule.effectiveFrom).substring(0, 10) : "N/A"}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(rule)}>
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => setDeleteTarget({ id: rule.id, taxYear: rule.taxYear, incomeType: rule.incomeType })}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+      {isAdding && (
+        <div className="border-b border-border bg-muted/40 p-5 sm:p-6">
+          <p className="mb-4 text-sm font-medium text-foreground">
+            {editingId ? "Edit rule" : "New rule"}
+          </p>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Tax year" htmlFor="rule-year" required hint="Format: 2026-27">
+                <Input id="rule-year" value={taxYear} onChange={(e) => setTaxYear(e.target.value)} required className="font-mono" />
+              </Field>
+              <Field label="Income type" htmlFor="rule-type">
+                <Select value={incomeType} onValueChange={setIncomeType}>
+                  <SelectTrigger id="rule-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="IT_EXPORT_PSEB">IT export (PSEB)</SelectItem>
+                    <SelectItem value="IT_EXPORT_STANDARD">IT export (standard)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Rate" htmlFor="rule-rate" required hint="As a decimal — 0.01 means 1%.">
+                <Input
+                  id="rule-rate"
+                  type="number"
+                  step="0.0001"
+                  value={rate}
+                  onChange={(e) => setRate(e.target.value)}
+                  required
+                  className="font-mono tabular-nums"
+                />
+              </Field>
+              <Field label="Effective from" htmlFor="rule-from" required>
+                <Input
+                  id="rule-from"
+                  type="date"
+                  value={effectiveFrom}
+                  onChange={(e) => setEffectiveFrom(e.target.value)}
+                  required
+                />
+              </Field>
+            </div>
+
+            <Field label="Notes" htmlFor="rule-notes">
+              <Input
+                id="rule-notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Budget 2026 update"
+              />
+            </Field>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button type="button" variant="ghost" onClick={resetForm}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving && <Loader2 className="animate-spin" />} Save rule
+              </Button>
+            </div>
+          </form>
         </div>
-      </CardContent>
+      )}
+
+      {isLoading ? (
+        <TableSkeleton rows={4} columns={5} />
+      ) : rules?.length === 0 ? (
+        <EmptyState
+          title="No tax rules configured"
+          description="Add a rule so tax estimates use a rate rather than falling back."
+          action={
+            <Button size="sm" onClick={() => setIsAdding(true)}>
+              <Plus /> Add rule
+            </Button>
+          }
+        />
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Tax year</TableHead>
+              <TableHead>Income type</TableHead>
+              <TableHead className="text-right">Rate</TableHead>
+              <TableHead>Effective from</TableHead>
+              <TableHead className="text-right">
+                <span className="sr-only">Actions</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rules?.map((rule: any) => (
+              <TableRow key={rule.id}>
+                <TableCell className="font-mono font-medium tabular-nums text-foreground">{rule.taxYear}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">{rule.incomeType}</TableCell>
+                <TableCell className="text-right font-mono text-sm font-medium tabular-nums text-foreground">
+                  {(Number(rule.rate) * 100).toFixed(2)}%
+                </TableCell>
+                <TableCell className="text-muted-foreground tabular">
+                  {rule.effectiveFrom ? formatDate(String(rule.effectiveFrom).substring(0, 10)) : "—"}
+                </TableCell>
+                <TableCell className="text-right">
+                  <span className="flex items-center justify-end gap-0.5">
+                    <Button size="icon-sm" variant="ghost" onClick={() => startEdit(rule)} title="Edit rule">
+                      <Pencil />
+                      <span className="sr-only">Edit {rule.taxYear} rule</span>
+                    </Button>
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      className="hover:bg-destructive-surface hover:text-destructive"
+                      onClick={() => setDeleteTarget({ id: rule.id, taxYear: rule.taxYear, incomeType: rule.incomeType })}
+                      title="Delete rule"
+                    >
+                      <Trash2 />
+                      <span className="sr-only">Delete {rule.taxYear} rule</span>
+                    </Button>
+                  </span>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
 
       <ConfirmModal
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleConfirmDelete}
-        title="Delete Tax Rule?"
+        title="Delete this tax rule?"
         description={
           deleteTarget
-            ? `Delete the ${deleteTarget.taxYear} rule for ${deleteTarget.incomeType}? This affects every user's tax calculation.`
+            ? `The ${deleteTarget.taxYear} rule for ${deleteTarget.incomeType} will be removed. This changes tax calculations for every account.`
             : ""
         }
-        confirmText="Delete Rule"
+        confirmText="Delete rule"
         isLoading={deleteRuleMutation.isPending}
       />
     </Card>

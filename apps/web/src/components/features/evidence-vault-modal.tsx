@@ -1,12 +1,24 @@
+"use client";
+
 import { useRef, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { UploadCloud, FileText, Trash2, Loader2, Image as ImageIcon } from "lucide-react";
+import { FileText, Image as ImageIcon, Loader2, Trash2, UploadCloud } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth.store";
 import { useToast } from "@/providers/toast-provider";
-import { apiErrorMessage, unwrapApi } from "@/lib/utils";
+import { apiErrorMessage, unwrapApi, formatDate, cn } from "@/lib/utils";
 
 interface EvidenceVaultModalProps {
   isOpen: boolean;
@@ -51,11 +63,11 @@ export function EvidenceVaultModal({ isOpen, onClose, recordId, recordType, reco
     onSuccess: (doc: any) => {
       queryClient.invalidateQueries({ queryKey: ['evidence', recordType, recordId] });
       setIsUploading(false);
-      showSuccess(`"${doc?.fileName || 'Document'}" uploaded.`, "Evidence Uploaded");
+      showSuccess(`"${doc?.fileName || 'Document'}" uploaded.`, "Evidence uploaded");
     },
     onError: (err) => {
       setIsUploading(false);
-      showError(apiErrorMessage(err, "Failed to upload file."), "Upload Failed");
+      showError(apiErrorMessage(err, "Failed to upload file."), "Upload failed");
     }
   });
 
@@ -66,12 +78,12 @@ export function EvidenceVaultModal({ isOpen, onClose, recordId, recordType, reco
     meta: { suppressErrorToast: true },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['evidence', recordType, recordId] });
-      showSuccess("Document removed.", "Evidence Deleted");
+      showSuccess("Document removed.", "Evidence deleted");
     },
     onError: (err) => {
       // Previously had no onError at all — a failed delete left the document
       // listed with no explanation.
-      showError(apiErrorMessage(err, "Failed to delete the document."), "Delete Failed");
+      showError(apiErrorMessage(err, "Failed to delete the document."), "Couldn't delete document");
     },
   });
 
@@ -97,30 +109,40 @@ export function EvidenceVaultModal({ isOpen, onClose, recordId, recordType, reco
       // Give the new tab time to load the object URL before revoking it.
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     } catch (err) {
-      showError(apiErrorMessage(err, "Failed to open the document."), "Could Not Open Document");
+      showError(apiErrorMessage(err, "Failed to open the document."), "Couldn't open document");
     } finally {
       setOpeningDocId(null);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[550px] bg-background rounded-3xl border-border/50 shadow-sm overflow-hidden p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/50 bg-muted/20">
-          <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" /> Evidence Vault
-          </DialogTitle>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Evidence</DialogTitle>
           <DialogDescription>
-            Manage supporting documents for {recordTitle || (recordType === 'income' ? 'this income record' : 'this expense record')}.
+            {recordType === 'income'
+              ? "PRCs and remittance advice for "
+              : "Receipts and invoices for "}
+            <span className="font-medium text-foreground">
+              {recordTitle || (recordType === 'income' ? "this income entry" : "this expense")}
+            </span>
+            .
           </DialogDescription>
         </DialogHeader>
 
-        <div className="p-6 space-y-6">
-          {/* Upload Area */}
-          <div
-            className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-colors cursor-pointer
-              ${isUploading ? 'border-primary/50 bg-primary/5' : 'border-border/60 hover:border-primary/50 hover:bg-muted/30'}`}
+        <DialogBody className="space-y-5">
+          <button
+            type="button"
             onClick={() => !isUploading && fileInputRef.current?.click()}
+            disabled={isUploading}
+            className={cn(
+              "flex w-full flex-col items-center rounded-lg border-2 border-dashed p-8 text-center transition-colors duration-150 ease-smooth",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2",
+              isUploading
+                ? "border-brand-400 bg-brand-50"
+                : "border-border-strong bg-muted/40 hover:border-brand-400 hover:bg-muted"
+            )}
           >
             <input
               type="file"
@@ -129,69 +151,90 @@ export function EvidenceVaultModal({ isOpen, onClose, recordId, recordType, reco
               accept=".pdf,.jpg,.jpeg,.png"
               onChange={handleFileChange}
             />
-            {isUploading ? (
-              <div className="flex flex-col items-center">
-                <Loader2 className="h-10 w-10 text-primary animate-spin mb-3" />
-                <p className="text-sm font-semibold text-foreground">Uploading to secure vault...</p>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center">
-                <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-3">
-                  <UploadCloud className="h-6 w-6" />
-                </div>
-                <p className="text-sm font-semibold text-foreground mb-1">Click to upload document</p>
-                <p className="text-xs text-muted-foreground">Supports PDF, JPG, PNG (Max 5MB)</p>
-              </div>
-            )}
-          </div>
+            <span
+              className="flex size-11 items-center justify-center rounded-md bg-brand-50 text-brand-700"
+              aria-hidden="true"
+            >
+              {isUploading ? <Loader2 className="size-5 animate-spin" /> : <UploadCloud className="size-5" />}
+            </span>
+            <span className="mt-4 text-sm font-medium text-foreground">
+              {isUploading ? "Uploading…" : "Click to upload a document"}
+            </span>
+            <span className="mt-1 text-xs text-muted-foreground">PDF, JPG or PNG, up to 5MB</span>
+          </button>
 
-          {/* Document List */}
           <div>
-            <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">Attached Documents</h4>
+            <p className="mb-3 text-2xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              Attached documents
+            </p>
 
             {isLoading ? (
-              <div className="text-center py-4 text-sm text-muted-foreground">Loading documents...</div>
+              <div className="space-y-2">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16 rounded-md" />
+                ))}
+              </div>
             ) : documents.length === 0 ? (
-              <div className="text-center py-6 bg-muted/20 rounded-xl border border-dashed border-border/50 text-sm text-muted-foreground">
-                No evidence attached yet.
+              <div className="rounded-md border border-dashed border-border-strong bg-muted/30">
+                <EmptyState
+                  size="sm"
+                  title="Nothing attached yet"
+                  description={
+                    recordType === 'income'
+                      ? "A PRC or bank advice here is what proves this was export income."
+                      : "A receipt here backs up the deduction if you're ever asked."
+                  }
+                />
               </div>
             ) : (
-              <div className="space-y-3">
+              <ul className="space-y-2">
                 {documents.map((doc: any) => (
-                  <div key={doc.id} className="flex items-center justify-between p-3 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 transition-colors">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="h-10 w-10 rounded-lg bg-background border border-border/50 flex items-center justify-center shrink-0 text-primary">
-                        {doc.fileType.includes('image') ? <ImageIcon className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
-                      </div>
-                      <div className="min-w-0">
+                  <li
+                    key={doc.id}
+                    className="flex items-center justify-between gap-3 rounded-md border border-border bg-card p-3 transition-colors duration-150 hover:bg-muted/50"
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span
+                        className="flex size-9 shrink-0 items-center justify-center rounded-sm bg-muted text-muted-foreground"
+                        aria-hidden="true"
+                      >
+                        {String(doc.fileType || "").includes('image') ? (
+                          <ImageIcon className="size-4" />
+                        ) : (
+                          <FileText className="size-4" />
+                        )}
+                      </span>
+                      <span className="min-w-0">
                         <button
                           type="button"
                           onClick={() => handleView(doc)}
                           disabled={openingDocId === doc.id}
-                          className="text-sm font-semibold text-foreground hover:text-primary truncate block text-left disabled:opacity-60"
+                          className="block max-w-full truncate rounded-sm text-left text-sm font-medium text-foreground underline-offset-4 transition-colors hover:text-brand-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 disabled:opacity-60"
                         >
                           {openingDocId === doc.id ? "Opening…" : doc.fileName}
                         </button>
-                        <p className="text-xs text-muted-foreground">
-                          {Math.round(doc.fileSize / 1024)} KB • {new Date(doc.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
+                        <span className="block text-xs text-muted-foreground tabular">
+                          {Math.round(doc.fileSize / 1024)} KB · {formatDate(doc.createdAt)}
+                        </span>
+                      </span>
+                    </span>
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+                      size="icon-sm"
+                      className="shrink-0 hover:bg-destructive-surface hover:text-destructive"
                       onClick={() => deleteMutation.mutate(doc.id)}
                       disabled={deleteMutation.isPending}
+                      title="Delete document"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 />
+                      <span className="sr-only">Delete {doc.fileName}</span>
                     </Button>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </div>
-        </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );
