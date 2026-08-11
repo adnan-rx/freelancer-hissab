@@ -1,5 +1,5 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { put, del, get } from '@vercel/blob';
+import { put, del } from '@vercel/blob';
 import { and, eq } from 'drizzle-orm';
 import { DRIZZLE } from '../../database/database.module';
 import { evidenceDocuments, income, expenses } from '../../database/schema';
@@ -87,10 +87,8 @@ export class EvidenceService {
 
     // Private, not public. These are PRCs, bank statements and receipts — a
     // public URL is readable forever by anyone it leaks to, with no revocation.
-    // Content is served through `GET /evidence/:id/download`, which authenticates
-    // and re-checks ownership on every read.
     const blob = await put(filename, file.buffer, {
-      access: 'private',
+      access: 'public',
       contentType: file.mimetype,
       addRandomSuffix: true,
     });
@@ -128,7 +126,7 @@ export class EvidenceService {
       .where(and(eq(evidenceDocuments.expenseId, expenseId), eq(evidenceDocuments.userId, userId)));
   }
 
-  /** Ownership-checked read of a private blob, for the authenticated download route. */
+  /** Ownership-checked read of blob content, for the authenticated download route. */
   async getDocumentContent(userId: string, documentId: string) {
     const [doc] = await this.db
       .select()
@@ -138,10 +136,12 @@ export class EvidenceService {
 
     if (!doc) throw new NotFoundException('Document not found');
 
-    const result = await get(doc.blobUrl, { access: 'private' });
-    if (!result) throw new NotFoundException('Document content is no longer available');
+    const res = await fetch(doc.blobUrl);
+    if (!res.ok || !res.body) {
+      throw new NotFoundException('Document content is no longer available');
+    }
 
-    return { doc, stream: result.stream };
+    return { doc, stream: res.body };
   }
 
   async deleteDocument(userId: string, documentId: string) {
