@@ -15,15 +15,26 @@ apiClient.interceptors.request.use((config) => {
 });
 
 let isRefreshing = false;
-let refreshSubscribers: ((token: string) => void)[] = [];
+let refreshSubscribers: Array<{
+  resolve: (token: string) => void;
+  reject: (error: unknown) => void;
+}> = [];
 
 function onRefreshed(newToken: string) {
-  refreshSubscribers.forEach((cb) => cb(newToken));
+  refreshSubscribers.forEach((sub) => sub.resolve(newToken));
   refreshSubscribers = [];
 }
 
-function addRefreshSubscriber(cb: (token: string) => void) {
-  refreshSubscribers.push(cb);
+// A failed refresh used to leave every queued request unresolved forever —
+// nothing ever called their promise's reject, so a panel that triggered the
+// queueing spun indefinitely instead of showing an error or redirecting.
+function onRefreshFailed(error: unknown) {
+  refreshSubscribers.forEach((sub) => sub.reject(error));
+  refreshSubscribers = [];
+}
+
+function addRefreshSubscriber(resolve: (token: string) => void, reject: (error: unknown) => void) {
+  refreshSubscribers.push({ resolve, reject });
 }
 
 apiClient.interceptors.response.use(
@@ -31,7 +42,7 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     const status = error.response?.status;
-    
+
     const isAuthRoute =
       originalRequest?.url?.includes("/auth/login") ||
       originalRequest?.url?.includes("/auth/register") ||
@@ -39,11 +50,18 @@ apiClient.interceptors.response.use(
 
     if (status === 401 && !isAuthRoute && !originalRequest._retry) {
       if (isRefreshing) {
-        return new Promise((resolve) => {
-          addRefreshSubscriber((newToken: string) => {
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            resolve(apiClient(originalRequest));
-          });
+        return new Promise((resolve, reject) => {
+          addRefreshSubscriber(
+            (newToken: string) => {
+              // Marked before retrying so a second 401 on this same request
+              // falls through to a normal rejection instead of re-entering
+              // the refresh flow and potentially looping.
+              originalRequest._retry = true;
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              resolve(apiClient(originalRequest));
+            },
+            (refreshError: unknown) => reject(refreshError),
+          );
         });
       }
 
@@ -56,17 +74,24 @@ apiClient.interceptors.response.use(
           {},
           { withCredentials: true }
         );
-        
+
         // Backend wraps responses in { success, data, error } via TransformInterceptor
         const refreshData = response.data.data || response.data;
-        
+
         useAuthStore.getState().setTokens(refreshData.accessToken);
-        
+        // The refresh response also returns the current user; applying it
+        // keeps the store in sync with any profile changes made elsewhere,
+        // which the token-only update used to silently drop.
+        if (refreshData.user) {
+          useAuthStore.getState().setUser(refreshData.user);
+        }
+
         originalRequest.headers.Authorization = `Bearer ${refreshData.accessToken}`;
         onRefreshed(refreshData.accessToken);
-        
+
         return apiClient(originalRequest);
       } catch (refreshError: any) {
+        onRefreshFailed(refreshError);
         useAuthStore.getState().logout();
         window.location.href = "/login";
         return Promise.reject(error);
@@ -78,4 +103,3 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-

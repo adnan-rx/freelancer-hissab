@@ -12,8 +12,9 @@ import { JwtAuthGuard } from './jwt-auth.guard';
     UsersModule,
     PassportModule,
     JwtModule.registerAsync({
+      // Validated at boot (see main.ts assertRequiredEnv) — no committed development fallback.
       useFactory: () => ({
-        secret: process.env.JWT_SECRET || 'fh_dev_access_secret_key_2026_pk',
+        secret: process.env.JWT_SECRET as string,
       }),
     }),
   ],

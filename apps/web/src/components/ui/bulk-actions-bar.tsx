@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2, X, Loader2 } from "lucide-react";
+import { Loader2, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export interface BulkActionsBarProps {
@@ -9,29 +9,32 @@ export interface BulkActionsBarProps {
   onClear: () => void;
   isDeleting?: boolean;
   label?: string;
+  /** Extra bulk actions rendered before Delete. */
+  children?: React.ReactNode;
 }
 
-/** Sticky-ish bar shown above a table's header row once one or more rows are selected. */
-export function BulkActionsBar({ count, onDelete, onClear, isDeleting, label = "item" }: BulkActionsBarProps) {
+/** Replaces the table toolbar while rows are selected, in every table. */
+export function BulkActionsBar({ count, onDelete, onClear, isDeleting, label = "item", children }: BulkActionsBarProps) {
   if (count === 0) return null;
 
   return (
-    <div className="flex items-center justify-between gap-3 px-6 py-3 border-b border-border bg-primary/5">
-      <p className="text-sm font-medium text-foreground">
-        {count} {label}
+    <div
+      role="region"
+      aria-label="Bulk actions"
+      className="flex flex-col gap-3 border-b border-brand-100 bg-brand-50 px-5 py-3 animate-fade-in sm:flex-row sm:items-center sm:justify-between sm:px-6"
+    >
+      <p className="text-sm font-medium text-brand-900">
+        <span className="tabular">{count}</span> {label}
         {count === 1 ? "" : "s"} selected
       </p>
       <div className="flex items-center gap-2">
+        {children}
         <Button variant="ghost" size="sm" onClick={onClear} disabled={isDeleting}>
-          <X className="h-3.5 w-3.5 mr-1" /> Clear
+          <X /> Clear
         </Button>
         <Button variant="destructive" size="sm" onClick={onDelete} disabled={isDeleting}>
-          {isDeleting ? (
-            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-          ) : (
-            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-          )}
-          Delete Selected
+          {isDeleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+          Delete
         </Button>
       </div>
     </div>

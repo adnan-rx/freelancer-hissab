@@ -1,27 +1,15 @@
 "use client";
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { 
-  BookOpen, 
-  Search, 
-  Sparkles, 
-  FileText, 
-  Users, 
-  DollarSign, 
-  Wallet, 
-  PieChart, 
-  ShieldCheck, 
-  Upload, 
-  Download,
-  HelpCircle,
-  ChevronRight,
-  CheckCircle2
-} from "lucide-react";
+import { ArrowRight, BookOpen, CheckCircle2, FileText, PieChart, ShieldCheck, Sparkles, Upload, Wallet } from "lucide-react";
 import Link from 'next/link';
+
+import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SearchInput } from "@/components/ui/data-toolbar";
+import { SegmentedFilter } from "@/components/ui/segmented-filter";
 
 export default function UserGuidePage() {
   const [search, setSearch] = useState("");
@@ -30,215 +18,232 @@ export default function UserGuidePage() {
   const guideSections = [
     {
       id: "quickstart",
-      category: "Getting Started",
+      category: "Getting started",
       icon: Sparkles,
-      color: "text-primary bg-primary/10 border-primary/20",
-      title: "Quick Start Guide (Non-Tech Friendly)",
-      description: "Learn how to set up your account, log income, and issue invoices in 4 simple steps.",
+      title: "Set up in four steps",
+      description: "Account, clients, invoices and tax — the shortest path to a working ledger.",
       steps: [
-        { title: "Step 1: Set Up Bank Profile", desc: "Go to Settings and save your Name, Business Name, and Meezan Bank IBAN. This automatically populates your invoice wire instructions." },
-        { title: "Step 2: Add Clients", desc: "Go to Clients and click '+ Add New Client'. Enter client name and email for Upwork, Fiverr, or Direct overseas clients." },
-        { title: "Step 3: Create & Export Invoices", desc: "Go to Invoices → 'Create New Invoice'. Type your USD amount ($500). The app auto-converts to PKR at live rates and adds SBP wire notes." },
-        { title: "Step 4: Track FBR Tax & Reports", desc: "Visit Reports anytime to see total revenue, profit margin, and exact 0.25% FBR Section 154A tax liability for your tax filer." },
+        { title: "Save your bank profile", desc: "In Settings, add your name, business name and IBAN. Your invoices pick up the wire instructions from there automatically." },
+        { title: "Add your clients", desc: "On Clients, add the people and companies you bill — Upwork, Fiverr or direct overseas clients." },
+        { title: "Create and export invoices", desc: "On Invoices, enter the amount in USD. It converts to PKR at the live rate and adds the SBP wire notes." },
+        { title: "Track tax and reports", desc: "Reports shows revenue, profit margin and your Section 154A liability at your actual PSEB status." },
       ]
     },
     {
       id: "invoicing",
       category: "Invoices",
       icon: FileText,
-      color: "text-blue-500 bg-blue-500/10 border-blue-500/20",
-      title: "Creating & Exporting Invoices",
-      description: "How to generate, brand, and download PDF invoices for international clients.",
+      title: "Creating and exporting invoices",
+      description: "Generating, branding and downloading PDF invoices for international clients.",
       content: [
-        "Select an existing client or type a new client name to automatically resolve or create client profiles.",
-        "Live Market FX Conversion automatically populates the USD to PKR exchange rate (e.g. 280.50), with full support for manual rate overrides.",
-        "Click 'Export PDF' on any invoice page to open the print dialog and save clean, professional invoices directly to your computer."
+        "Pick an existing client or type a new name — the client profile is resolved or created for you.",
+        "The USD to PKR rate is filled in from live market data, and you can override it manually when the bank rate differs.",
+        "Export PDF on any invoice opens the print dialog so you can save a clean copy to your computer."
       ]
     },
     {
       id: "csvimport",
       category: "Automation",
       icon: Upload,
-      color: "text-purple-500 bg-purple-500/10 border-purple-500/20",
-      title: "Automated CSV & Statement Ingestion",
-      description: "Import Upwork, Fiverr, Wise, or Payoneer statements without manual entry.",
+      title: "Importing statements",
+      description: "Bringing in Upwork, Fiverr, Wise or Payoneer statements without typing them out.",
       content: [
-        "Click 'Auto-Import Upwork/Fiverr CSV' on Dashboard, Income, or Expenses pages.",
-        "Upload a .csv file (Upwork Transaction History or generic statement). The app automatically extracts client names, earnings, platform service fees, and PKR values.",
-        "Client side file validation checks extension (.csv) and file size (< 5MB) before processing.",
-        "Use the 'Download Sample CSV' button inside the modal to download a ready-made statement template."
+        "Use Import CSV on the Clients, Income or Expenses pages.",
+        "Upload a .csv (Upwork transaction history or a generic statement). Client names, earnings, platform fees and PKR values are extracted for you.",
+        "Files are checked for extension and size (under 5MB) before anything is processed.",
+        "Download sample CSV inside the modal gives you a template to match."
       ]
     },
     {
       id: "tax",
-      category: "Pakistani Tax & SBP Rules",
+      category: "Tax & SBP",
       icon: ShieldCheck,
-      color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
-      title: "FBR Section 154A & SBP Code 9100",
-      description: "How to qualify for the 0.25% reduced IT export tax rate in Pakistan.",
+      title: "Section 154A and SBP code 9100",
+      description: "What it takes to qualify for the 0.25% reduced IT export tax rate.",
       content: [
-        "SBP Purpose Code 9100 / 9102 is the official State Bank classification for Computer Software / IT Export Services.",
-        "When foreign remittances arrive under Code 9100, your bank (e.g. Meezan) issues a Proceeds Realization Certificate (PRC).",
-        "PRC certificates prove to FBR that your income is genuine IT export revenue, entitling PSEB filers to the reduced 0.25% tax rate instead of 35% income tax."
+        "SBP purpose code 9100 / 9102 is the State Bank classification for computer software and IT export services.",
+        "When a remittance arrives under code 9100, your bank issues a Proceeds Realization Certificate (PRC).",
+        "The PRC is what proves to FBR that the income is genuine IT export revenue — that's what entitles PSEB filers to 0.25% instead of normal slab rates."
       ]
     },
     {
       id: "wealth-recon",
-      category: "Compliance & FBR",
+      category: "Compliance",
       icon: Wallet,
-      color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20",
-      title: "Wealth Reconciliation",
-      description: "Ensure your declared assets match your reported income.",
+      title: "Wealth reconciliation",
+      description: "Making your declared assets line up with your reported income.",
       steps: [
-        { title: "Step 1: Declare Opening Wealth", desc: "Navigate to the Wealth page and enter your net wealth carried forward from the previous tax year." },
-        { title: "Step 2: Add Assets & Liabilities", desc: "List all your current assets (Cash, Property, Vehicles) and any liabilities (Loans). The system will calculate your Net Declared Wealth." },
-        { title: "Step 3: Review Reconciliation Status", desc: "The app automatically checks if your (Opening Wealth + Income - Expenses) equals your Net Declared Wealth. FBR allows a variance of up to Rs 50,000." },
-        { title: "Troubleshooting Mismatches", desc: "If you have a mismatch, review your tracked expenses and income to ensure no transactions are missing before filing." }
+        { title: "Declare opening wealth", desc: "On the Wealth page, enter the net wealth carried forward from last tax year." },
+        { title: "Add assets and liabilities", desc: "List cash, property, vehicles and any loans. Net declared wealth is calculated from those." },
+        { title: "Check the reconciliation", desc: "The app checks whether opening wealth plus income minus expenses equals your net declared wealth. FBR allows a variance of up to Rs 50,000." },
+        { title: "If it doesn't balance", desc: "Review your income and expenses for missing entries before filing — a gap usually means something wasn't logged." }
       ]
     },
     {
       id: "tax-simulator",
-      category: "Compliance & FBR",
+      category: "Compliance",
       icon: PieChart,
-      color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
-      title: "FBR Tax Simulator",
-      description: "Simulate tax liabilities and visualize PSEB registration benefits.",
+      title: "Tax simulator",
+      description: "Modelling liability and seeing what PSEB registration is worth.",
       content: [
-        "Go to the Tax Simulator page to see a breakdown of your Gross Income, Expected Expenses, and Estimated Tax Liability.",
-        "Toggle the 'PSEB Registered' option to immediately see how much you save by qualifying for the reduced 0.25% IT export rate versus the standard 1% rate or slab rates.",
-        "The simulator uses the latest FBR Section 154A tax rules loaded internally into the app's rule engine."
+        "The Tax Simulator breaks down gross income, expenses and estimated liability side by side with where you stand today.",
+        "Toggle PSEB registered to see the difference between the 0.25% and 1% export rates on your own numbers.",
+        "It runs on the same Section 154A rules the rest of the app uses."
       ]
     },
     {
       id: "filing-simulator",
-      category: "Compliance & FBR",
+      category: "Compliance",
       icon: CheckCircle2,
-      color: "text-rose-500 bg-rose-500/10 border-rose-500/20",
-      title: "Filing Readiness Audit",
-      description: "Run a pre-flight compliance check before submitting to FBR.",
+      title: "Filing readiness audit",
+      description: "A pre-flight check before you submit anything to FBR.",
       steps: [
-        { title: "Step 1: Check Profile & Income", desc: "The simulator checks if your profile is missing a PSEB ID and ensures all income has an associated platform." },
-        { title: "Step 2: Verify SBP/PRC Details", desc: "It runs a deep audit on foreign income to ensure every export transaction has a logged PRC reference and SBP purpose code." },
-        { title: "Step 3: Fix Errors", desc: "Review the 'Warnings' and 'Errors' generated by the system. Click on specific issues to resolve them." },
-        { title: "Step 4: Manual FBR Submission", desc: "Note: This app acts as an internal auditing tool. Once your Readiness Score reaches 100%, you must manually log into the FBR IRIS portal to submit your final return using the generated numbers." }
+        { title: "Profile and income", desc: "Checks whether your profile is missing a PSEB ID and whether every income entry has a platform attached." },
+        { title: "SBP and PRC details", desc: "Audits foreign income for a logged PRC reference and SBP purpose code on each export transaction." },
+        { title: "Fix what it finds", desc: "Each issue links to the page where you can resolve it." },
+        { title: "Submit on IRIS", desc: "This app is an auditing tool. Once readiness reaches 100%, you still submit the return yourself on the FBR IRIS portal using these figures." }
       ]
     }
   ];
 
   const filteredSections = guideSections.filter(sec => {
-    const matchesTab = activeTab === "all" || sec.category.toLowerCase().includes(activeTab);
-    const matchesSearch = sec.title.toLowerCase().includes(search.toLowerCase()) || 
+    const matchesTab = activeTab === "all" || sec.category.toLowerCase() === activeTab;
+    const matchesSearch = sec.title.toLowerCase().includes(search.toLowerCase()) ||
                           sec.description.toLowerCase().includes(search.toLowerCase());
     return matchesTab && matchesSearch;
   });
 
+  // The category state and filter above existed with no control to drive
+  // them, so `activeTab` could never be anything but "all" — these pills are
+  // that missing control, not a new feature.
+  const categories = Array.from(new Set(guideSections.map((sec) => sec.category)));
+  const filterOptions = [
+    { value: "all", label: "All topics" },
+    ...categories.map((c) => ({ value: c.toLowerCase(), label: c })),
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10">
-              <BookOpen className="mr-1.5 h-3.5 w-3.5" /> Official Help Center
-            </Badge>
-          </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">User Manual & Feature Guide</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Step-by-step instructions for managing clients, generating invoices, importing CSV statements, and FBR tax filings.
-          </p>
-        </div>
+    <div className="mx-auto max-w-5xl space-y-6 lg:space-y-8">
+      <PageHeader
+        title="User guide"
+        description="How to manage clients, raise invoices, import statements and get a tax year ready to file."
+        actions={
+          <Button asChild variant="outline">
+            <Link href="/dashboard">
+              Back to dashboard <ArrowRight />
+            </Link>
+          </Button>
+        }
+      />
 
-        <Button asChild>
-          <Link href="/dashboard">
-            Back to Dashboard <ChevronRight className="ml-1 h-4 w-4" />
-          </Link>
-        </Button>
-      </div>
-
-      {/* Search Bar */}
-      <div className="relative max-w-xl">
-        <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
-        <Input 
-          type="text" 
-          placeholder="Search guide topics (e.g., invoice, CSV, SBP Code, tax)..." 
-          value={search} 
-          onChange={(e) => setSearch(e.target.value)} 
-          className="pl-10 bg-background border-border text-foreground text-sm focus:border-primary"
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <SearchInput
+          value={search}
+          onValueChange={setSearch}
+          placeholder="Search topics — invoice, CSV, SBP code…"
+          aria-label="Search the guide"
+          className="sm:w-80"
         />
+        <SegmentedFilter options={filterOptions} value={activeTab} onChange={setActiveTab} ariaLabel="Filter by topic" />
       </div>
 
-      {/* Quick Summary Cards */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {filteredSections.map((sec) => {
-          const Icon = sec.icon;
-          return (
-            <Card key={sec.id} className="hover:border-primary/30 transition-all shadow-sm">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className={`p-2.5 rounded-xl border ${sec.color}`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg font-bold text-foreground">{sec.title}</CardTitle>
-                    <CardDescription className="text-xs text-muted-foreground mt-0.5">{sec.description}</CardDescription>
+      {filteredSections.length === 0 ? (
+        <Card>
+          <EmptyState
+            icon={BookOpen}
+            title="Nothing matches that search"
+            description="Try a different term, or switch back to all topics."
+            action={
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearch("");
+                  setActiveTab("all");
+                }}
+              >
+                Clear filters
+              </Button>
+            }
+          />
+        </Card>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
+          {filteredSections.map((sec) => {
+            const Icon = sec.icon;
+            return (
+              <Card key={sec.id} className="flex flex-col">
+                <div className="flex items-start gap-3 p-5 sm:p-6">
+                  <span
+                    className="flex size-10 shrink-0 items-center justify-center rounded-md bg-brand-50 text-brand-700"
+                    aria-hidden="true"
+                  >
+                    <Icon className="size-5" strokeWidth={1.75} />
+                  </span>
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-2xs font-semibold uppercase tracking-[0.1em] text-subtle">{sec.category}</p>
+                    <CardTitle>{sec.title}</CardTitle>
+                    <CardDescription>{sec.description}</CardDescription>
                   </div>
                 </div>
-              </CardHeader>
 
-              <CardContent className="space-y-4 text-xs text-foreground">
-                {sec.steps ? (
-                  <div className="space-y-3">
-                    {sec.steps.map((step, idx) => (
-                      <div key={idx} className="flex items-start gap-2.5 p-2.5 rounded-xl bg-muted/50 border border-border">
-                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-semibold text-foreground">{step.title}</p>
-                          <p className="text-muted-foreground text-[11px] leading-relaxed mt-0.5">{step.desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <ul className="space-y-2">
-                    {sec.content?.map((point, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-muted-foreground">
-                        <ChevronRight className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                        <span>{point}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                <CardContent className="flex-1">
+                  {sec.steps ? (
+                    <ol className="space-y-2.5">
+                      {sec.steps.map((step, idx) => (
+                        <li key={idx} className="flex items-start gap-3 rounded-md border border-border bg-muted/40 p-3">
+                          <span
+                            className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-brand-100 font-mono text-2xs font-semibold text-brand-800"
+                            aria-hidden="true"
+                          >
+                            {idx + 1}
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-sm font-medium text-foreground">{step.title}</span>
+                            <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{step.desc}</span>
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <ul className="space-y-2.5">
+                      {sec.content?.map((point, idx) => (
+                        <li key={idx} className="flex items-start gap-2.5 text-sm leading-relaxed text-muted-foreground">
+                          <span className="mt-2 size-1 shrink-0 rounded-full bg-brand-400" aria-hidden="true" />
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
-      {/* SBP Code 9100 Explanation Banner */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-primary" /> SBP Purpose Code 9100 Cheat Sheet
+        <div className="p-5 sm:p-6">
+          <CardTitle className="flex items-center gap-2">
+            <ShieldCheck className="size-4 text-brand-600" aria-hidden="true" /> SBP purpose codes at a glance
           </CardTitle>
-        </CardHeader>
-        <CardContent className="text-xs text-muted-foreground space-y-3">
-          <p>
-            When foreign wire transfers arrive in Meezan Bank, JazzCash, or Allied Bank, ensure your client or payment gateway tags the transaction under <strong className="text-foreground">State Bank Code 9100</strong> (Software Services Export).
-          </p>
-          <div className="grid gap-3 md:grid-cols-3 pt-2">
-            <div className="p-3 rounded-xl bg-muted/50 border border-border">
-              <span className="font-bold text-primary block mb-1">Code 9100</span>
-              Software Development & IT Export Services
-            </div>
-            <div className="p-3 rounded-xl bg-muted/50 border border-border">
-              <span className="font-bold text-teal-600 block mb-1">Code 9102</span>
-              IT Enabled Services (BPO, Virtual Assistance)
-            </div>
-            <div className="p-3 rounded-xl bg-muted/50 border border-border">
-              <span className="font-bold text-blue-500 block mb-1">PRC Document</span>
-              Proceeds Realization Certificate from Meezan Bank
-            </div>
-          </div>
+          <CardDescription className="mt-1.5 max-w-2xl">
+            When a wire lands in your bank, the transaction has to be tagged under the right State Bank code for the
+            reduced rate to apply. Ask your client or gateway to use these.
+          </CardDescription>
+        </div>
+        <CardContent>
+          <dl className="grid gap-3 sm:grid-cols-3">
+            {[
+              { code: "9100", label: "Software development and IT export services" },
+              { code: "9102", label: "IT-enabled services — BPO, virtual assistance" },
+              { code: "PRC", label: "Proceeds Realization Certificate, issued by your bank" },
+            ].map((item) => (
+              <div key={item.code} className="rounded-md border border-border bg-muted/40 p-4">
+                <dt className="font-mono text-sm font-semibold text-brand-700">{item.code}</dt>
+                <dd className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{item.label}</dd>
+              </div>
+            ))}
+          </dl>
         </CardContent>
       </Card>
     </div>

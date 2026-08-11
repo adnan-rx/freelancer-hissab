@@ -1,38 +1,48 @@
 "use client";
 
 import { useState } from 'react';
+import { ArrowDownRight, DollarSign, Paperclip, Pencil, Plus, Trash2, Upload } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { PaginationBar } from '@/components/ui/pagination-bar';
 import { BulkActionsBar } from '@/components/ui/bulk-actions-bar';
-import { Plus, Sparkles, Trash2, DollarSign, Pencil } from 'lucide-react';
-import { formatPKR, formatUSD } from '@/lib/utils';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { TableSkeleton } from '@/components/ui/skeleton';
+import { DataToolbar } from '@/components/ui/data-toolbar';
+import { SegmentedFilter } from '@/components/ui/segmented-filter';
+import { formatPKR, formatMoney, formatDate, apiErrorMessage } from '@/lib/utils';
 import { useIncome, useDeleteIncome } from '@/hooks/use-income';
 import { useDataTable } from '@/hooks/use-data-table';
 import { CSVImportModal } from '@/components/features/csv-import-modal';
 import { AddIncomeModal } from '@/components/features/add-income-modal';
 import { EvidenceVaultModal } from '@/components/features/evidence-vault-modal';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
-import { Toast } from '@/components/ui/toast';
+import { useToast } from '@/providers/toast-provider';
 
-const PAGE_SIZE = 10;
+const SOURCE_FILTERS = [
+  { value: 'all', label: 'All sources' },
+  { value: 'foreign', label: 'Foreign' },
+  { value: 'local', label: 'Local' },
+];
 
 export default function IncomePage() {
   const { data: incomeList = [], isLoading } = useIncome();
   const deleteIncomeMutation = useDeleteIncome();
+  const { showSuccess, showError } = useToast();
 
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingIncome, setEditingIncome] = useState<any | null>(null);
   const [evidenceTarget, setEvidenceTarget] = useState<{ id: string; title: string } | null>(null);
 
-  // Modal & Toast States
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; description: string } | null>(null);
-  const [toast, setToast] = useState<{ type: 'error' | 'success'; title?: string; message: string } | null>(null);
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -47,7 +57,6 @@ export default function IncomePage() {
 
   const table = useDataTable(displayIncome, {
     getId: (inc: any) => inc.id,
-    pageSize: PAGE_SIZE,
     sortAccessors: {
       date: (inc: any) => inc.receivedAt || "",
       description: (inc: any) => (inc.description || inc.clientName || "").toLowerCase(),
@@ -56,6 +65,9 @@ export default function IncomePage() {
       amountPKR: (inc: any) => Number(inc.amountPKR || 0),
     },
   });
+
+  const totalPKR = displayIncome.reduce((sum: number, inc: any) => sum + Number(inc.amountPKR || 0), 0);
+  const withEvidence = displayIncome.filter((inc: any) => !!inc.prcReferenceNumber).length;
 
   const handleBulkDelete = async () => {
     const ids = Array.from(table.selected);
@@ -67,177 +79,255 @@ export default function IncomePage() {
 
     const failed = results.filter((r) => r.status === "rejected").length;
     const deleted = ids.length - failed;
-    setToast(
-      failed === 0
-        ? { type: "success", title: "Income Deleted", message: `${deleted} income entr${deleted === 1 ? "y" : "ies"} removed.` }
-        : { type: "error", title: "Some Deletes Failed", message: `${deleted} deleted, ${failed} failed.` }
-    );
+    if (failed === 0) {
+      showSuccess(`${deleted} income entr${deleted === 1 ? "y" : "ies"} removed.`, "Income deleted");
+    } else {
+      showError(`${deleted} deleted, ${failed} could not be removed.`, "Some deletes failed");
+    }
   };
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     try {
       await deleteIncomeMutation.mutateAsync(deleteTarget.id);
-      setToast({
-        type: "success",
-        title: "Income Entry Deleted",
-        message: "Income log has been removed from database.",
-      });
+      showSuccess("The income entry has been removed.", "Income deleted");
       setDeleteTarget(null);
     } catch (err: any) {
-      console.warn("Delete income error:", err);
-      const apiErr = err?.response?.data?.error;
-      setToast({
-        type: "error",
-        title: "Delete Failed",
-        message: apiErr?.message || "Could not delete income log.",
-      });
+      showError(apiErrorMessage(err, "Could not delete this income entry."), "Couldn't delete entry");
       setDeleteTarget(null);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Income Logs</h1>
-          <p className="text-sm text-muted-foreground mt-1">Track foreign remittances and local earnings with automated PKR conversion.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Select value={sourceFilter} onValueChange={setSourceFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Sources" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sources</SelectItem>
-              <SelectItem value="foreign">Foreign / Remittance</SelectItem>
-              <SelectItem value="local">Local Income</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button 
-            onClick={() => setIsImportOpen(true)}
-            variant="outline" 
-          >
-            <Sparkles className="mr-2 h-4 w-4 text-primary" /> Auto-Import CSV
-          </Button>
-          <Button 
-            onClick={() => { setEditingIncome(null); setIsAddOpen(true); }}
-          >
-            <Plus className="mr-2 h-4 w-4" /> Log Income
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-6 lg:space-y-8">
+      <PageHeader
+        title="Income"
+        description="Foreign remittances and local earnings, each converted to PKR at the rate on the day it arrived."
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+              <Upload /> Import CSV
+            </Button>
+            <Button
+              onClick={() => {
+                setEditingIncome(null);
+                setIsAddOpen(true);
+              }}
+            >
+              <Plus /> Log income
+            </Button>
+          </>
+        }
+      />
 
-      <div className="border border-border rounded-xl overflow-hidden bg-card shadow-sm">
-        <BulkActionsBar
-          count={table.selected.size}
-          onDelete={() => setBulkConfirmOpen(true)}
-          onClear={table.clearSelection}
-          isDeleting={isBulkDeleting}
-          label="income entry"
+      <section aria-label="Income totals" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard
+          label="Total income"
+          value={formatPKR(totalPKR)}
+          icon={ArrowDownRight}
+          emphasis
+          hint={
+            sourceFilter === "all"
+              ? "Every entry on record, all years"
+              : `${SOURCE_FILTERS.find((f) => f.value === sourceFilter)?.label} only`
+          }
+          isLoading={isLoading}
         />
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow className="border-border">
-              <TableHead className="w-10">
-                <Checkbox
-                  checked={table.allSelectedOnPage}
-                  indeterminate={table.someSelectedOnPage && !table.allSelectedOnPage}
-                  onChange={table.toggleSelectAll}
-                  aria-label="Select all income entries on this page"
-                />
-              </TableHead>
-              <SortableTableHead sortKey="date" sort={table.sort} onSort={table.toggleSort} className="text-muted-foreground font-medium">Date</SortableTableHead>
-              <SortableTableHead sortKey="description" sort={table.sort} onSort={table.toggleSort} className="text-muted-foreground font-medium">Description / Client</SortableTableHead>
-              <SortableTableHead sortKey="platform" sort={table.sort} onSort={table.toggleSort} className="text-muted-foreground font-medium">Platform</SortableTableHead>
-              <SortableTableHead sortKey="amount" sort={table.sort} onSort={table.toggleSort} className="text-muted-foreground font-medium">Original Amount</SortableTableHead>
-              <SortableTableHead sortKey="amountPKR" sort={table.sort} onSort={table.toggleSort} className="text-muted-foreground font-medium">Converted Amount (PKR)</SortableTableHead>
-              <TableHead className="text-right text-muted-foreground font-medium">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading income logs...</TableCell>
-              </TableRow>
-            ) : displayIncome.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
-                  <div className="flex flex-col items-center justify-center space-y-2">
-                    <DollarSign className="h-8 w-8 text-muted-foreground/60" />
-                    <p className="font-semibold text-foreground">No income entries recorded yet</p>
-                    <p className="text-xs text-muted-foreground">Log manual foreign income or upload bank statements to start tracking.</p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              table.paged.map((inc: any) => (
-                <TableRow key={inc.id} className="transition-colors" data-state={table.selected.has(inc.id) ? "selected" : undefined}>
-                  <TableCell>
+        <StatCard
+          label="Entries"
+          value={displayIncome.length}
+          unit={displayIncome.length === 1 ? "record" : "records"}
+          icon={DollarSign}
+          hint="Matching the current filter"
+          isLoading={isLoading}
+        />
+        <StatCard
+          label="With PRC reference"
+          value={withEvidence}
+          unit={`of ${displayIncome.length}`}
+          icon={Paperclip}
+          hint="Needed for remittance evidence"
+          isLoading={isLoading}
+        />
+      </section>
+
+      <Card className="overflow-hidden">
+        {table.selected.size > 0 ? (
+          <BulkActionsBar
+            count={table.selected.size}
+            onDelete={() => setBulkConfirmOpen(true)}
+            onClear={table.clearSelection}
+            isDeleting={isBulkDeleting}
+            label="income entry"
+          />
+        ) : (
+          <DataToolbar>
+            <SegmentedFilter
+              options={SOURCE_FILTERS}
+              value={sourceFilter}
+              onChange={setSourceFilter}
+              ariaLabel="Filter by income source"
+            />
+          </DataToolbar>
+        )}
+
+        {isLoading ? (
+          <TableSkeleton rows={6} columns={6} />
+        ) : displayIncome.length === 0 ? (
+          <EmptyState
+            icon={DollarSign}
+            title={sourceFilter === "all" ? "No income recorded yet" : "Nothing matches this filter"}
+            description={
+              sourceFilter === "all"
+                ? "Log a payment manually, or import a bank or platform statement to bring in a whole month at once."
+                : "Switch back to all sources to see every entry."
+            }
+            action={
+              sourceFilter === "all" ? (
+                <>
+                  <Button
+                    onClick={() => {
+                      setEditingIncome(null);
+                      setIsAddOpen(true);
+                    }}
+                  >
+                    <Plus /> Log income
+                  </Button>
+                  <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+                    <Upload /> Import CSV
+                  </Button>
+                </>
+              ) : (
+                <Button variant="outline" onClick={() => setSourceFilter("all")}>
+                  Show all sources
+                </Button>
+              )
+            }
+          />
+        ) : (
+          <>
+            <Table className="min-w-[48rem]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>
                     <Checkbox
-                      checked={table.selected.has(inc.id)}
-                      onChange={() => table.toggleSelect(inc.id)}
-                      aria-label={`Select ${inc.description || "income entry"}`}
+                      checked={table.allSelectedOnPage}
+                      indeterminate={table.someSelectedOnPage && !table.allSelectedOnPage}
+                      onChange={table.toggleSelectAll}
+                      aria-label="Select all income entries on this page"
                     />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-xs font-mono">{inc.receivedAt ? String(inc.receivedAt).substring(0, 10) : "N/A"}</TableCell>
-                  <TableCell className="font-medium text-foreground">{inc.description || inc.clientName || "Direct Transfer"}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="capitalize border-primary/30 text-primary bg-primary/10 font-medium">
-                      {inc.platform || "upwork"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-foreground font-medium font-mono">
-                    {inc.currency === "USD" ? formatUSD(inc.amount) : `${inc.currency || 'USD'} ${inc.amount}`}
-                  </TableCell>
-                  <TableCell className="font-bold text-primary font-mono">{formatPKR(inc.amountPKR || 0)}</TableCell>
-                  <TableCell className="text-right flex items-center justify-end gap-1">
-                    <Button
-                      onClick={() => { setEditingIncome(inc); setIsAddOpen(true); }}
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
-                      title="Edit Income Entry"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      onClick={() => setEvidenceTarget({ id: inc.id, title: inc.description || "Income Entry" })}
-                      size="sm"
-                      variant="outline"
-                      className="h-8 text-xs font-semibold rounded-lg hover:text-primary transition-colors"
-                    >
-                      Evidence
-                    </Button>
-                    <Button
-                      onClick={() => setDeleteTarget({ id: inc.id, description: inc.description || "Income Entry" })}
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
-                      title="Delete Income Entry"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+                  </TableHead>
+                  <SortableTableHead sortKey="date" sort={table.sort} onSort={table.toggleSort}>
+                    Received
+                  </SortableTableHead>
+                  <SortableTableHead sortKey="description" sort={table.sort} onSort={table.toggleSort}>
+                    Description
+                  </SortableTableHead>
+                  <SortableTableHead sortKey="platform" sort={table.sort} onSort={table.toggleSort}>
+                    Platform
+                  </SortableTableHead>
+                  <SortableTableHead sortKey="amount" sort={table.sort} onSort={table.toggleSort} align="right">
+                    Original
+                  </SortableTableHead>
+                  <SortableTableHead sortKey="amountPKR" sort={table.sort} onSort={table.toggleSort} align="right">
+                    In PKR
+                  </SortableTableHead>
+                  <TableHead className="text-right">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-        <PaginationBar page={table.page} pageSize={PAGE_SIZE} total={table.total} onPageChange={table.setPage} />
-      </div>
+              </TableHeader>
+              <TableBody>
+                {table.paged.map((inc: any) => (
+                  <TableRow key={inc.id} data-state={table.selected.has(inc.id) ? "selected" : undefined}>
+                    <TableCell>
+                      <Checkbox
+                        checked={table.selected.has(inc.id)}
+                        onChange={() => table.toggleSelect(inc.id)}
+                        aria-label={`Select ${inc.description || "income entry"}`}
+                      />
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground tabular">
+                      {inc.receivedAt ? formatDate(String(inc.receivedAt).substring(0, 10)) : "—"}
+                    </TableCell>
+                    <TableCell className="font-medium text-foreground">
+                      {inc.description || inc.clientName || "Direct transfer"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="neutral" className="capitalize">
+                        {inc.platform || "upwork"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm tabular-nums text-muted-foreground">
+                      {formatMoney(inc.amount, inc.currency)}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm font-medium tabular-nums text-foreground">
+                      {formatPKR(inc.amountPKR || 0)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className="flex items-center justify-end gap-0.5">
+                        <Button
+                          onClick={() => setEvidenceTarget({ id: inc.id, title: inc.description || "Income entry" })}
+                          size="icon-sm"
+                          variant="ghost"
+                          title="Evidence and attachments"
+                        >
+                          <Paperclip />
+                          <span className="sr-only">Evidence for {inc.description || "this entry"}</span>
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setEditingIncome(inc);
+                            setIsAddOpen(true);
+                          }}
+                          size="icon-sm"
+                          variant="ghost"
+                          title="Edit entry"
+                        >
+                          <Pencil />
+                          <span className="sr-only">Edit {inc.description || "this entry"}</span>
+                        </Button>
+                        <Button
+                          onClick={() => setDeleteTarget({ id: inc.id, description: inc.description || "Income entry" })}
+                          size="icon-sm"
+                          variant="ghost"
+                          className="hover:bg-destructive-surface hover:text-destructive"
+                          title="Delete entry"
+                        >
+                          <Trash2 />
+                          <span className="sr-only">Delete {inc.description || "this entry"}</span>
+                        </Button>
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <PaginationBar
+              page={table.page}
+              pageSize={table.pageSize}
+              total={table.total}
+              onPageChange={table.setPage}
+              onPageSizeChange={table.setPageSize}
+            />
+          </>
+        )}
+      </Card>
 
       <CSVImportModal isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} />
       <AddIncomeModal
         isOpen={isAddOpen}
-        onClose={() => { setIsAddOpen(false); setEditingIncome(null); }}
+        onClose={() => {
+          setIsAddOpen(false);
+          setEditingIncome(null);
+        }}
         income={editingIncome}
       />
-      
-      <EvidenceVaultModal 
-        isOpen={!!evidenceTarget} 
-        onClose={() => setEvidenceTarget(null)} 
-        recordId={evidenceTarget?.id || null} 
+
+      <EvidenceVaultModal
+        isOpen={!!evidenceTarget}
+        onClose={() => setEvidenceTarget(null)}
+        recordId={evidenceTarget?.id || null}
         recordType="income"
         recordTitle={evidenceTarget?.title}
       />
@@ -246,9 +336,9 @@ export default function IncomePage() {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleConfirmDelete}
-        title="Delete Income Record?"
-        description={deleteTarget ? `Are you sure you want to delete "${deleteTarget.description}"? This action will remove the record from your income logs.` : ""}
-        confirmText="Delete Income"
+        title="Delete this income entry?"
+        description={deleteTarget ? `"${deleteTarget.description}" will be removed from your income log. This cannot be undone.` : ""}
+        confirmText="Delete entry"
         isLoading={deleteIncomeMutation.isPending}
       />
 
@@ -256,20 +346,11 @@ export default function IncomePage() {
         isOpen={bulkConfirmOpen}
         onClose={() => setBulkConfirmOpen(false)}
         onConfirm={handleBulkDelete}
-        title={`Delete ${table.selected.size} Income Entr${table.selected.size === 1 ? "y" : "ies"}?`}
+        title={`Delete ${table.selected.size} income entr${table.selected.size === 1 ? "y" : "ies"}?`}
         description="This cannot be undone."
-        confirmText="Delete Selected"
+        confirmText="Delete selected"
         isLoading={isBulkDeleting}
       />
-
-      {toast && (
-        <Toast 
-          type={toast.type} 
-          title={toast.title} 
-          message={toast.message} 
-          onClose={() => setToast(null)} 
-        />
-      )}
     </div>
   );
 }

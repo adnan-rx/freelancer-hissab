@@ -1,15 +1,52 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Activity, AlertCircle, Calculator, Loader2, TrendingDown, TrendingUp } from "lucide-react";
+
+import { Card, CardContent, CardDescription, CardTitle, CardToolbar } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useSimulateTax, useTaxEstimate } from "@/hooks/use-tax";
 import { formatPKR, apiErrorMessage } from "@/lib/utils";
-import { Calculator, TrendingUp, TrendingDown, Activity, Percent, AlertCircle } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import { getCurrentTaxYear } from "@/lib/tax-year";
+import { getCurrentTaxYear, taxYearLabel } from "@/lib/tax-year";
+
+/** PKR-prefixed number field — the same treatment on all three inputs. */
+function AmountInput({
+  id,
+  value,
+  onChange,
+  placeholder,
+}: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <div className="relative">
+      <span
+        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-sm text-muted-foreground"
+        aria-hidden="true"
+      >
+        Rs
+      </span>
+      <Input
+        id={id}
+        type="number"
+        inputMode="numeric"
+        min={0}
+        placeholder={placeholder}
+        className="pl-10 font-mono tabular-nums"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+}
 
 export default function TaxSimulatorPage() {
   const [exportIncomePKR, setExportIncomePKR] = useState("");
@@ -18,7 +55,10 @@ export default function TaxSimulatorPage() {
   const [isPseb, setIsPseb] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: currentTax, isLoading: isCurrentLoading } = useTaxEstimate(getCurrentTaxYear(), isPseb);
+  // Only the loading flag is used below (as a guard before the simulation's
+  // own `current` figures are available); the estimate itself is unused here
+  // since the simulation response already returns its own `current` snapshot.
+  const { isLoading: isCurrentLoading } = useTaxEstimate(getCurrentTaxYear(), isPseb);
   const simulateMutation = useSimulateTax();
 
   const handleSimulate = () => {
@@ -39,182 +79,181 @@ export default function TaxSimulatorPage() {
   };
 
   const simulationResult = simulateMutation.data;
+  const isSaving = simulateMutation.isPending;
+  const isDecrease = simulationResult ? simulationResult.differencePKR <= 0 : false;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Calculator className="h-8 w-8 text-primary" /> Tax Scenario Simulator
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            &quot;What if?&quot; See how changes in income or PSEB registration impact your tax liability.
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6 lg:space-y-8">
+      <PageHeader
+        title="Tax simulator"
+        description={`See how a change in income, expenses or PSEB registration would move your liability for tax year ${taxYearLabel(getCurrentTaxYear())}.`}
+      />
 
-      <div className="grid gap-6 md:grid-cols-12">
-        <div className="md:col-span-5 space-y-6">
-          <Card className="rounded-3xl shadow-sm border-border/50">
-            <CardHeader>
-              <CardTitle>Simulation Inputs</CardTitle>
-              <CardDescription>Enter hypothetical figures to forecast your taxes.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {error && (
-                <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                  <span>{error}</span>
-                </div>
-              )}
+      <div className="grid gap-4 lg:grid-cols-12 lg:gap-6">
+        <Card className="lg:col-span-5">
+          <CardToolbar>
+            <div className="space-y-1">
+              <CardTitle>Scenario</CardTitle>
+              <CardDescription>Hypothetical figures — nothing here is saved.</CardDescription>
+            </div>
+          </CardToolbar>
 
-              <div className="space-y-2">
-                <Label>Hypothetical Export Income (PKR)</Label>
-                <p className="text-xs text-muted-foreground -mt-1">
-                  Foreign/platform income taxed under s.154A — never reduced by expenses.
-                </p>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">Rs</span>
-                  <Input
-                    type="number"
-                    placeholder="e.g. 15000000"
-                    className="pl-10 rounded-xl"
-                    value={exportIncomePKR}
-                    onChange={(e) => setExportIncomePKR(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Hypothetical Local Income (PKR)</Label>
-                <p className="text-xs text-muted-foreground -mt-1">Taxed on the normal slabs; expenses are deductible against this.</p>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">Rs</span>
-                  <Input
-                    type="number"
-                    placeholder="e.g. 2000000"
-                    className="pl-10 rounded-xl"
-                    value={localIncomePKR}
-                    onChange={(e) => setLocalIncomePKR(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Hypothetical Annual Expenses (PKR)</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">Rs</span>
-                  <Input
-                    type="number"
-                    placeholder="e.g. 500000"
-                    className="pl-10 rounded-xl"
-                    value={expensesPKR}
-                    onChange={(e) => setExpensesPKR(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-2xl border border-border/50">
-                <div className="space-y-0.5">
-                  <Label>PSEB Registered</Label>
-                  <p className="text-xs text-muted-foreground">Applies 0.25% vs 1% rate on exports.</p>
-                </div>
-                <Switch checked={isPseb} onCheckedChange={setIsPseb} />
-              </div>
-
-              <Button
-                className="w-full rounded-xl shadow-sm h-12 text-md font-semibold"
-                onClick={handleSimulate}
-                disabled={simulateMutation.isPending || (!exportIncomePKR && !localIncomePKR)}
+          <CardContent className="space-y-5 pt-5 sm:pt-6">
+            {error && (
+              <div
+                role="alert"
+                className="flex items-start gap-2.5 rounded-md border border-destructive/15 bg-destructive-surface p-3 text-sm text-destructive"
               >
-                {simulateMutation.isPending ? "Calculating..." : "Run Simulation"}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="md:col-span-7">
-          {!simulationResult ? (
-            <Card className="h-full min-h-[400px] rounded-3xl border-dashed bg-muted/20 flex flex-col items-center justify-center text-center p-8">
-              <div className="h-16 w-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4">
-                <Activity className="h-8 w-8" />
+                <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                <span className="leading-relaxed">{error}</span>
               </div>
-              <h3 className="font-bold text-lg text-foreground mb-2">Ready for Simulation</h3>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                Enter your hypothetical figures on the left and run the simulation to see how your tax liability would change.
-              </p>
+            )}
+
+            <Field
+              label="Export income"
+              htmlFor="sim-export"
+              hint="Foreign and platform income taxed under s.154A. Expenses never reduce it."
+            >
+              <AmountInput id="sim-export" value={exportIncomePKR} onChange={setExportIncomePKR} placeholder="15000000" />
+            </Field>
+
+            <Field
+              label="Local income"
+              htmlFor="sim-local"
+              hint="Taxed on the normal slabs, after deducting expenses."
+            >
+              <AmountInput id="sim-local" value={localIncomePKR} onChange={setLocalIncomePKR} placeholder="2000000" />
+            </Field>
+
+            <Field label="Annual expenses" htmlFor="sim-expenses">
+              <AmountInput id="sim-expenses" value={expensesPKR} onChange={setExpensesPKR} placeholder="500000" />
+            </Field>
+
+            <div className="flex items-center justify-between gap-4 rounded-md border border-border bg-muted/50 p-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="sim-pseb">PSEB registered</Label>
+                <p className="text-xs text-muted-foreground">Applies 0.25% instead of 1% on exports.</p>
+              </div>
+              <Switch id="sim-pseb" checked={isPseb} onCheckedChange={setIsPseb} />
+            </div>
+
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={handleSimulate}
+              disabled={isSaving || (!exportIncomePKR && !localIncomePKR)}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="animate-spin" /> Calculating…
+                </>
+              ) : (
+                <>
+                  <Calculator /> Run simulation
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <div className="lg:col-span-7">
+          {!simulationResult ? (
+            <Card className="flex h-full min-h-[22rem] items-center justify-center border-dashed bg-transparent shadow-none">
+              <EmptyState
+                icon={Activity}
+                title="Nothing simulated yet"
+                description="Fill in the figures on the left and run the simulation to compare it against where you stand today."
+              />
             </Card>
           ) : (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <Card className="rounded-3xl border-border/50 shadow-sm relative overflow-hidden bg-background">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-muted-foreground/30"></div>
-                  <CardContent className="p-6">
-                    <p className="text-sm font-bold text-muted-foreground mb-1 uppercase tracking-wider">Current Trajectory</p>
-                    <div className="text-2xl font-black font-mono text-foreground mb-4">
+            <div className="space-y-4 lg:space-y-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Card className="overflow-hidden">
+                  <span className="block h-1 w-full bg-border-strong" aria-hidden="true" />
+                  <CardContent className="p-5 pt-5 sm:p-6 sm:pt-6">
+                    <p className="text-sm font-medium text-muted-foreground">Where you are now</p>
+                    <p className="mt-3 font-mono text-2xl font-semibold tracking-[-0.03em] tabular-nums text-foreground">
                       {isCurrentLoading ? "…" : formatPKR(simulationResult.current.taxPKR)}
-                    </div>
-                    <div className="space-y-1 text-xs text-muted-foreground">
-                      <div className="flex justify-between">
-                        <span>Income:</span>
-                        <span className="font-mono text-foreground">{formatPKR(simulationResult.current.incomePKR)}</span>
+                    </p>
+                    <dl className="mt-4 space-y-1.5 text-xs">
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-muted-foreground">Income</dt>
+                        <dd className="font-mono tabular-nums text-foreground">
+                          {formatPKR(simulationResult.current.incomePKR)}
+                        </dd>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Expenses:</span>
-                        <span className="font-mono text-foreground">{formatPKR(simulationResult.current.expensesPKR)}</span>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-muted-foreground">Expenses</dt>
+                        <dd className="font-mono tabular-nums text-foreground">
+                          {formatPKR(simulationResult.current.expensesPKR)}
+                        </dd>
                       </div>
-                    </div>
+                    </dl>
                   </CardContent>
                 </Card>
 
-                <Card className="rounded-3xl border-primary/20 shadow-sm relative overflow-hidden bg-primary/5">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-primary"></div>
-                  <CardContent className="p-6">
-                    <p className="text-sm font-bold text-primary mb-1 uppercase tracking-wider">Simulated Future</p>
-                    <div className="text-2xl font-black font-mono text-primary mb-4">
+                <Card className="overflow-hidden border-brand-200 bg-brand-50/50">
+                  <span className="block h-1 w-full bg-primary" aria-hidden="true" />
+                  <CardContent className="p-5 pt-5 sm:p-6 sm:pt-6">
+                    <p className="text-sm font-medium text-brand-800">Under this scenario</p>
+                    <p className="mt-3 font-mono text-2xl font-semibold tracking-[-0.03em] tabular-nums text-brand-900">
                       {formatPKR(simulationResult.scenario.taxPKR)}
-                    </div>
-                    <div className="space-y-1 text-xs text-primary/80">
-                      <div className="flex justify-between">
-                        <span>Export tax:</span>
-                        <span className="font-mono text-primary font-bold">{formatPKR(simulationResult.scenario.exportTaxPKR)}</span>
+                    </p>
+                    <dl className="mt-4 space-y-1.5 text-xs">
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-brand-700">Export tax</dt>
+                        <dd className="font-mono font-medium tabular-nums text-brand-900">
+                          {formatPKR(simulationResult.scenario.exportTaxPKR)}
+                        </dd>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Local tax:</span>
-                        <span className="font-mono text-primary font-bold">{formatPKR(simulationResult.scenario.localTaxPKR)}</span>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-brand-700">Local tax</dt>
+                        <dd className="font-mono font-medium tabular-nums text-brand-900">
+                          {formatPKR(simulationResult.scenario.localTaxPKR)}
+                        </dd>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Expenses:</span>
-                        <span className="font-mono text-primary font-bold">{formatPKR(simulationResult.scenario.expensesPKR)}</span>
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-brand-700">Expenses</dt>
+                        <dd className="font-mono font-medium tabular-nums text-brand-900">
+                          {formatPKR(simulationResult.scenario.expensesPKR)}
+                        </dd>
                       </div>
-                    </div>
+                    </dl>
                   </CardContent>
                 </Card>
               </div>
 
-              <Card className={`rounded-3xl border-border/50 shadow-sm overflow-hidden ${simulationResult.differencePKR <= 0 ? "bg-emerald-500/10" : "bg-amber-500/10"}`}>
-                <CardContent className="p-8 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-bold mb-1">
-                      {simulationResult.differencePKR <= 0 ? "Tax Decrease" : "Tax Increase"} vs Current
+              <Card className={isDecrease ? "border-success/20 bg-success-surface" : "border-warning/20 bg-warning-surface"}>
+                <CardContent className="flex items-center justify-between gap-4 p-6 pt-6">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">
+                      {isDecrease ? "Less tax than today" : "More tax than today"}
                     </p>
-                    <h2 className={`text-3xl font-black font-mono ${simulationResult.differencePKR <= 0 ? "text-emerald-600" : "text-amber-600"}`}>
-                      {simulationResult.differencePKR <= 0 ? "-" : "+"}{formatPKR(Math.abs(simulationResult.differencePKR))}
-                    </h2>
+                    <p
+                      className={`mt-1.5 font-mono text-3xl font-semibold tracking-[-0.03em] tabular-nums ${
+                        isDecrease ? "text-success" : "text-warning"
+                      }`}
+                    >
+                      {isDecrease ? "−" : "+"}
+                      {formatPKR(Math.abs(simulationResult.differencePKR))}
+                    </p>
                   </div>
-                  <div className={`h-16 w-16 rounded-full flex items-center justify-center shadow-inner ${simulationResult.differencePKR <= 0 ? "bg-emerald-100 text-emerald-600" : "bg-amber-100 text-amber-600"}`}>
-                    {simulationResult.differencePKR <= 0 ? <TrendingDown className="h-8 w-8" /> : <TrendingUp className="h-8 w-8" />}
-                  </div>
+                  <span
+                    className={`flex size-12 shrink-0 items-center justify-center rounded-md ${
+                      isDecrease ? "bg-success text-success-foreground" : "bg-warning text-warning-foreground"
+                    }`}
+                    aria-hidden="true"
+                  >
+                    {isDecrease ? <TrendingDown className="size-6" /> : <TrendingUp className="size-6" />}
+                  </span>
                 </CardContent>
               </Card>
 
-              <div className="p-4 rounded-2xl bg-muted/50 border border-border/50 flex items-start gap-3">
-                <Percent className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Export income is taxed at <strong>{isPseb ? "0.25%" : "1.0%"}</strong> on the gross amount under Section 154A —
-                  expenses never reduce it. Local income is taxed on the normal slabs after deducting your expenses.
-                </p>
-              </div>
+              <p className="rounded-md border border-border bg-muted/50 p-4 text-sm leading-relaxed text-muted-foreground">
+                Export income is taxed at <strong className="font-medium text-foreground">{isPseb ? "0.25%" : "1.0%"}</strong>{" "}
+                on the gross amount under Section 154A — expenses never reduce it. Local income is taxed on the normal
+                slabs after your expenses are deducted.
+              </p>
             </div>
           )}
         </div>

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth.store";
+import { unwrapApi } from "@/lib/utils";
 
 export function useProfile() {
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -8,17 +9,8 @@ export function useProfile() {
   return useQuery({
     queryKey: ["user-profile", accessToken],
     queryFn: async () => {
-      if (!accessToken) return null;
-      try {
-        const res = await apiClient.get("/users/profile");
-        const resData = res.data;
-        // Handle double-nested or single-nested backend response payload
-        const userObj = resData?.data?.data || resData?.data || resData;
-        return userObj || null;
-      } catch (e) {
-        console.warn("Failed to fetch user profile:", e);
-        return null;
-      }
+      const res = await apiClient.get("/users/profile");
+      return unwrapApi(res);
     },
     enabled: !!accessToken,
   });
@@ -29,9 +21,11 @@ export function useUpdateProfile() {
   return useMutation({
     mutationFn: async (payload: any) => {
       const res = await apiClient.patch("/users/profile", payload);
-      const resData = res.data;
-      return resData?.data?.data || resData?.data || resData;
+      return unwrapApi(res);
     },
+    // settings/page.tsx shows its own success/error toast and needs the
+    // result to update the auth store's cached user.
+    meta: { suppressErrorToast: true },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-profile"] });
     },

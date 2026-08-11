@@ -5,7 +5,20 @@
  * Accepts "2026", 2026, or "2025-26" — all resolve to the same window.
  */
 
-export const DEFAULT_TAX_YEAR = 2026;
+/**
+ * The tax year we are currently inside, derived from the clock.
+ *
+ * This was a hardcoded `DEFAULT_TAX_YEAR = 2026`, which silently went stale on
+ * 1 July 2026: every default-scoped estimate, wealth reconciliation and filing
+ * check kept reporting the *previous* year, so income entered "today" was
+ * invisible until the user manually changed the year.
+ *
+ * Mirrors `apps/web/src/lib/tax-year.ts` — keep the two in step.
+ */
+export function getCurrentTaxYear(date = new Date()): number {
+  // July (month index 6) starts the next tax year.
+  return date.getUTCMonth() >= 6 ? date.getUTCFullYear() + 1 : date.getUTCFullYear();
+}
 
 export interface TaxYearRange {
   taxYear: number;
@@ -17,7 +30,7 @@ export interface TaxYearRange {
 }
 
 export function parseTaxYear(input?: string | number | null): number {
-  if (input === undefined || input === null || input === '') return DEFAULT_TAX_YEAR;
+  if (input === undefined || input === null || input === '') return getCurrentTaxYear();
 
   const raw = String(input).trim();
 
@@ -29,7 +42,7 @@ export function parseTaxYear(input?: string | number | null): number {
   }
 
   const year = parseInt(raw, 10);
-  return Number.isFinite(year) && year > 1900 && year < 3000 ? year : DEFAULT_TAX_YEAR;
+  return Number.isFinite(year) && year > 1900 && year < 3000 ? year : getCurrentTaxYear();
 }
 
 export function taxYearRange(input?: string | number | null): TaxYearRange {

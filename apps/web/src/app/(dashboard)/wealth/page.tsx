@@ -1,35 +1,44 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Trash2, CheckCircle2, XCircle, RefreshCw } from "lucide-react"
+import { CheckCircle2, Landmark, Loader2, Plus, Trash2, XCircle } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardTitle, CardToolbar } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Field, Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import { SortableTableHead } from "@/components/ui/sortable-table-head"
 import { PaginationBar } from "@/components/ui/pagination-bar"
 import { BulkActionsBar } from "@/components/ui/bulk-actions-bar"
 import { ConfirmModal } from "@/components/ui/confirm-modal"
-import { Toast } from "@/components/ui/toast"
+import { PageHeader } from "@/components/ui/page-header"
+import { StatCard } from "@/components/ui/stat-card"
+import { EmptyState } from "@/components/ui/empty-state"
+import { Skeleton, TableSkeleton } from "@/components/ui/skeleton"
+import { useToast } from "@/providers/toast-provider"
 import { useAuthStore } from "@/stores/auth.store"
 import { apiClient } from "@/lib/api-client"
+import { apiErrorMessage, formatPKR } from "@/lib/utils"
 import { useDataTable } from "@/hooks/use-data-table"
 import { getCurrentTaxYear, taxYearOptions } from "@/lib/tax-year"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-
-const PAGE_SIZE = 10
 
 export default function WealthPage() {
   const token = useAuthStore((state) => state.accessToken)
   const [loading, setLoading] = useState(true)
   const [taxYear, setTaxYear] = useState(() => String(getCurrentTaxYear()))
 
-  const [statement, setStatement] = useState<any>(null)
   const [assets, setAssets] = useState<any[]>([])
   const [liabilities, setLiabilities] = useState<any[]>([])
   const [reconciliation, setReconciliation] = useState<any>(null)
@@ -38,11 +47,15 @@ export default function WealthPage() {
   const [openingWealth, setOpeningWealth] = useState("")
   const [isAssetDialogOpen, setIsAssetDialogOpen] = useState(false)
   const [isLiabilityDialogOpen, setIsLiabilityDialogOpen] = useState(false)
+  const [isSavingAsset, setIsSavingAsset] = useState(false)
+  const [isSavingLiability, setIsSavingLiability] = useState(false)
 
   const [newAsset, setNewAsset] = useState({ type: "CASH", description: "", valuePKR: "", name: "", currency: "PKR", balance: "" })
   const [newLiability, setNewLiability] = useState({ description: "", amountPKR: "" })
 
-  const [toast, setToast] = useState<{ type: "error" | "success"; title?: string; message: string } | null>(null)
+  const { showSuccess, showError } = useToast()
+  const [deleteAssetTarget, setDeleteAssetTarget] = useState<{ id: string; name: string } | null>(null)
+  const [deleteLiabilityTarget, setDeleteLiabilityTarget] = useState<{ id: string; description: string } | null>(null)
   const [bulkAssetConfirmOpen, setBulkAssetConfirmOpen] = useState(false)
   const [isBulkDeletingAssets, setIsBulkDeletingAssets] = useState(false)
   const [bulkLiabilityConfirmOpen, setBulkLiabilityConfirmOpen] = useState(false)
@@ -52,6 +65,7 @@ export default function WealthPage() {
     if (!token) return
     try {
       setLoading(true)
+
 
       const [stmtRes, assetsRes, liabRes, reconRes] = await Promise.all([
         apiClient.get(`/wealth/statement?year=${taxYear}`),
@@ -65,13 +79,15 @@ export default function WealthPage() {
       const liabData = liabRes.data
       const reconData = reconRes.data
 
-      setStatement(stmtData?.data || stmtData)
       setAssets(Array.isArray(assetsData?.data) ? assetsData.data : Array.isArray(assetsData) ? assetsData : [])
       setLiabilities(Array.isArray(liabData?.data) ? liabData.data : Array.isArray(liabData) ? liabData : [])
       setReconciliation(reconData?.data || reconData)
       setOpeningWealth(stmtData?.data?.openingWealthPKR || stmtData?.openingWealthPKR || "")
     } catch (error) {
-      console.error(error)
+      // Every write below already reports its own success/failure; this is
+      // the initial page load, so a failure here means the whole page has
+      // nothing to show — worth a toast rather than a silently blank screen.
+      showError(apiErrorMessage(error, "Could not load your wealth data."), "Couldn't load wealth data")
     } finally {
       setLoading(false)
     }
@@ -79,6 +95,7 @@ export default function WealthPage() {
 
   useEffect(() => {
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, taxYear])
 
   const updateOpeningWealth = async () => {
@@ -86,14 +103,16 @@ export default function WealthPage() {
       await apiClient.patch(`/wealth/statement?year=${taxYear}`, {
         openingWealthPKR: Number(openingWealth)
       })
+      showSuccess("Opening wealth updated.", "Saved")
       fetchData()
     } catch (error) {
-      console.error(error)
+      showError(apiErrorMessage(error, "Failed to update opening wealth."), "Couldn't save")
     }
   }
 
   const addAsset = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSavingAsset(true)
     try {
       await apiClient.post(`/wealth/assets`, {
         taxYear,
@@ -104,26 +123,32 @@ export default function WealthPage() {
         description: newAsset.description,
         valuePKR: Number(newAsset.valuePKR)
       })
+      showSuccess(`"${newAsset.name}" added.`, "Asset added")
       setNewAsset({ type: "CASH", description: "", valuePKR: "", name: "", currency: "PKR", balance: "" })
       setIsAssetDialogOpen(false)
       fetchData()
     } catch (error) {
-      console.error(error)
+      showError(apiErrorMessage(error, "Failed to save the asset."), "Couldn't save asset")
+    } finally {
+      setIsSavingAsset(false)
     }
   }
 
-  const deleteAsset = async (id: string) => {
+  const handleConfirmDeleteAsset = async () => {
+    if (!deleteAssetTarget) return
     try {
-      await apiClient.delete(`/wealth/assets/${id}`)
+      await apiClient.delete(`/wealth/assets/${deleteAssetTarget.id}`)
+      showSuccess(`"${deleteAssetTarget.name}" removed.`, "Asset deleted")
       fetchData()
     } catch (error) {
-      console.error(error)
+      showError(apiErrorMessage(error, "Failed to delete the asset."), "Couldn't delete asset")
+    } finally {
+      setDeleteAssetTarget(null)
     }
   }
 
   const assetsTable = useDataTable(assets, {
     getId: (a: any) => a.id,
-    pageSize: PAGE_SIZE,
     sortAccessors: {
       name: (a: any) => (a.name || a.description || "").toLowerCase(),
       type: (a: any) => (a.type || "").toLowerCase(),
@@ -143,41 +168,48 @@ export default function WealthPage() {
 
     const failed = results.filter((r) => r.status === "rejected").length
     const deleted = ids.length - failed
-    setToast(
-      failed === 0
-        ? { type: "success", title: "Assets Deleted", message: `${deleted} asset(s) removed.` }
-        : { type: "error", title: "Some Deletes Failed", message: `${deleted} deleted, ${failed} failed.` }
-    )
+    if (failed === 0) {
+      showSuccess(`${deleted} asset${deleted === 1 ? "" : "s"} removed.`, "Assets deleted")
+    } else {
+      showError(`${deleted} deleted, ${failed} could not be removed.`, "Some deletes failed")
+    }
   }
 
   const addLiability = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSavingLiability(true)
     try {
       await apiClient.post(`/wealth/liabilities`, {
         taxYear,
         description: newLiability.description,
         amountPKR: Number(newLiability.amountPKR)
       })
+      showSuccess(`"${newLiability.description}" added.`, "Liability added")
       setNewLiability({ description: "", amountPKR: "" })
       setIsLiabilityDialogOpen(false)
       fetchData()
     } catch (error) {
-      console.error(error)
+      showError(apiErrorMessage(error, "Failed to save the liability."), "Couldn't save liability")
+    } finally {
+      setIsSavingLiability(false)
     }
   }
 
-  const deleteLiability = async (id: string) => {
+  const handleConfirmDeleteLiability = async () => {
+    if (!deleteLiabilityTarget) return
     try {
-      await apiClient.delete(`/wealth/liabilities/${id}`)
+      await apiClient.delete(`/wealth/liabilities/${deleteLiabilityTarget.id}`)
+      showSuccess(`"${deleteLiabilityTarget.description}" removed.`, "Liability deleted")
       fetchData()
     } catch (error) {
-      console.error(error)
+      showError(apiErrorMessage(error, "Failed to delete the liability."), "Couldn't delete liability")
+    } finally {
+      setDeleteLiabilityTarget(null)
     }
   }
 
   const liabilitiesTable = useDataTable(liabilities, {
     getId: (l: any) => l.id,
-    pageSize: PAGE_SIZE,
     sortAccessors: {
       description: (l: any) => (l.description || "").toLowerCase(),
       amount: (l: any) => Number(l.amountPKR || 0),
@@ -195,329 +227,232 @@ export default function WealthPage() {
 
     const failed = results.filter((r) => r.status === "rejected").length
     const deleted = ids.length - failed
-    setToast(
-      failed === 0
-        ? { type: "success", title: "Liabilities Deleted", message: `${deleted} liability(ies) removed.` }
-        : { type: "error", title: "Some Deletes Failed", message: `${deleted} deleted, ${failed} failed.` }
-    )
+    if (failed === 0) {
+      showSuccess(`${deleted} liabilit${deleted === 1 ? "y" : "ies"} removed.`, "Liabilities deleted")
+    } else {
+      showError(`${deleted} deleted, ${failed} could not be removed.`, "Some deletes failed")
+    }
   }
 
-  const formatCurrency = (val: number | string | undefined) => {
-    return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(Number(val || 0))
-  }
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        {/* Header Skeleton */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mt-6">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight">Wealth Management</h1>
-            <p className="text-muted-foreground mt-1">Manage your assets, liabilities, and reconcile your wealth for FBR compliance.</p>
-          </div>
-          <div className="w-full sm:w-[200px] space-y-2">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        </div>
-
-        {/* Primary Summary Metrics Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="border-border">
-              <CardHeader className="pb-2">
-                <Skeleton className="h-4 w-28" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-9 w-40" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Reconciliation Status Card Skeleton */}
-        <Card className="border border-border">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <Skeleton className="h-6 w-60" />
-              <Skeleton className="h-6 w-28 rounded-full" />
-            </div>
-            <Skeleton className="h-4 w-80 mt-1" />
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="p-4 rounded-xl border border-border bg-muted/20 space-y-2">
-                  <Skeleton className="h-3 w-28" />
-                  <Skeleton className="h-6 w-24" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Assets & Liabilities Side-by-Side Grid Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          {[1, 2].map((col) => (
-            <div key={col} className="border border-border rounded-xl overflow-hidden bg-card shadow-sm flex flex-col">
-              <div className="p-5 border-b border-border flex items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <Skeleton className="h-5 w-24" />
-                  <Skeleton className="h-3 w-32" />
-                </div>
-                <Skeleton className="h-8 w-24" />
-              </div>
-              <div className="p-5 space-y-4">
-                {[1, 2, 3].map((row) => (
-                  <div key={row} className="flex items-center justify-between py-2 border-b border-border/40">
-                    <div className="space-y-1.5">
-                      <Skeleton className="h-4 w-36" />
-                      <Skeleton className="h-3 w-20" />
-                    </div>
-                    <Skeleton className="h-5 w-24" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
+  const isReconciled = !!reconciliation?.reconciled
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mt-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Wealth Management</h1>
-          <p className="text-muted-foreground mt-1">Manage your assets, liabilities, and reconcile your wealth for FBR compliance.</p>
-        </div>
-        <div className="w-full sm:w-[200px]">
-          <Label className="mb-2 block text-sm">Tax Year</Label>
+    <div className="space-y-6 lg:space-y-8">
+      <PageHeader
+        title="Wealth"
+        description="Assets, liabilities and the reconciliation FBR expects between your declared wealth and your income."
+        actions={
           <Select value={taxYear} onValueChange={setTaxYear}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select Tax Year" />
+            <SelectTrigger className="w-[11rem]" aria-label="Tax year">
+              <SelectValue placeholder="Tax year" />
             </SelectTrigger>
             <SelectContent>
               {taxYearOptions().map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Primary Summary Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Assets</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{formatCurrency(reconciliation?.declaredAssetsPKR)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Liabilities</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-destructive">{formatCurrency(reconciliation?.declaredLiabilitiesPKR)}</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-primary text-primary-foreground">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground/80">Net Declared Wealth</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{formatCurrency(reconciliation?.netDeclaredWealthPKR)}</div>
-          </CardContent>
-        </Card>
-      </div>
+      <section aria-label="Wealth totals" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard
+          label="Total assets"
+          value={formatPKR(reconciliation?.declaredAssetsPKR ?? 0)}
+          icon={Landmark}
+          hint="What you own"
+          isLoading={loading}
+        />
+        <StatCard
+          label="Total liabilities"
+          value={formatPKR(reconciliation?.declaredLiabilitiesPKR ?? 0)}
+          icon={Landmark}
+          hint="What you owe"
+          isLoading={loading}
+        />
+        <StatCard
+          label="Net declared wealth"
+          value={formatPKR(reconciliation?.netDeclaredWealthPKR ?? 0)}
+          icon={Landmark}
+          emphasis
+          hint="Assets less liabilities"
+          isLoading={loading}
+        />
+      </section>
 
-      {/* Reconciliation Section */}
-      {reconciliation && (
-        <Card className={`border-l-4 shadow-sm ${reconciliation.reconciled ? "border-l-emerald-500" : "border-l-destructive"}`}>
-          <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-              <div className="space-y-2">
-                <h3 className="text-xl font-bold flex items-center gap-2">
-                  {reconciliation.reconciled ? (
-                    <><CheckCircle2 className="text-emerald-500 h-6 w-6" /> Wealth Reconciled</>
-                  ) : (
-                    <><XCircle className="text-destructive h-6 w-6" /> Wealth Mismatch</>
-                  )}
-                </h3>
-                <p className="text-sm text-muted-foreground max-w-xl">
-                  {reconciliation.reconciled
-                    ? "Your declared assets perfectly align with your reported income and expenses for this tax year."
-                    : `Your declared net wealth is off by ${formatCurrency(Math.abs(reconciliation.differencePKR))} compared to what your income minus expenses implies. FBR allows a variance of up to ${formatCurrency(reconciliation.toleranceThresholdPKR)}.`
-                  }
-                </p>
+      {loading ? (
+        <Skeleton className="h-40 rounded-lg" />
+      ) : (
+        reconciliation && (
+          <Card className={isReconciled ? "border-success/20 bg-success-surface" : "border-destructive/20 bg-destructive-surface"}>
+            <CardContent className="p-5 pt-5 sm:p-6 sm:pt-6">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0 space-y-2">
+                  <h2 className="flex items-center gap-2 text-base font-semibold tracking-[-0.01em] text-foreground">
+                    {isReconciled ? (
+                      <CheckCircle2 className="size-5 shrink-0 text-success" aria-hidden="true" />
+                    ) : (
+                      <XCircle className="size-5 shrink-0 text-destructive" aria-hidden="true" />
+                    )}
+                    {isReconciled ? "Wealth reconciled" : "Wealth doesn't reconcile"}
+                  </h2>
+                  <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
+                    {isReconciled
+                      ? "Your declared assets line up with the income and expenses you've reported for this tax year."
+                      : `Your declared net wealth is out by ${formatPKR(Math.abs(reconciliation.differencePKR))} against what income minus expenses implies. FBR allows a variance of up to ${formatPKR(reconciliation.toleranceThresholdPKR)}.`}
+                  </p>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-4 rounded-md border border-border bg-card p-4 sm:gap-6">
+                  <div className="text-center">
+                    <p className="text-2xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">Expected</p>
+                    <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-foreground">
+                      {formatPKR(reconciliation.expectedClosingWealthPKR)}
+                    </p>
+                  </div>
+                  <span className="text-lg text-subtle" aria-hidden="true">
+                    vs
+                  </span>
+                  <div className="text-center">
+                    <p className="text-2xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">Declared</p>
+                    <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-foreground">
+                      {formatPKR(reconciliation.netDeclaredWealthPKR)}
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex gap-4 sm:gap-8 bg-muted/30 p-4 rounded-xl border items-center justify-center min-w-[300px]">
-                <div className="text-center">
-                  <div className="text-xs uppercase font-semibold text-muted-foreground mb-1">Expected</div>
-                  <div className="text-xl font-bold font-mono">{formatCurrency(reconciliation.expectedClosingWealthPKR)}</div>
+              <dl className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border pt-4 text-sm">
+                <div className="flex items-center gap-1.5">
+                  <dt className="text-muted-foreground">Opening</dt>
+                  <dd className="font-mono font-medium tabular-nums text-foreground">
+                    {formatPKR(reconciliation.openingWealthPKR)}
+                  </dd>
                 </div>
-                <div className="text-xl text-muted-foreground font-light">=</div>
-                <div className="text-center">
-                  <div className="text-xs uppercase font-semibold text-muted-foreground mb-1">Declared</div>
-                  <div className="text-xl font-bold font-mono">{formatCurrency(reconciliation.netDeclaredWealthPKR)}</div>
+                <div className="flex items-center gap-1.5">
+                  <dt className="text-success">+ Income</dt>
+                  <dd className="font-mono font-medium tabular-nums text-success">
+                    {formatPKR(reconciliation.totalIncomePKR)}
+                  </dd>
                 </div>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Formula:</span>
-              <span>Opening: <strong className="text-foreground">{formatCurrency(reconciliation.openingWealthPKR)}</strong></span>
-              <span className="text-emerald-600 font-medium">+ Income: {formatCurrency(reconciliation.totalIncomePKR)}</span>
-              <span className="text-rose-600 font-medium">- Expenses: {formatCurrency(reconciliation.totalExpensesPKR)}</span>
-              <span>= Expected: <strong className="text-foreground">{formatCurrency(reconciliation.expectedClosingWealthPKR)}</strong></span>
-            </div>
-          </CardContent>
-        </Card>
+                <div className="flex items-center gap-1.5">
+                  <dt className="text-muted-foreground">− Expenses</dt>
+                  <dd className="font-mono font-medium tabular-nums text-foreground">
+                    {formatPKR(reconciliation.totalExpensesPKR)}
+                  </dd>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <dt className="text-muted-foreground">= Expected</dt>
+                  <dd className="font-mono font-semibold tabular-nums text-foreground">
+                    {formatPKR(reconciliation.expectedClosingWealthPKR)}
+                  </dd>
+                </div>
+              </dl>
+            </CardContent>
+          </Card>
+        )
       )}
 
-      {/* Opening Wealth Input */}
       <Card>
-        <CardHeader>
-          <CardTitle>Opening Wealth</CardTitle>
-          <CardDescription>Net wealth carried forward from the previous tax year.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex max-w-sm flex-col gap-2">
-            <Label htmlFor="opening-wealth">Opening Balance (PKR)</Label>
+        <CardToolbar>
+          <div className="space-y-1">
+            <CardTitle>Opening wealth</CardTitle>
+            <CardDescription>Net wealth carried forward from the previous tax year.</CardDescription>
+          </div>
+        </CardToolbar>
+        <CardContent className="pt-5 sm:pt-6">
+          <Field
+            label="Opening balance"
+            htmlFor="opening-wealth"
+            hint="Saved when you click away from the field."
+            className="max-w-xs"
+          >
             <Input
               id="opening-wealth"
               type="number"
+              inputMode="numeric"
+              className="font-mono tabular-nums"
               value={openingWealth}
-              onChange={e => setOpeningWealth(e.target.value)}
+              onChange={(e) => setOpeningWealth(e.target.value)}
               onBlur={updateOpeningWealth}
-              placeholder="e.g. 500000"
+              placeholder="500000"
             />
-          </div>
+          </Field>
         </CardContent>
       </Card>
 
-      {/* Assets & Liabilities Side-by-Side Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-
-        {/* Assets Section */}
-        <div className="border border-border rounded-xl overflow-hidden bg-card shadow-sm flex flex-col">
-          <div className="p-5 border-b border-border flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-base font-bold text-foreground">Assets</h2>
-              <p className="text-xs text-muted-foreground">What you own</p>
+      <div className="grid gap-4 lg:gap-6 xl:grid-cols-2">
+        {/* Assets */}
+        <Card className="overflow-hidden">
+          <CardToolbar>
+            <div className="space-y-1">
+              <CardTitle>Assets</CardTitle>
+              <CardDescription>What you own</CardDescription>
             </div>
-            <Dialog open={isAssetDialogOpen} onOpenChange={setIsAssetDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="h-8 text-xs"><Plus className="h-3.5 w-3.5 mr-1.5" /> Add Asset</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Asset</DialogTitle>
-                  <DialogDescription>
-                    Declare a new asset to include in your wealth statement.
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={addAsset} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="asset-name">Asset Name *</Label>
-                    <Input id="asset-name" required value={newAsset.name} onChange={e => setNewAsset({ ...newAsset, name: e.target.value })} placeholder="e.g. Meezan Bank Current Acc" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="asset-type">Asset Type</Label>
-                    <Select value={newAsset.type} onValueChange={(val) => setNewAsset({ ...newAsset, type: val })}>
-                      <SelectTrigger id="asset-type">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="CASH">Cash / Bank</SelectItem>
-                        <SelectItem value="PROPERTY">Property</SelectItem>
-                        <SelectItem value="VEHICLE">Vehicle</SelectItem>
-                        <SelectItem value="INVESTMENT">Investment</SelectItem>
-                        <SelectItem value="OTHER">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="asset-balance">Current Balance *</Label>
-                      <Input id="asset-balance" required type="number" value={newAsset.balance} onChange={e => setNewAsset({ ...newAsset, balance: e.target.value })} placeholder="0" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="asset-currency">Currency</Label>
-                      <Select value={newAsset.currency} onValueChange={(val) => setNewAsset({ ...newAsset, currency: val })}>
-                        <SelectTrigger id="asset-currency">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="PKR">PKR (Rs.)</SelectItem>
-                          <SelectItem value="USD">USD ($)</SelectItem>
-                          <SelectItem value="USDT">USDT</SelectItem>
-                          <SelectItem value="EUR">EUR (€)</SelectItem>
-                          <SelectItem value="GBP">GBP (£)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="asset-val">Value (PKR) *</Label>
-                    <Input id="asset-val" required type="number" value={newAsset.valuePKR} onChange={e => setNewAsset({ ...newAsset, valuePKR: e.target.value })} placeholder="0" />
-                    {newAsset.currency !== 'PKR' && (
-                      <p className="text-[11px] text-muted-foreground">Enter the equivalent PKR value for FBR reconciliation.</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="asset-desc">Notes</Label>
-                    <Input id="asset-desc" value={newAsset.description} onChange={e => setNewAsset({ ...newAsset, description: e.target.value })} placeholder="Optional notes (e.g. Primary checking account)" />
-                  </div>
-                  <DialogFooter>
-                    <Button type="submit">Save Asset</Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
+            <Button size="sm" onClick={() => setIsAssetDialogOpen(true)}>
+              <Plus /> Add asset
+            </Button>
+          </CardToolbar>
 
-          <BulkActionsBar
-            count={assetsTable.selected.size}
-            onDelete={() => setBulkAssetConfirmOpen(true)}
-            onClear={assetsTable.clearSelection}
-            isDeleting={isBulkDeletingAssets}
-            label="asset"
-          />
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-muted/50">
-                <TableRow className="border-border">
-                  <TableHead className="w-10">
-                    <Checkbox
-                      checked={assetsTable.allSelectedOnPage}
-                      indeterminate={assetsTable.someSelectedOnPage && !assetsTable.allSelectedOnPage}
-                      onChange={assetsTable.toggleSelectAll}
-                      aria-label="Select all assets on this page"
-                    />
-                  </TableHead>
-                  <SortableTableHead sortKey="name" sort={assetsTable.sort} onSort={assetsTable.toggleSort} className="text-muted-foreground font-medium">Asset</SortableTableHead>
-                  <SortableTableHead sortKey="type" sort={assetsTable.sort} onSort={assetsTable.toggleSort} className="text-muted-foreground font-medium">Type</SortableTableHead>
-                  <SortableTableHead sortKey="balance" sort={assetsTable.sort} onSort={assetsTable.toggleSort} className="text-muted-foreground font-medium text-right">Value (PKR)</SortableTableHead>
-                  <TableHead className="w-10 text-right text-muted-foreground font-medium"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {assets.length === 0 ? (
+          {assetsTable.selected.size > 0 && (
+            <BulkActionsBar
+              count={assetsTable.selected.size}
+              onDelete={() => setBulkAssetConfirmOpen(true)}
+              onClear={assetsTable.clearSelection}
+              isDeleting={isBulkDeletingAssets}
+              label="asset"
+            />
+          )}
+
+          {loading ? (
+            <TableSkeleton rows={4} columns={5} />
+          ) : assets.length === 0 ? (
+            <EmptyState
+              icon={Landmark}
+              size="sm"
+              title="No assets declared"
+              description="Add bank accounts, property or investments so your wealth statement can reconcile."
+              action={
+                <Button size="sm" onClick={() => setIsAssetDialogOpen(true)}>
+                  <Plus /> Add asset
+                </Button>
+              }
+            />
+          ) : (
+            <>
+              <Table className="min-w-[36rem]">
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-10 text-muted-foreground text-xs">
-                      No assets declared yet.
-                    </TableCell>
+                    <TableHead>
+                      <Checkbox
+                        checked={assetsTable.allSelectedOnPage}
+                        indeterminate={assetsTable.someSelectedOnPage && !assetsTable.allSelectedOnPage}
+                        onChange={assetsTable.toggleSelectAll}
+                        aria-label="Select all assets on this page"
+                      />
+                    </TableHead>
+                    <SortableTableHead sortKey="name" sort={assetsTable.sort} onSort={assetsTable.toggleSort}>
+                      Asset
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="type" sort={assetsTable.sort} onSort={assetsTable.toggleSort}>
+                      Type
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="balance" sort={assetsTable.sort} onSort={assetsTable.toggleSort} align="right">
+                      Balance
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="currency" sort={assetsTable.sort} onSort={assetsTable.toggleSort}>
+                      Currency
+                    </SortableTableHead>
+                    <TableHead className="text-right">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
                   </TableRow>
-                ) : (
-                  assetsTable.paged.map(asset => (
-                    <TableRow key={asset.id} className="transition-colors" data-state={assetsTable.selected.has(asset.id) ? "selected" : undefined}>
+                </TableHeader>
+                <TableBody>
+                  {assetsTable.paged.map((asset) => (
+                    <TableRow key={asset.id} data-state={assetsTable.selected.has(asset.id) ? "selected" : undefined}>
                       <TableCell>
                         <Checkbox
                           checked={assetsTable.selected.has(asset.id)}
@@ -526,107 +461,121 @@ export default function WealthPage() {
                         />
                       </TableCell>
                       <TableCell>
-                        <div className="font-semibold text-foreground text-xs leading-snug">{asset.name || asset.description}</div>
-                        {asset.description && asset.name && (
-                          <div className="text-[11px] text-muted-foreground truncate max-w-[180px]">{asset.description}</div>
+                        <span className="block font-medium text-foreground">{asset.name || asset.description}</span>
+                        {asset.name && asset.description && (
+                          <span className="block text-xs text-muted-foreground">{asset.description}</span>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="capitalize text-[10px] font-medium px-2 py-0.5">
-                          {(asset.type || "").toLowerCase()}
-                        </Badge>
+                      <TableCell className="text-xs capitalize text-muted-foreground">
+                        {(asset.type || "").toLowerCase()}
                       </TableCell>
-                      <TableCell className="text-right font-mono font-bold text-primary text-xs whitespace-nowrap">
-                        {formatCurrency(asset.valuePKR || asset.balance)}
-                        {asset.currency && asset.currency !== 'PKR' && (
-                          <div className="text-[10px] text-muted-foreground font-normal">
-                            {asset.currency} {Number(asset.balance || 0).toLocaleString()}
-                          </div>
-                        )}
+                      <TableCell className="text-right font-mono text-sm font-medium tabular-nums text-foreground">
+                        {asset.currency === "PKR"
+                          ? formatPKR(asset.balance || asset.valuePKR)
+                          : new Intl.NumberFormat("en-US").format(Number(asset.balance || 0))}
                       </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{asset.currency || "PKR"}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => deleteAsset(asset.id)} className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-muted" title="Delete Asset">
-                          <Trash2 className="h-3.5 w-3.5" />
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="hover:bg-destructive-surface hover:text-destructive"
+                          onClick={() =>
+                            setDeleteAssetTarget({ id: asset.id, name: asset.name || asset.description || "this asset" })
+                          }
+                          title="Delete asset"
+                        >
+                          <Trash2 />
+                          <span className="sr-only">Delete {asset.name || "asset"}</span>
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          <PaginationBar page={assetsTable.page} pageSize={PAGE_SIZE} total={assetsTable.total} onPageChange={assetsTable.setPage} />
-        </div>
+                  ))}
+                </TableBody>
+              </Table>
+              <PaginationBar
+                page={assetsTable.page}
+                pageSize={assetsTable.pageSize}
+                total={assetsTable.total}
+                onPageChange={assetsTable.setPage}
+                onPageSizeChange={assetsTable.setPageSize}
+              />
+            </>
+          )}
+        </Card>
 
-        {/* Liabilities Section */}
-        <div className="border border-border rounded-xl overflow-hidden bg-card shadow-sm flex flex-col">
-          <div className="p-5 border-b border-border flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-base font-bold text-foreground">Liabilities</h2>
-              <p className="text-xs text-muted-foreground">What you owe</p>
+        {/* Liabilities */}
+        <Card className="overflow-hidden">
+          <CardToolbar>
+            <div className="space-y-1">
+              <CardTitle>Liabilities</CardTitle>
+              <CardDescription>What you owe</CardDescription>
             </div>
-            <Dialog open={isLiabilityDialogOpen} onOpenChange={setIsLiabilityDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="h-8 text-xs"><Plus className="h-3.5 w-3.5 mr-1.5" /> Add Liability</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Liability</DialogTitle>
-                  <DialogDescription>
-                    Declare a new liability or loan.
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={addLiability} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="liab-desc">Description</Label>
-                    <Input id="liab-desc" required value={newLiability.description} onChange={e => setNewLiability({ ...newLiability, description: e.target.value })} placeholder="e.g. Car Loan" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="liab-val">Amount (PKR)</Label>
-                    <Input id="liab-val" required type="number" value={newLiability.amountPKR} onChange={e => setNewLiability({ ...newLiability, amountPKR: e.target.value })} placeholder="0" />
-                  </div>
-                  <DialogFooter>
-                    <Button type="submit">Save Liability</Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
+            <Button size="sm" variant="outline" onClick={() => setIsLiabilityDialogOpen(true)}>
+              <Plus /> Add liability
+            </Button>
+          </CardToolbar>
 
-          <BulkActionsBar
-            count={liabilitiesTable.selected.size}
-            onDelete={() => setBulkLiabilityConfirmOpen(true)}
-            onClear={liabilitiesTable.clearSelection}
-            isDeleting={isBulkDeletingLiabilities}
-            label="liability"
-          />
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-muted/50">
-                <TableRow className="border-border">
-                  <TableHead className="w-10">
-                    <Checkbox
-                      checked={liabilitiesTable.allSelectedOnPage}
-                      indeterminate={liabilitiesTable.someSelectedOnPage && !liabilitiesTable.allSelectedOnPage}
-                      onChange={liabilitiesTable.toggleSelectAll}
-                      aria-label="Select all liabilities on this page"
-                    />
-                  </TableHead>
-                  <SortableTableHead sortKey="description" sort={liabilitiesTable.sort} onSort={liabilitiesTable.toggleSort} className="text-muted-foreground font-medium">Description</SortableTableHead>
-                  <SortableTableHead sortKey="amount" sort={liabilitiesTable.sort} onSort={liabilitiesTable.toggleSort} className="text-muted-foreground font-medium text-right">Amount (PKR)</SortableTableHead>
-                  <TableHead className="w-10 text-right text-muted-foreground font-medium"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {liabilities.length === 0 ? (
+          {liabilitiesTable.selected.size > 0 && (
+            <BulkActionsBar
+              count={liabilitiesTable.selected.size}
+              onDelete={() => setBulkLiabilityConfirmOpen(true)}
+              onClear={liabilitiesTable.clearSelection}
+              isDeleting={isBulkDeletingLiabilities}
+              label="liability"
+            />
+          )}
+
+          {loading ? (
+            <TableSkeleton rows={4} columns={3} />
+          ) : liabilities.length === 0 ? (
+            <EmptyState
+              icon={Landmark}
+              size="sm"
+              title="No liabilities declared"
+              description="Loans and outstanding balances belong here so net wealth is accurate."
+              action={
+                <Button size="sm" variant="outline" onClick={() => setIsLiabilityDialogOpen(true)}>
+                  <Plus /> Add liability
+                </Button>
+              }
+            />
+          ) : (
+            <>
+              <Table className="min-w-0">
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-10 text-muted-foreground text-xs">
-                      No liabilities declared yet.
-                    </TableCell>
+                    <TableHead>
+                      <Checkbox
+                        checked={liabilitiesTable.allSelectedOnPage}
+                        indeterminate={liabilitiesTable.someSelectedOnPage && !liabilitiesTable.allSelectedOnPage}
+                        onChange={liabilitiesTable.toggleSelectAll}
+                        aria-label="Select all liabilities on this page"
+                      />
+                    </TableHead>
+                    <SortableTableHead
+                      sortKey="description"
+                      sort={liabilitiesTable.sort}
+                      onSort={liabilitiesTable.toggleSort}
+                    >
+                      Description
+                    </SortableTableHead>
+                    <SortableTableHead
+                      sortKey="amount"
+                      sort={liabilitiesTable.sort}
+                      onSort={liabilitiesTable.toggleSort}
+                      align="right"
+                    >
+                      Amount
+                    </SortableTableHead>
+                    <TableHead className="text-right">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
                   </TableRow>
-                ) : (
-                  liabilitiesTable.paged.map(liab => (
-                    <TableRow key={liab.id} className="transition-colors" data-state={liabilitiesTable.selected.has(liab.id) ? "selected" : undefined}>
+                </TableHeader>
+                <TableBody>
+                  {liabilitiesTable.paged.map((liab) => (
+                    <TableRow key={liab.id} data-state={liabilitiesTable.selected.has(liab.id) ? "selected" : undefined}>
                       <TableCell>
                         <Checkbox
                           checked={liabilitiesTable.selected.has(liab.id)}
@@ -634,31 +583,223 @@ export default function WealthPage() {
                           aria-label={`Select ${liab.description || "liability"}`}
                         />
                       </TableCell>
-                      <TableCell className="font-semibold text-foreground text-xs">{liab.description}</TableCell>
-                      <TableCell className="text-right font-mono font-bold text-destructive text-xs whitespace-nowrap">{formatCurrency(liab.amountPKR)}</TableCell>
+                      <TableCell className="font-medium text-foreground">{liab.description}</TableCell>
+                      <TableCell className="text-right font-mono text-sm font-medium tabular-nums text-foreground">
+                        {formatPKR(liab.amountPKR)}
+                      </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => deleteLiability(liab.id)} className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-muted" title="Delete Liability">
-                          <Trash2 className="h-3.5 w-3.5" />
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="hover:bg-destructive-surface hover:text-destructive"
+                          onClick={() =>
+                            setDeleteLiabilityTarget({
+                              id: liab.id,
+                              description: liab.description || "this liability",
+                            })
+                          }
+                          title="Delete liability"
+                        >
+                          <Trash2 />
+                          <span className="sr-only">Delete {liab.description || "liability"}</span>
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          <PaginationBar page={liabilitiesTable.page} pageSize={PAGE_SIZE} total={liabilitiesTable.total} onPageChange={liabilitiesTable.setPage} />
-        </div>
-
+                  ))}
+                </TableBody>
+              </Table>
+              <PaginationBar
+                page={liabilitiesTable.page}
+                pageSize={liabilitiesTable.pageSize}
+                total={liabilitiesTable.total}
+                onPageChange={liabilitiesTable.setPage}
+                onPageSizeChange={liabilitiesTable.setPageSize}
+              />
+            </>
+          )}
+        </Card>
       </div>
+
+      {/* Add asset */}
+      <Dialog open={isAssetDialogOpen} onOpenChange={setIsAssetDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add asset</DialogTitle>
+            <DialogDescription>Declare an asset to include in your wealth statement.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={addAsset} className="contents">
+            <DialogBody className="space-y-4">
+              <Field label="Asset name" htmlFor="asset-name" required>
+                <Input
+                  id="asset-name"
+                  required
+                  value={newAsset.name}
+                  onChange={(e) => setNewAsset({ ...newAsset, name: e.target.value })}
+                  placeholder="Meezan Bank current account"
+                />
+              </Field>
+
+              <Field label="Asset type" htmlFor="asset-type">
+                <Select value={newAsset.type} onValueChange={(val) => setNewAsset({ ...newAsset, type: val })}>
+                  <SelectTrigger id="asset-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CASH">Cash / bank</SelectItem>
+                    <SelectItem value="PROPERTY">Property</SelectItem>
+                    <SelectItem value="VEHICLE">Vehicle</SelectItem>
+                    <SelectItem value="INVESTMENT">Investment</SelectItem>
+                    <SelectItem value="OTHER">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Current balance" htmlFor="asset-balance" required>
+                  <Input
+                    id="asset-balance"
+                    required
+                    type="number"
+                    inputMode="numeric"
+                    className="font-mono tabular-nums"
+                    value={newAsset.balance}
+                    onChange={(e) => setNewAsset({ ...newAsset, balance: e.target.value })}
+                    placeholder="0"
+                  />
+                </Field>
+
+                <Field label="Currency" htmlFor="asset-currency">
+                  <Select value={newAsset.currency} onValueChange={(val) => setNewAsset({ ...newAsset, currency: val })}>
+                    <SelectTrigger id="asset-currency">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PKR">PKR (Rs)</SelectItem>
+                      <SelectItem value="USD">USD ($)</SelectItem>
+                      <SelectItem value="USDT">USDT</SelectItem>
+                      <SelectItem value="EUR">EUR (€)</SelectItem>
+                      <SelectItem value="GBP">GBP (£)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+
+              <Field
+                label="Value in PKR"
+                htmlFor="asset-val"
+                required
+                hint={newAsset.currency !== "PKR" ? "Enter the PKR equivalent — FBR reconciles in rupees." : undefined}
+              >
+                <Input
+                  id="asset-val"
+                  required
+                  type="number"
+                  inputMode="numeric"
+                  className="font-mono tabular-nums"
+                  value={newAsset.valuePKR}
+                  onChange={(e) => setNewAsset({ ...newAsset, valuePKR: e.target.value })}
+                  placeholder="0"
+                />
+              </Field>
+
+              <Field label="Notes" htmlFor="asset-desc">
+                <Input
+                  id="asset-desc"
+                  value={newAsset.description}
+                  onChange={(e) => setNewAsset({ ...newAsset, description: e.target.value })}
+                  placeholder="Primary checking account"
+                />
+              </Field>
+            </DialogBody>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsAssetDialogOpen(false)} disabled={isSavingAsset}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSavingAsset}>
+                {isSavingAsset && <Loader2 className="animate-spin" />} Save asset
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add liability */}
+      <Dialog open={isLiabilityDialogOpen} onOpenChange={setIsLiabilityDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add liability</DialogTitle>
+            <DialogDescription>Declare a loan or outstanding balance.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={addLiability} className="contents">
+            <DialogBody className="space-y-4">
+              <Field label="Description" htmlFor="liab-desc" required>
+                <Input
+                  id="liab-desc"
+                  required
+                  value={newLiability.description}
+                  onChange={(e) => setNewLiability({ ...newLiability, description: e.target.value })}
+                  placeholder="Car loan"
+                />
+              </Field>
+              <Field label="Amount in PKR" htmlFor="liab-val" required>
+                <Input
+                  id="liab-val"
+                  required
+                  type="number"
+                  inputMode="numeric"
+                  className="font-mono tabular-nums"
+                  value={newLiability.amountPKR}
+                  onChange={(e) => setNewLiability({ ...newLiability, amountPKR: e.target.value })}
+                  placeholder="0"
+                />
+              </Field>
+            </DialogBody>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsLiabilityDialogOpen(false)}
+                disabled={isSavingLiability}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSavingLiability}>
+                {isSavingLiability && <Loader2 className="animate-spin" />} Save liability
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmModal
+        isOpen={!!deleteAssetTarget}
+        onClose={() => setDeleteAssetTarget(null)}
+        onConfirm={handleConfirmDeleteAsset}
+        title="Delete this asset?"
+        description={deleteAssetTarget ? `"${deleteAssetTarget.name}" will be removed. This cannot be undone.` : ""}
+        confirmText="Delete asset"
+      />
+
+      <ConfirmModal
+        isOpen={!!deleteLiabilityTarget}
+        onClose={() => setDeleteLiabilityTarget(null)}
+        onConfirm={handleConfirmDeleteLiability}
+        title="Delete this liability?"
+        description={
+          deleteLiabilityTarget ? `"${deleteLiabilityTarget.description}" will be removed. This cannot be undone.` : ""
+        }
+        confirmText="Delete liability"
+      />
 
       <ConfirmModal
         isOpen={bulkAssetConfirmOpen}
         onClose={() => setBulkAssetConfirmOpen(false)}
         onConfirm={handleBulkDeleteAssets}
-        title={`Delete ${assetsTable.selected.size} Asset(s)?`}
+        title={`Delete ${assetsTable.selected.size} asset${assetsTable.selected.size === 1 ? "" : "s"}?`}
         description="This cannot be undone."
-        confirmText="Delete Selected"
+        confirmText="Delete selected"
         isLoading={isBulkDeletingAssets}
       />
 
@@ -666,15 +807,11 @@ export default function WealthPage() {
         isOpen={bulkLiabilityConfirmOpen}
         onClose={() => setBulkLiabilityConfirmOpen(false)}
         onConfirm={handleBulkDeleteLiabilities}
-        title={`Delete ${liabilitiesTable.selected.size} Liability(ies)?`}
+        title={`Delete ${liabilitiesTable.selected.size} liabilit${liabilitiesTable.selected.size === 1 ? "y" : "ies"}?`}
         description="This cannot be undone."
-        confirmText="Delete Selected"
+        confirmText="Delete selected"
         isLoading={isBulkDeletingLiabilities}
       />
-
-      {toast && (
-        <Toast type={toast.type} title={toast.title} message={toast.message} onClose={() => setToast(null)} />
-      )}
     </div>
   )
 }

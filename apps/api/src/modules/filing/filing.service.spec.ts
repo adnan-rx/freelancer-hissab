@@ -6,6 +6,7 @@ import { users, income, expenses, invoices, evidenceDocuments } from '../../data
 import { createMockDb } from '../../common/testing/mock-db';
 
 const USER = 'user1';
+const TAX_YEAR = '2026';
 const IN_YEAR = new Date('2026-01-15');
 
 interface Fixture {
@@ -68,7 +69,7 @@ const cleanFixture = (): Fixture => ({
 describe('FilingService.getReadinessScore', () => {
   it('reports 100% when every check passes', async () => {
     const service = await buildService(cleanFixture());
-    const result = await service.getReadinessScore(USER);
+    const result = await service.getReadinessScore(USER, TAX_YEAR);
 
     expect(result.score).toBe(100);
     expect(result.status).toBe('READY');
@@ -77,7 +78,7 @@ describe('FilingService.getReadinessScore', () => {
 
   it('flags a missing PSEB id and points at settings', async () => {
     const service = await buildService({ ...cleanFixture(), psebId: null });
-    const result = await service.getReadinessScore(USER);
+    const result = await service.getReadinessScore(USER, TAX_YEAR);
 
     const issue = result.issues.find((i) => i.code === 'MISSING_PROFILE_INFO');
     expect(issue).toBeDefined();
@@ -89,7 +90,7 @@ describe('FilingService.getReadinessScore', () => {
   // hardcoded fallback the UI produced — so the score could never reach 100%.
   it('does not flag a legitimate 280 exchange rate', async () => {
     const service = await buildService(cleanFixture());
-    const result = await service.getReadinessScore(USER);
+    const result = await service.getReadinessScore(USER, TAX_YEAR);
 
     expect(result.issues.some((i) => i.code === 'MISSING_EXCHANGE_RATE')).toBe(false);
   });
@@ -98,7 +99,7 @@ describe('FilingService.getReadinessScore', () => {
     const fixture = cleanFixture();
     fixture.income![0].exchangeRate = '1';
     const service = await buildService(fixture);
-    const result = await service.getReadinessScore(USER);
+    const result = await service.getReadinessScore(USER, TAX_YEAR);
 
     expect(result.issues.some((i) => i.code === 'MISSING_EXCHANGE_RATE')).toBe(true);
   });
@@ -107,7 +108,7 @@ describe('FilingService.getReadinessScore', () => {
     const fixture = cleanFixture();
     fixture.income![0].prcReferenceNumber = null;
     const service = await buildService(fixture);
-    const result = await service.getReadinessScore(USER);
+    const result = await service.getReadinessScore(USER, TAX_YEAR);
 
     const issue = result.issues.find((i) => i.code === 'MISSING_PRC_SBP');
     expect(issue).toBeDefined();
@@ -119,7 +120,7 @@ describe('FilingService.getReadinessScore', () => {
     const fixture = cleanFixture();
     fixture.invoices = [{ id: 'inv-1', userId: USER, status: 'paid', createdAt: IN_YEAR }];
     const service = await buildService(fixture);
-    const result = await service.getReadinessScore(USER);
+    const result = await service.getReadinessScore(USER, TAX_YEAR);
 
     expect(result.issues.some((i) => i.code === 'ORPHANED_PAID_INVOICE')).toBe(true);
   });
@@ -129,7 +130,7 @@ describe('FilingService.getReadinessScore', () => {
     fixture.invoices = [{ id: 'inv-1', userId: USER, status: 'paid', createdAt: IN_YEAR }];
     fixture.income![0].invoiceId = 'inv-1';
     const service = await buildService(fixture);
-    const result = await service.getReadinessScore(USER);
+    const result = await service.getReadinessScore(USER, TAX_YEAR);
 
     expect(result.issues.some((i) => i.code === 'ORPHANED_PAID_INVOICE')).toBe(false);
   });
@@ -138,14 +139,14 @@ describe('FilingService.getReadinessScore', () => {
     const fixture = cleanFixture();
     fixture.expenses = [{ id: 'exp-1', userId: USER, category: 'other', expenseDate: '2026-01-10' }];
     const service = await buildService(fixture);
-    const result = await service.getReadinessScore(USER);
+    const result = await service.getReadinessScore(USER, TAX_YEAR);
 
     expect(result.issues.some((i) => i.code === 'EXPENSE_MISSING_CATEGORY')).toBe(true);
   });
 
   it('incorporates wealth reconciliation, which used to be ignored by the score', async () => {
     const service = await buildService({ ...cleanFixture(), reconciled: false });
-    const result = await service.getReadinessScore(USER);
+    const result = await service.getReadinessScore(USER, TAX_YEAR);
 
     expect(result.issues.some((i) => i.code === 'WEALTH_NOT_RECONCILED')).toBe(true);
     expect(result.wealthReconciled).toBe(false);
@@ -156,7 +157,7 @@ describe('FilingService.getReadinessScore', () => {
     const fixture = cleanFixture();
     fixture.evidence = [];
     const service = await buildService(fixture);
-    const result = await service.getReadinessScore(USER);
+    const result = await service.getReadinessScore(USER, TAX_YEAR);
 
     expect(result.evidenceCoveragePercent).toBe(0);
     expect(result.issues.some((i) => i.code === 'MISSING_EVIDENCE')).toBe(true);
@@ -177,7 +178,7 @@ describe('FilingService.getReadinessScore', () => {
     });
 
     const service = await buildService(fixture);
-    const result = await service.getReadinessScore(USER);
+    const result = await service.getReadinessScore(USER, TAX_YEAR);
 
     expect(result.score).toBe(100);
   });

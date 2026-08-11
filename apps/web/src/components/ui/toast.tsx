@@ -1,15 +1,51 @@
 "use client";
 
-import { AlertCircle, CheckCircle2, Info, X } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { cn } from "@/lib/utils";
+
+export type ToastKind = "error" | "success" | "info" | "warning";
 
 export interface ToastProps {
-  type?: "error" | "success" | "info";
+  type?: ToastKind;
   title?: string;
   message: string;
   onClose: () => void;
   duration?: number;
 }
+
+/**
+ * One notification appearance for every kind: white card, hairline border,
+ * a coloured rail and icon chip carrying the semantics. Solid-colour toasts
+ * read as alarms; this reads as the product talking.
+ * Stacking and screen position are owned by ToastProvider's viewport.
+ */
+const TONE = {
+  success: {
+    rail: "bg-success",
+    chip: "bg-success-surface text-success",
+    Icon: CheckCircle2,
+    defaultTitle: "Saved",
+  },
+  error: {
+    rail: "bg-destructive",
+    chip: "bg-destructive-surface text-destructive",
+    Icon: AlertCircle,
+    defaultTitle: "Something went wrong",
+  },
+  warning: {
+    rail: "bg-warning",
+    chip: "bg-warning-surface text-warning",
+    Icon: AlertTriangle,
+    defaultTitle: "Check this",
+  },
+  info: {
+    rail: "bg-info",
+    chip: "bg-info-surface text-info",
+    Icon: Info,
+    defaultTitle: "Notice",
+  },
+} as const;
 
 export function Toast({ type = "error", title, message, onClose, duration = 6000 }: ToastProps) {
   // onClose is almost always a fresh inline function from the caller, so it must not
@@ -25,30 +61,41 @@ export function Toast({ type = "error", title, message, onClose, duration = 6000
     }
   }, [duration]);
 
-  const defaultTitle = { error: "Submission Error", success: "Success", info: "Notice" }[type];
-  const style = {
-    error: "bg-destructive/90 border-destructive/40 text-destructive-foreground",
-    success: "bg-primary/90 border-primary/40 text-primary-foreground",
-    info: "bg-foreground/90 border-foreground/40 text-background",
-  }[type];
-  const Icon = { error: AlertCircle, success: CheckCircle2, info: Info }[type];
+  const { rail, chip, Icon, defaultTitle } = TONE[type] ?? TONE.info;
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 flex items-start gap-3 max-w-md p-4 rounded-xl border shadow-2xl backdrop-blur-md transition-all animate-in slide-in-from-bottom-5 ${style}`}>
-      <Icon className="h-5 w-5 shrink-0 mt-0.5" />
-      <div className="flex-1 space-y-1">
-        <h4 className="text-sm font-bold tracking-wide">
-          {title || defaultTitle}
-        </h4>
-        <p className="text-xs leading-relaxed opacity-90">{message}</p>
+    <div
+      role={type === "error" ? "alert" : "status"}
+      aria-live={type === "error" ? "assertive" : "polite"}
+      className="relative flex w-full items-start gap-3 overflow-hidden rounded-lg border border-border bg-card p-4 pl-[1.125rem] shadow-pop"
+    >
+      <span className={cn("absolute inset-y-0 left-0 w-1", rail)} aria-hidden="true" />
+
+      <span className={cn("mt-px flex size-7 shrink-0 items-center justify-center rounded-sm", chip)} aria-hidden="true">
+        <Icon className="size-4" />
+      </span>
+
+      <div className="min-w-0 flex-1 space-y-0.5">
+        <p className="text-sm font-semibold leading-tight text-foreground">{title || defaultTitle}</p>
+        <p className="break-words text-sm leading-relaxed text-muted-foreground">{message}</p>
       </div>
-      <button 
-        onClick={onClose} 
+
+      <button
+        onClick={onClose}
         type="button"
-        className="p-1 rounded-lg hover:bg-black/10 text-current opacity-70 hover:opacity-100 transition-opacity"
+        aria-label="Dismiss notification"
+        className="-mr-1 -mt-1 shrink-0 rounded-sm p-1.5 text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70"
       >
-        <X className="h-4 w-4" />
+        <X className="size-4" />
       </button>
+
+      {duration > 0 && (
+        <span
+          className={cn("absolute inset-x-0 bottom-0 h-0.5 origin-left opacity-30", rail)}
+          style={{ animation: `toast-timer ${duration}ms linear forwards` }}
+          aria-hidden="true"
+        />
+      )}
     </div>
   );
 }

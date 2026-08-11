@@ -51,9 +51,25 @@ export class AuthService {
     return this.generateTokens(user);
   }
 
+  /**
+   * Revokes the presented refresh token so the session is genuinely over.
+   * Logout previously only cleared the cookie, leaving the token valid in the
+   * database for its full 7-day life — anyone holding a copy could refresh.
+   */
+  async logout(refreshTokenStr?: string) {
+    if (!refreshTokenStr) return { message: 'Logged out successfully' };
+
+    await this.db
+      .update(refreshTokens)
+      .set({ isRevoked: true, updatedAt: new Date() })
+      .where(eq(refreshTokens.hashedToken, this.hashToken(refreshTokenStr)));
+
+    return { message: 'Logged out successfully' };
+  }
+
   async refresh(refreshTokenStr: string) {
     try {
-      const refreshSecret = process.env.JWT_REFRESH_SECRET || 'fh_dev_refresh_secret_key_2026_pk';
+      const refreshSecret = process.env.JWT_REFRESH_SECRET as string;
       const payload = this.jwtService.verify(refreshTokenStr, { secret: refreshSecret });
       
       const hashedToken = this.hashToken(refreshTokenStr);
@@ -99,7 +115,8 @@ export class AuthService {
 
   private async generateTokens(user: any) {
     const payload = { sub: user.id, email: user.email };
-    const refreshSecret = process.env.JWT_REFRESH_SECRET || 'fh_dev_refresh_secret_key_2026_pk';
+    // Validated at boot (see main.ts) — no committed development fallback.
+    const refreshSecret = process.env.JWT_REFRESH_SECRET as string;
     
     const [accessToken, refreshTokenStr] = await Promise.all([
       this.jwtService.signAsync(payload, { expiresIn: (process.env.JWT_EXPIRATION || '15m') as any }),

@@ -8,8 +8,20 @@ export function getCurrentTaxYear(date = new Date()): number {
 }
 
 export function taxYearOptions(around: number = getCurrentTaxYear()): { value: string; label: string }[] {
+  // Labelled in the "2026-27" span form, matching the header pill and every
+  // other tax-year label in the UI — "Tax Year 2027" read like a calendar year.
   return [around - 2, around - 1, around, around + 1].map((y) => ({
     value: String(y),
-    label: `Tax Year ${y}`,
+    label: `Tax year ${taxYearLabel(y)}`,
   }));
+}
+
+/** 'YYYY-MM-DD' bounds of a tax year, for client-side date-string comparisons. */
+export function taxYearBounds(year: number = getCurrentTaxYear()): { start: string; end: string } {
+  return { start: `${year - 1}-07-01`, end: `${year}-06-30` };
+}
+
+/** "2026-27" style label — matches the format stored in the tax_rules table. */
+export function taxYearLabel(year: number = getCurrentTaxYear()): string {
+  return `${year - 1}-${String(year).slice(2)}`;
 }

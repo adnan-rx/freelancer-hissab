@@ -1,11 +1,15 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { CheckCircle2, Download, FileText, AlertCircle, RefreshCcw, ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { AlertCircle, ArrowRight, CheckCircle2, Download, FileText, Loader2, RefreshCcw } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { PageHeader } from "@/components/ui/page-header"
+import { ErrorState } from "@/components/ui/empty-state"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useAuthStore } from "@/stores/auth.store"
 import { useProfile } from "@/hooks/use-profile"
 import { useGeneratePackage } from "@/hooks/use-generate-package"
@@ -60,57 +64,6 @@ export default function FilingSimulatorPage() {
     fetchData()
   }, [fetchData])
 
-  if (loading) {
-    return (
-      <div id="simulator-dashboard" className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Filing Simulator</h1>
-            <p className="text-muted-foreground mt-1">
-              A guided walkthrough of your FBR tax return preparation.
-            </p>
-          </div>
-          <div className="flex gap-4 items-center">
-            <Skeleton className="h-10 w-[150px]" />
-            <Skeleton className="h-10 w-24" />
-          </div>
-        </div>
-
-        <Card className="border-2 border-border">
-          <CardContent className="p-8">
-            <div className="flex items-end justify-between mb-4">
-              <div className="space-y-1">
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-9 w-20" />
-              </div>
-              <Skeleton className="h-6 w-36" />
-            </div>
-            <Skeleton className="h-3 w-full" />
-          </CardContent>
-        </Card>
-
-        <div className="space-y-4">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i} className="border-l-4 border-l-border">
-              <CardContent className="p-6">
-                <div className="flex gap-4 items-start">
-                  <Skeleton className="h-6 w-6 rounded-full shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Skeleton className="h-5 w-44" />
-                      <Skeleton className="h-4 w-16" />
-                    </div>
-                    <Skeleton className="h-4 w-80" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
   const issuesList = readiness?.issues || []
   const issuesFor = (...codes: string[]) => issuesList.filter((i: any) => codes.includes(i.code))
   const messagesFor = (...codes: string[]) => issuesFor(...codes).map((i: any) => i.message)
@@ -122,52 +75,52 @@ export default function FilingSimulatorPage() {
   const steps: Step[] = [
     {
       id: "profile",
-      title: "Personal Information",
-      description: "Verify your FBR NTN and PSEB registration.",
+      title: "Personal information",
+      description: "Your FBR NTN and PSEB registration.",
       isComplete: hasPseb,
-      warnings: hasPseb ? [] : ["Missing PSEB registration (loss of 0.75% tax break)"],
+      warnings: hasPseb ? [] : ["No PSEB registration on file — you lose the 0.75% rate reduction."],
       fixPath: "/settings",
     },
     {
       id: "income",
-      title: "Income Ledger",
-      description: "Verify all income for the tax year.",
+      title: "Income ledger",
+      description: "Every payment for the tax year, tagged to a platform or client.",
       isComplete: issuesFor("INCOME_UNMATCHED_PLATFORM", "ORPHANED_PAID_INVOICE").length === 0,
       warnings: messagesFor("INCOME_UNMATCHED_PLATFORM", "ORPHANED_PAID_INVOICE"),
       fixPath: "/income",
     },
     {
       id: "expenses",
-      title: "Expense Categorization",
-      description: "Verify all expenses have valid tax categories.",
+      title: "Expense categories",
+      description: "Every expense assigned a valid tax category.",
       isComplete: issuesFor("EXPENSE_MISSING_CATEGORY").length === 0,
       warnings: messagesFor("EXPENSE_MISSING_CATEGORY"),
       fixPath: "/expenses",
     },
     {
       id: "audit",
-      title: "Financial Audit",
-      description: "Ensure SBP purpose codes and PRC numbers are mapped.",
+      title: "Financial audit",
+      description: "SBP purpose codes, PRC numbers and exchange rates mapped.",
       isComplete: issuesFor("MISSING_PRC_SBP", "MISSING_EXCHANGE_RATE").length === 0,
       warnings: messagesFor("MISSING_PRC_SBP", "MISSING_EXCHANGE_RATE"),
       fixPath: "/income",
     },
     {
       id: "evidence",
-      title: "Supporting Documents",
-      description: `Attach proof for your income entries (${readiness?.evidenceCoveragePercent ?? 0}% covered).`,
+      title: "Supporting documents",
+      description: `Proof attached to your income entries — ${readiness?.evidenceCoveragePercent ?? 0}% covered.`,
       isComplete: issuesFor("MISSING_EVIDENCE").length === 0,
       warnings: messagesFor("MISSING_EVIDENCE"),
       fixPath: "/income",
     },
     {
       id: "wealth",
-      title: "Wealth Reconciliation",
-      description: "Ensure declared assets match income and expenses.",
+      title: "Wealth reconciliation",
+      description: "Declared assets that balance against income and expenses.",
       isComplete: !!wealth?.reconciled,
       warnings: wealth?.reconciled
         ? []
-        : [`Wealth gap of Rs. ${Math.abs(Math.round(wealth?.differencePKR || 0)).toLocaleString()} detected`],
+        : [`Wealth statement is out by Rs ${Math.abs(Math.round(wealth?.differencePKR || 0)).toLocaleString()}.`],
       fixPath: "/wealth",
     },
   ]
@@ -178,132 +131,171 @@ export default function FilingSimulatorPage() {
   const totalWarnings = steps.reduce((sum, step) => sum + step.warnings.length, 0)
 
   return (
-    <div id="simulator-dashboard" className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Filing Simulator</h1>
-          <p className="text-muted-foreground mt-1">
-            A guided walkthrough of your FBR tax return preparation
-            {readiness?.taxYearLabel ? ` for ${readiness.taxYearLabel}` : ""}.
-          </p>
-        </div>
-        <div className="flex gap-4 items-center print:hidden">
-          <Select value={taxYear} onValueChange={setTaxYear}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Tax Year" />
-            </SelectTrigger>
-            <SelectContent>
-              {taxYearOptions().map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" onClick={fetchData}>
-            <RefreshCcw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-        </div>
-      </div>
+    <div id="simulator-dashboard" className="mx-auto max-w-4xl space-y-6 lg:space-y-8">
+      <PageHeader
+        title="Filing simulator"
+        description={`A step-by-step check of your FBR return${readiness?.taxYearLabel ? ` for ${readiness.taxYearLabel}` : ""}.`}
+        actions={
+          <>
+            <Select value={taxYear} onValueChange={setTaxYear}>
+              <SelectTrigger className="w-[10rem]" aria-label="Tax year">
+                <SelectValue placeholder="Tax year" />
+              </SelectTrigger>
+              <SelectContent>
+                {taxYearOptions().map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={fetchData} disabled={loading}>
+              <RefreshCcw className={loading ? "animate-spin" : undefined} /> Refresh
+            </Button>
+          </>
+        }
+      />
 
-      {error && (
-        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-sm flex items-center justify-between gap-4">
-          <span>{error}</span>
-          <Button size="sm" variant="outline" onClick={fetchData}>Retry</Button>
+      {loading ? (
+        <div className="space-y-4">
+          <Skeleton className="h-32 rounded-lg" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-lg" />
+          ))}
         </div>
-      )}
-
-      <Card className="bg-gradient-to-r from-card to-card/50 border-2">
-        <CardContent className="p-8">
-          <div className="flex items-end justify-between mb-4">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Filing Readiness</p>
-              <h2 className="text-4xl font-bold tracking-tight">{Math.round(percentComplete)}%</h2>
-            </div>
-            <div className="text-right">
-              {totalWarnings > 0 ? (
-                <span className="inline-flex items-center gap-1.5 text-amber-600 font-medium">
-                  <AlertCircle className="h-5 w-5" />
-                  {totalWarnings} unresolved {totalWarnings === 1 ? "issue" : "issues"}
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 text-emerald-600 font-medium">
-                  <CheckCircle2 className="h-5 w-5" />
-                  Ready to file
-                </span>
-              )}
-            </div>
-          </div>
-          <Progress value={percentComplete} className="h-3" indicatorClassName={isReady ? "bg-emerald-500" : "bg-primary"} />
-        </CardContent>
-      </Card>
-
-      <div className="space-y-4">
-        {steps.map((step, index) => (
-          <Card key={step.id} className={`transition-all border-l-4 ${step.isComplete ? "border-l-emerald-500" : "border-l-border"}`}>
-            <CardContent className="p-6">
-              <div className="flex gap-4">
-                <div className="shrink-0 mt-1">
-                  {step.isComplete ? (
-                    <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-                  ) : (
-                    <div className="h-6 w-6 rounded-full border-2 border-muted-foreground flex items-center justify-center text-xs font-medium text-muted-foreground">
-                      {index + 1}
-                    </div>
-                  )}
+      ) : error ? (
+        <Card>
+          <ErrorState
+            description={error}
+            action={
+              <Button variant="outline" onClick={fetchData}>
+                <RefreshCcw /> Try again
+              </Button>
+            }
+          />
+        </Card>
+      ) : (
+        <>
+          <Card className={isReady ? "border-success/20 bg-success-surface" : undefined}>
+            <CardContent className="p-6 pt-6 sm:p-8 sm:pt-8">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Filing readiness</p>
+                  <p className="mt-1 font-mono text-4xl font-semibold tracking-[-0.03em] tabular-nums text-foreground">
+                    {Math.round(percentComplete)}%
+                  </p>
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between gap-4">
-                    <h3 className="text-lg font-semibold">{step.title}</h3>
-                    {!step.isComplete && step.fixPath && (
-                      <Button variant="link" size="sm" asChild className="print:hidden">
-                        <Link href={step.fixPath}>
-                          Fix this <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                        </Link>
-                      </Button>
-                    )}
-                  </div>
-                  <p className="text-muted-foreground text-sm mt-1">{step.description}</p>
-
-                  {step.warnings.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      {step.warnings.map((warning, i) => (
-                        <div key={i} className="flex items-start gap-2 text-sm text-amber-600 bg-amber-500/10 p-2.5 rounded-md">
-                          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                          <span>{warning}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <p
+                  className={`inline-flex items-center gap-1.5 text-sm font-medium ${
+                    totalWarnings > 0 ? "text-warning" : "text-success"
+                  }`}
+                >
+                  {totalWarnings > 0 ? <AlertCircle className="size-4" /> : <CheckCircle2 className="size-4" />}
+                  {totalWarnings > 0
+                    ? `${totalWarnings} unresolved ${totalWarnings === 1 ? "issue" : "issues"}`
+                    : "Ready to file"}
+                </p>
               </div>
+              <Progress
+                value={percentComplete}
+                className="mt-5 h-2"
+                indicatorClassName={isReady ? "bg-success" : "bg-primary"}
+                aria-label="Filing readiness"
+              />
+              <p className="mt-2.5 text-xs text-muted-foreground">
+                {completedSteps} of {steps.length} steps complete
+              </p>
             </CardContent>
           </Card>
-        ))}
-      </div>
 
-      <Card className="border-2 border-primary/20 bg-primary/5 print:hidden">
-        <CardContent className="p-8 text-center space-y-4">
-          <FileText className="h-12 w-12 text-primary mx-auto opacity-80" />
-          <h2 className="text-2xl font-bold">Generate Filing Package</h2>
-          <p className="text-muted-foreground max-w-lg mx-auto">
-            Downloads a ZIP containing your tax summary, income report, expense report and full transaction ledger.
-          </p>
-          <Button size="lg" disabled={isGenerating} onClick={() => generatePackage(taxYear)} className="mt-4">
-            {isGenerating ? "Compiling Package..." : (
-              <>
-                <Download className="mr-2 h-5 w-5" />
-                Download Tax Package (ZIP)
-              </>
-            )}
-          </Button>
-          {generateError && <p className="text-sm text-destructive font-medium">{generateError}</p>}
-          {!isReady && (
-            <p className="text-sm text-amber-600 font-medium">
-              {totalWarnings} issue{totalWarnings === 1 ? "" : "s"} still open — the package will reflect your data as it stands today.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+          <ol className="space-y-3">
+            {steps.map((step, index) => (
+              <li key={step.id}>
+                <Card className={step.isComplete ? "border-l-2 border-l-success" : "border-l-2 border-l-warning"}>
+                  <CardContent className="flex gap-4 p-5 pt-5 sm:p-6 sm:pt-6">
+                    <span className="mt-0.5 shrink-0" aria-hidden="true">
+                      {step.isComplete ? (
+                        <CheckCircle2 className="size-5 text-success" />
+                      ) : (
+                        <span className="flex size-5 items-center justify-center rounded-full border border-border-strong font-mono text-2xs font-semibold text-muted-foreground">
+                          {index + 1}
+                        </span>
+                      )}
+                    </span>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <h2 className="text-base font-semibold tracking-[-0.01em] text-foreground">{step.title}</h2>
+                        {!step.isComplete && step.fixPath && (
+                          <Button variant="ghost" size="sm" asChild className="print:hidden">
+                            <Link href={step.fixPath}>
+                              Fix this <ArrowRight />
+                            </Link>
+                          </Button>
+                        )}
+                      </div>
+                      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{step.description}</p>
+
+                      {step.warnings.length > 0 && (
+                        <ul className="mt-4 space-y-2">
+                          {step.warnings.map((warning, i) => (
+                            <li
+                              key={i}
+                              className="flex items-start gap-2 rounded-md border border-warning/15 bg-warning-surface p-2.5 text-sm leading-relaxed text-warning"
+                            >
+                              <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                              <span>{warning}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </li>
+            ))}
+          </ol>
+
+          <Card className="border-brand-200 bg-brand-50/50 print:hidden">
+            <CardContent className="flex flex-col items-center p-8 pt-8 text-center">
+              <span
+                className="flex size-12 items-center justify-center rounded-md bg-primary text-primary-foreground"
+                aria-hidden="true"
+              >
+                <FileText className="size-6" />
+              </span>
+              <h2 className="mt-5 text-lg font-semibold tracking-[-0.01em] text-foreground">Generate filing package</h2>
+              <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+                A ZIP with your tax summary, income report, expense report and the full transaction ledger.
+              </p>
+
+              <Button size="lg" className="mt-6" disabled={isGenerating} onClick={() => generatePackage(taxYear)}>
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="animate-spin" /> Compiling…
+                  </>
+                ) : (
+                  <>
+                    <Download /> Download package
+                  </>
+                )}
+              </Button>
+
+              {generateError && (
+                <p className="mt-3 text-sm font-medium text-destructive" role="alert">
+                  {generateError}
+                </p>
+              )}
+              {!isReady && (
+                <p className="mt-3 text-sm text-warning">
+                  {totalWarnings} issue{totalWarnings === 1 ? "" : "s"} still open — the package reflects your data as it
+                  stands today.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   )
 }

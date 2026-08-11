@@ -1,12 +1,8 @@
-import { defineConfig, globalIgnores } from "eslint/config";
+import { nextJsConfig } from "@freelancerhisab/eslint-config/next-js";
 
-const eslintConfig = defineConfig([
-  globalIgnores([
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-  ]),
-]);
-
-export default eslintConfig;
+// This used to be an empty ruleset — `next lint` reported "0 warnings" simply
+// because nothing was ever checked. `nextJsConfig` brings in the Next.js
+// core-web-vitals rules, TypeScript's recommended set, and react-hooks
+// (exhaustive-deps, rules-of-hooks), matching what `packages/eslint-config`
+// already ships for exactly this purpose.
+export default nextJsConfig;

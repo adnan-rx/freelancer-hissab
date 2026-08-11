@@ -43,12 +43,14 @@ const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
 );
 Tabs.displayName = "Tabs";
 
+/** Segmented control. Scrolls horizontally rather than wrapping on narrow screens. */
 const TabsList = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
+      role="tablist"
       className={cn(
-        "inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground",
+        "inline-flex max-w-full items-center gap-1 overflow-x-auto no-scrollbar rounded-md border border-border bg-muted p-1",
         className
       )}
       {...props}
@@ -70,9 +72,15 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
       <button
         ref={ref}
         type="button"
+        role="tab"
+        aria-selected={isActive}
         data-state={isActive ? "active" : "inactive"}
         className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
+          "inline-flex h-8 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 text-sm font-medium text-muted-foreground transition-[background-color,color,box-shadow] duration-150 ease-smooth",
+          "hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+          "disabled:pointer-events-none disabled:opacity-50",
+          "data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs",
+          "[&_svg]:size-4 [&_svg]:shrink-0",
           className
         )}
         onClick={(e) => {
@@ -98,9 +106,10 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
     return (
       <div
         ref={ref}
-        data-state={context.value === value ? "active" : "inactive"}
+        role="tabpanel"
+        data-state="active"
         className={cn(
-          "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "mt-5 animate-fade-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2",
           className
         )}
         {...props}
@@ -111,4 +120,3 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
 TabsContent.displayName = "TabsContent";
 
 export { Tabs, TabsList, TabsTrigger, TabsContent };
-

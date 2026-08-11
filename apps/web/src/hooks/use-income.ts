@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth.store";
+import { unwrapApi } from "@/lib/utils";
 
 export function useIncome() {
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -8,18 +9,22 @@ export function useIncome() {
   return useQuery({
     queryKey: ["income", accessToken],
     queryFn: async () => {
-      if (!accessToken) return [];
-      try {
-        const res = await apiClient.get("/income");
-        const resData = res.data;
-        const list = resData?.data?.data || resData?.data || resData || [];
-        return Array.isArray(list) ? list : [];
-      } catch (e) {
-        return [];
-      }
+      const res = await apiClient.get("/income");
+      const list = unwrapApi<any[]>(res);
+      return Array.isArray(list) ? list : [];
     },
     enabled: !!accessToken,
   });
+}
+
+function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ["income"] });
+  queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+  queryClient.invalidateQueries({ queryKey: ["filing-readiness"] });
+  queryClient.invalidateQueries({ queryKey: ["transactions"] });
+  // Income created against an invoice can flip that invoice to paid.
+  queryClient.invalidateQueries({ queryKey: ["invoices"] });
+  queryClient.invalidateQueries({ queryKey: ["invoice"] });
 }
 
 export function useCreateIncome() {
@@ -27,15 +32,11 @@ export function useCreateIncome() {
   return useMutation({
     mutationFn: async (payload: any) => {
       const res = await apiClient.post("/income", payload);
-      const resData = res.data;
-      return resData?.data?.data || resData?.data || resData;
+      return unwrapApi(res);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["income"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
-      queryClient.invalidateQueries({ queryKey: ["filing-readiness"] });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-    },
+    // add-income-modal.tsx shows its own inline validation/error banner.
+    meta: { suppressErrorToast: true },
+    onSuccess: () => invalidateAll(queryClient),
   });
 }
 
@@ -44,15 +45,10 @@ export function useUpdateIncome() {
   return useMutation({
     mutationFn: async ({ id, ...payload }: { id: string; [key: string]: any }) => {
       const res = await apiClient.patch(`/income/${id}`, payload);
-      const resData = res.data;
-      return resData?.data?.data || resData?.data || resData;
+      return unwrapApi(res);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["income"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
-      queryClient.invalidateQueries({ queryKey: ["filing-readiness"] });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-    },
+    meta: { suppressErrorToast: true },
+    onSuccess: () => invalidateAll(queryClient),
   });
 }
 
@@ -61,14 +57,10 @@ export function useDeleteIncome() {
   return useMutation({
     mutationFn: async (id: string) => {
       const res = await apiClient.delete(`/income/${id}`);
-      const resData = res.data;
-      return resData?.data?.data || resData?.data || resData;
+      return unwrapApi(res);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["income"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
-      queryClient.invalidateQueries({ queryKey: ["filing-readiness"] });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-    },
+    // Single vs. bulk delete show their own success/failure counts.
+    meta: { suppressErrorToast: true },
+    onSuccess: () => invalidateAll(queryClient),
   });
 }

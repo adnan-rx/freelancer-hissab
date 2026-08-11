@@ -1,20 +1,38 @@
 import { db } from './db';
 import { users, clients, invoices, invoiceItems, income, expenses } from './schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import * as bcrypt from 'bcrypt';
 
+/**
+ * Demo fixtures for local development only.
+ *
+ * This script used to select EVERY user in the database, wipe their financial
+ * records (including an unscoped `delete(invoiceItems)` that truncated the whole
+ * table), and stamp demo bank/PSEB details onto real accounts. It now touches
+ * exactly one account and refuses to run outside development.
+ */
+const DEMO_EMAIL = process.env.SEED_EMAIL || 'adnan@gmail.com';
+
 async function seed() {
-  console.log('Seeding database with rich Pakistani context freelancing data...');
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Refusing to run the demo seed with NODE_ENV=production.');
+  }
+  if (!process.env.SEED_PASSWORD) {
+    throw new Error(
+      'Set SEED_PASSWORD to the password the demo account should use, e.g. SEED_PASSWORD=... npm run db:seed',
+    );
+  }
 
-  // Password hash for 'password123'
-  const defaultPasswordHash = await bcrypt.hash('password123', 10);
+  console.log(`Seeding demo data for ${DEMO_EMAIL} (development only)...`);
 
-  // 1. Get or Create Default Target User
-  let targetUsers = await db.select().from(users);
+  const defaultPasswordHash = await bcrypt.hash(process.env.SEED_PASSWORD, 10);
 
-  if (targetUsers.length === 0) {
-    const [newUser] = await db.insert(users).values({
-      email: 'adnan@gmail.com',
+  // 1. Get or create ONLY the demo user — never every user in the database.
+  let [demoUser] = await db.select().from(users).where(eq(users.email, DEMO_EMAIL)).limit(1);
+
+  if (!demoUser) {
+    [demoUser] = await db.insert(users).values({
+      email: DEMO_EMAIL,
       passwordHash: defaultPasswordHash,
       name: 'Adnan Niaz',
       businessName: 'Apex Tech Solutions',
@@ -24,33 +42,41 @@ async function seed() {
       iban: 'PK36MEZN0001020304050607',
       psebId: 'PSEB-2026-98765',
       isFiler: true,
-      invoicePrefix: 'FH-2026-',
       paymentTerms: 'Due on Receipt',
       invoiceNotes: 'Payment instructions: Wire foreign remittance directly to Meezan Bank IBAN under SBP Purpose Code 9100 for tax exemption.',
       defaultCurrency: 'PKR',
       timezone: 'Asia/Karachi',
-      isAdmin: true,
     }).returning();
-    targetUsers = [newUser];
   }
+
+  const targetUsers = [demoUser];
 
   for (const user of targetUsers) {
     console.log(`Seeding data for user: ${user.email} (${user.id})`);
 
-    // Clean existing records to avoid unique constraint collisions
+    // Clean this user's records only. Invoice items are scoped through the
+    // user's own invoices rather than truncated table-wide.
+    const ownInvoices = await db
+      .select({ id: invoices.id })
+      .from(invoices)
+      .where(eq(invoices.userId, user.id));
+
     await db.delete(income).where(eq(income.userId, user.id));
-    await db.delete(invoiceItems);
+    if (ownInvoices.length > 0) {
+      await db.delete(invoiceItems).where(
+        inArray(invoiceItems.invoiceId, ownInvoices.map((inv) => inv.id)),
+      );
+    }
     await db.delete(invoices).where(eq(invoices.userId, user.id));
     await db.delete(expenses).where(eq(expenses.userId, user.id));
     await db.delete(clients).where(eq(clients.userId, user.id));
 
-    // Update profile bank details if empty
+    // Fill in demo bank details only where the account has none.
     await db.update(users).set({
       bankName: user.bankName || 'Meezan Bank Limited',
       accountTitle: user.accountTitle || user.name || 'Adnan Niaz',
       iban: user.iban || 'PK36MEZN0001020304050607',
       psebId: user.psebId || 'PSEB-2026-98765',
-      isFiler: true,
     }).where(eq(users.id, user.id));
 
     // 2. Create Clients

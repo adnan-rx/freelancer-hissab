@@ -1,4 +1,6 @@
-import { Controller, Post, Get, Delete, Param, UseInterceptors, UploadedFile, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Param, UseInterceptors, UploadedFile, Body, UseGuards, Res } from '@nestjs/common';
+import type { Response } from 'express';
+import { Readable } from 'stream';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { EvidenceService, MAX_EVIDENCE_BYTES } from './evidence.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -32,6 +34,21 @@ export class EvidenceController {
   @Get('expense/:expenseId')
   getExpenseDocs(@CurrentUser() user: any, @Param('expenseId') expenseId: string) {
     return this.evidenceService.getDocumentsForExpense(user.id, expenseId);
+  }
+
+  /**
+   * Streams a private blob after re-checking ownership. Bypasses the global
+   * response envelope (`@Res` without passthrough) because the body is a file.
+   */
+  @Get(':id/download')
+  async download(@CurrentUser() user: any, @Param('id') documentId: string, @Res() res: Response) {
+    const { doc, stream } = await this.evidenceService.getDocumentContent(user.id, documentId);
+
+    res.setHeader('Content-Type', doc.fileType);
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(doc.fileName)}"`);
+    res.setHeader('Cache-Control', 'private, no-store');
+
+    Readable.fromWeb(stream as any).pipe(res);
   }
 
   @Delete(':id')

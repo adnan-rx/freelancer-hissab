@@ -2,17 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { FileText, Landmark, Loader2, Save, Shield, User } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input, Textarea } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardTitle, CardToolbar } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { User, Landmark, Shield, FileText, Save, Loader2 } from "lucide-react";
+import { Field } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
+import { PageHeader } from "@/components/ui/page-header";
 import { useAuthStore } from "@/stores/auth.store";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import { apiClient } from "@/lib/api-client";
 import { apiErrorMessage } from "@/lib/utils";
-import { Toast } from "@/components/ui/toast";
+import { useToast } from "@/providers/toast-provider";
 import { TaxRulesTab } from "@/components/features/tax-rules-tab";
 
 const IBAN_PATTERN = /^[A-Za-z]{2}[0-9]{2}[A-Za-z0-9]{11,30}$/;
@@ -20,8 +24,9 @@ const IBAN_PATTERN = /^[A-Za-z]{2}[0-9]{2}[A-Za-z0-9]{11,30}$/;
 export default function SettingsPage() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
-  const { data: profile, isLoading } = useProfile();
+  const { data: profile } = useProfile();
   const updateProfileMutation = useUpdateProfile();
+  const { showSuccess, showError } = useToast();
 
   // Profile Form State
   const [name, setName] = useState(user?.name || "");
@@ -36,19 +41,17 @@ export default function SettingsPage() {
   const [psebId, setPsebId] = useState("");
   const [isFiler, setIsFiler] = useState(true);
 
-  // Invoice Prefs State
-  const [invoicePrefix, setInvoicePrefix] = useState("FH-2026-");
+  // Invoice Prefs State — overwritten by the loaded profile below; no
+  // hardcoded year here since it would otherwise flash a stale "FH-2026-"
+  // for every account created after that year.
+  const [invoicePrefix, setInvoicePrefix] = useState("");
   const [paymentTerms, setPaymentTerms] = useState("Due on Receipt");
   const [invoiceNotes, setInvoiceNotes] = useState("");
 
   // Security tab state
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
-  const [savedSuccess, setSavedSuccess] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
   const [ibanError, setIbanError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -92,12 +95,10 @@ export default function SettingsPage() {
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaveError(null);
     setIbanError(null);
-    setSavedSuccess(null);
 
     if (iban.trim() && !IBAN_PATTERN.test(iban.trim())) {
-      setIbanError("Enter a valid IBAN, e.g. PK36MEZN0001020304050607.");
+      setIbanError("Enter a valid IBAN, for example PK36MEZN0001020304050607.");
       return;
     }
 
@@ -120,9 +121,9 @@ export default function SettingsPage() {
       if (user) {
         setUser({ ...user, name, businessName, psebId: psebId || null, hasPseb: !!psebId });
       }
-      setSavedSuccess("Settings updated & saved to database!");
+      showSuccess("Your changes have been saved.", "Settings updated");
     } catch (err) {
-      setSaveError(apiErrorMessage(err, "Failed to save your settings."));
+      showError(apiErrorMessage(err, "Failed to save your settings."), "Couldn't save settings");
     }
   };
 
@@ -131,328 +132,286 @@ export default function SettingsPage() {
       const res = await apiClient.patch("/users/password", { currentPassword, newPassword });
       return res.data;
     },
+    // Handled locally below so the message can be paired with clearing the form.
+    meta: { suppressErrorToast: true },
     onSuccess: () => {
-      setPasswordSuccess(true);
-      setPasswordError(null);
+      showSuccess("Your other sessions have been signed out.", "Password updated");
       setCurrentPassword("");
       setNewPassword("");
     },
     onError: (err) => {
-      setPasswordError(apiErrorMessage(err, "Failed to change your password."));
+      showError(apiErrorMessage(err, "Failed to change your password."), "Password not updated");
     },
   });
 
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault();
-    setPasswordError(null);
     if (!currentPassword || !newPassword) {
-      setPasswordError("Enter your current and new password.");
+      showError("Enter your current and new password.", "Password not updated");
       return;
     }
     changePasswordMutation.mutate();
   };
 
+  const isSaving = updateProfileMutation.isPending;
+  const SaveButton = ({ label }: { label: string }) => (
+    <Button type="submit" disabled={isSaving}>
+      {isSaving ? <Loader2 className="animate-spin" /> : <Save />} {label}
+    </Button>
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings & Preferences</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage your freelancer profile, bank remittance details, invoicing settings, and security.
-          </p>
-        </div>
-      </div>
+    <div className="mx-auto max-w-4xl space-y-6 lg:space-y-8">
+      <PageHeader
+        title="Settings"
+        description="Your profile, remittance bank details, invoice defaults and account security."
+      />
 
-      {savedSuccess && (
-        <Toast type="success" title="Saved" message={savedSuccess} onClose={() => setSavedSuccess(null)} />
-      )}
-      {saveError && (
-        <Toast type="error" title="Save Failed" message={saveError} onClose={() => setSaveError(null)} />
-      )}
-
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="bg-muted border border-border p-1 rounded-xl">
-          <TabsTrigger value="profile" className="data-[state=active]:bg-background data-[state=active]:text-foreground font-medium">
-            <User className="mr-2 h-4 w-4" /> Profile & Business
+      <Tabs defaultValue="profile">
+        <TabsList>
+          <TabsTrigger value="profile">
+            <User /> Profile
           </TabsTrigger>
-          <TabsTrigger value="bank" className="data-[state=active]:bg-background data-[state=active]:text-foreground font-medium">
-            <Landmark className="mr-2 h-4 w-4" /> Bank & SBP Tax
+          <TabsTrigger value="bank">
+            <Landmark /> Bank &amp; tax
           </TabsTrigger>
-          <TabsTrigger value="invoicing" className="data-[state=active]:bg-background data-[state=active]:text-foreground font-medium">
-            <FileText className="mr-2 h-4 w-4" /> Invoicing Prefs
+          <TabsTrigger value="invoicing">
+            <FileText /> Invoicing
           </TabsTrigger>
-          <TabsTrigger value="security" className="data-[state=active]:bg-background data-[state=active]:text-foreground font-medium">
-            <Shield className="mr-2 h-4 w-4" /> Security
+          <TabsTrigger value="security">
+            <Shield /> Security
           </TabsTrigger>
           {user?.isAdmin && (
-            <TabsTrigger value="tax-rules" className="data-[state=active]:bg-background data-[state=active]:text-foreground font-medium text-primary">
-              <Shield className="mr-2 h-4 w-4" /> Admin: Tax Rules
+            <TabsTrigger value="tax-rules">
+              <Shield /> Tax rules
             </TabsTrigger>
           )}
         </TabsList>
 
-        {/* Tab 1: Profile */}
+        {/* Profile */}
         <TabsContent value="profile">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-bold text-foreground">Freelancer Profile Information</CardTitle>
-              <CardDescription>Update your personal and business identity.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Full Name</label>
-                  <Input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    maxLength={255}
-                    required
-                    className="bg-background border-input text-foreground"
-                  />
-                </div>
+            <CardToolbar>
+              <div className="space-y-1">
+                <CardTitle>Profile</CardTitle>
+                <CardDescription>Your personal and business identity.</CardDescription>
+              </div>
+            </CardToolbar>
+            <CardContent className="pt-5 sm:pt-6">
+              <form onSubmit={handleSaveProfile} className="max-w-xl space-y-5">
+                <Field label="Full name" htmlFor="set-name" required>
+                  <Input id="set-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={255} required />
+                </Field>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Business / Brand Name</label>
+                <Field label="Business or brand name" htmlFor="set-business" hint="Shown on the invoices you send.">
                   <Input
+                    id="set-business"
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
                     maxLength={255}
-                    className="bg-background border-input text-foreground"
                   />
+                </Field>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Email" htmlFor="set-email" hint="Contact support to change this.">
+                    <Input id="set-email" value={email} disabled />
+                  </Field>
+
+                  <Field label="Phone" htmlFor="set-phone">
+                    <Input id="set-phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={50} />
+                  </Field>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Email Address</label>
-                    <Input
-                      value={email}
-                      disabled
-                      className="bg-muted border-input text-muted-foreground cursor-not-allowed"
-                    />
-                  </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Base currency" htmlFor="set-currency">
+                    <Input id="set-currency" value="PKR (Pakistani Rupee)" disabled />
+                  </Field>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Phone Number</label>
-                    <Input
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      maxLength={50}
-                      className="bg-background border-input text-foreground"
-                    />
-                  </div>
+                  <Field label="Timezone" htmlFor="set-tz">
+                    <Input id="set-tz" value="Asia/Karachi (GMT+5)" disabled />
+                  </Field>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Default Base Currency</label>
-                    <Input value="PKR (Pakistani Rupee)" disabled className="bg-muted border-input text-muted-foreground cursor-not-allowed" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Timezone</label>
-                    <Input value="Asia/Karachi (GMT+5)" disabled className="bg-muted border-input text-muted-foreground cursor-not-allowed" />
-                  </div>
-                </div>
-
-                <Button type="submit" disabled={updateProfileMutation.isPending}>
-                  {updateProfileMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Profile Changes
-                </Button>
+                <SaveButton label="Save profile" />
               </form>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Tab 2: Bank & Tax */}
+        {/* Bank & tax */}
         <TabsContent value="bank">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-bold text-foreground">SBP Inward Remittance Bank Account</CardTitle>
-              <CardDescription>Account details for foreign remittances and SBP PRC generation.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Primary Bank Name</label>
-                  <Input
-                    value={bankName}
-                    onChange={(e) => setBankName(e.target.value)}
-                    maxLength={255}
-                    className="bg-background border-input text-foreground"
-                  />
-                </div>
+            <CardToolbar>
+              <div className="space-y-1">
+                <CardTitle>Remittance bank account</CardTitle>
+                <CardDescription>Where foreign payments land, and the details SBP PRCs are issued against.</CardDescription>
+              </div>
+            </CardToolbar>
+            <CardContent className="pt-5 sm:pt-6">
+              <form onSubmit={handleSaveProfile} className="max-w-xl space-y-5">
+                <Field label="Bank name" htmlFor="set-bank">
+                  <Input id="set-bank" value={bankName} onChange={(e) => setBankName(e.target.value)} maxLength={255} />
+                </Field>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Account Title</label>
+                <Field label="Account title" htmlFor="set-title">
                   <Input
+                    id="set-title"
                     value={accountTitle}
                     onChange={(e) => setAccountTitle(e.target.value)}
                     maxLength={255}
-                    className="bg-background border-input text-foreground"
                   />
-                </div>
+                </Field>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">IBAN (International Bank Account Number)</label>
+                <Field label="IBAN" htmlFor="set-iban" error={ibanError}>
                   <Input
+                    id="set-iban"
                     value={iban}
-                    onChange={(e) => { setIban(e.target.value.toUpperCase()); setIbanError(null); }}
+                    onChange={(e) => {
+                      setIban(e.target.value.toUpperCase());
+                      setIbanError(null);
+                    }}
                     placeholder="PK36MEZN0001020304050607"
                     maxLength={34}
-                    className="bg-background border-input text-foreground font-mono"
+                    invalid={!!ibanError}
+                    className="font-mono"
                   />
-                  {ibanError && <p className="text-xs text-destructive">{ibanError}</p>}
-                </div>
+                </Field>
 
-                <div className="p-4 rounded-xl border border-border bg-muted/50 space-y-4">
-                  <h4 className="text-sm font-bold text-foreground">FBR & SBP Tax Compliance</h4>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">PSEB Registration</p>
-                      <p className="text-xs text-muted-foreground">
-                        {psebId ? "Applies the 0.25% reduced export tax rate." : "Add a PSEB ID to unlock the reduced 0.25% export rate."}
+                <div className="space-y-4 rounded-md border border-border bg-muted/50 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground">PSEB registration</p>
+                      <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                        {psebId
+                          ? "Your export income is taxed at the reduced 0.25% rate."
+                          : "Without a PSEB ID your export income is taxed at 1% instead of 0.25%."}
                       </p>
                     </div>
-                    <Badge
-                      variant="outline"
-                      className={psebId ? "border-primary/30 text-primary bg-primary/10" : "border-amber-500/30 text-amber-600 bg-amber-500/10"}
-                    >
-                      {psebId ? "PSEB Registered (0.25% Tax)" : "Not Registered (1% Tax)"}
+                    <Badge variant={psebId ? "success" : "warning"} dot>
+                      {psebId ? "Registered · 0.25%" : "Not registered · 1%"}
                     </Badge>
                   </div>
 
-                  <div className="space-y-2 pt-2">
-                    <label className="text-xs font-medium text-foreground">PSEB Registration Number</label>
+                  <Field label="PSEB registration number" htmlFor="set-pseb">
                     <Input
+                      id="set-pseb"
                       value={psebId}
                       onChange={(e) => setPsebId(e.target.value)}
                       maxLength={100}
-                      className="bg-background border-input text-foreground text-xs font-mono"
+                      className="font-mono"
                     />
-                  </div>
+                  </Field>
                 </div>
 
-                <Button type="submit" disabled={updateProfileMutation.isPending}>
-                  {updateProfileMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Bank Details
-                </Button>
+                <SaveButton label="Save bank details" />
               </form>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Tab 3: Invoicing */}
+        {/* Invoicing */}
         <TabsContent value="invoicing">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-bold text-foreground">Invoice Customization & Terms</CardTitle>
-              <CardDescription>
-                Used as the default invoice number prefix, payment terms, and footer text the next time you create an invoice.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSaveProfile} className="space-y-6 max-w-xl">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Invoice Number Prefix</label>
+            <CardToolbar>
+              <div className="space-y-1">
+                <CardTitle>Invoice defaults</CardTitle>
+                <CardDescription>Applied to the next invoice you create — existing invoices are untouched.</CardDescription>
+              </div>
+            </CardToolbar>
+            <CardContent className="pt-5 sm:pt-6">
+              <form onSubmit={handleSaveProfile} className="max-w-xl space-y-5">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Number prefix" htmlFor="set-prefix" hint="e.g. FH-2026-">
                     <Input
+                      id="set-prefix"
                       value={invoicePrefix}
                       onChange={(e) => setInvoicePrefix(e.target.value)}
                       maxLength={50}
-                      className="bg-background border-input text-foreground font-mono"
+                      className="font-mono"
                     />
-                  </div>
+                  </Field>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Default Payment Terms</label>
+                  <Field label="Payment terms" htmlFor="set-terms">
                     <Input
+                      id="set-terms"
                       value={paymentTerms}
                       onChange={(e) => setPaymentTerms(e.target.value)}
                       maxLength={100}
-                      className="bg-background border-input text-foreground"
                     />
-                  </div>
+                  </Field>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Default Invoice Footer / Wire Instructions</label>
-                  <textarea
+                <Field label="Footer and wire instructions" htmlFor="set-notes">
+                  <Textarea
+                    id="set-notes"
                     value={invoiceNotes}
                     onChange={(e) => setInvoiceNotes(e.target.value)}
                     rows={4}
                     maxLength={1000}
-                    className="w-full rounded-md border border-input bg-background p-3 text-sm text-foreground focus:border-primary focus:outline-none"
                   />
-                </div>
+                </Field>
 
-                <Button type="submit" disabled={updateProfileMutation.isPending}>
-                  {updateProfileMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save Invoice Preferences
-                </Button>
+                <SaveButton label="Save invoice defaults" />
               </form>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Tab 4: Security */}
+        {/* Security */}
         <TabsContent value="security">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-bold text-foreground">Security & Credentials</CardTitle>
-              <CardDescription>Change your password and inspect active session tokens.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6 max-w-xl">
-              {passwordError && (
-                <Toast type="error" title="Password Not Updated" message={passwordError} onClose={() => setPasswordError(null)} />
-              )}
-              {passwordSuccess && (
-                <Toast
-                  type="success"
-                  title="Password Updated"
-                  message="Your other sessions have been signed out."
-                  onClose={() => setPasswordSuccess(false)}
-                />
-              )}
-
+            <CardToolbar>
+              <div className="space-y-1">
+                <CardTitle>Security</CardTitle>
+                <CardDescription>Change your password and review your session.</CardDescription>
+              </div>
+            </CardToolbar>
+            <CardContent className="max-w-xl space-y-6 pt-5 sm:pt-6">
               <form onSubmit={handleChangePassword} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Current Password</label>
-                  <Input
-                    type="password"
-                    placeholder="••••••••"
+                <Field label="Current password" htmlFor="set-current-pw">
+                  <PasswordInput
+                    id="set-current-pw"
+                    autoComplete="current-password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="bg-background border-input text-foreground"
                   />
-                </div>
+                </Field>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">New Password</label>
-                  <Input
-                    type="password"
-                    placeholder="At least 8 characters, with a letter and a number"
+                <Field
+                  label="New password"
+                  htmlFor="set-new-pw"
+                  hint="At least 8 characters, with a letter and a number."
+                >
+                  <PasswordInput
+                    id="set-new-pw"
+                    autoComplete="new-password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="bg-background border-input text-foreground"
                   />
-                </div>
+                </Field>
 
                 <Button type="submit" variant="outline" disabled={changePasswordMutation.isPending}>
-                  {changePasswordMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Update Password
+                  {changePasswordMutation.isPending && <Loader2 className="animate-spin" />}
+                  Update password
                 </Button>
               </form>
 
-              <div className="p-4 rounded-xl border border-border bg-muted/50 space-y-2">
-                <p className="text-xs font-semibold text-foreground">Active Authentication Session</p>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10">JWT Bearer Token Active</Badge>
-                  <span>Expires in 2 minutes (auto-refreshed while you're active)</span>
+              <div className="rounded-md border border-border bg-muted/50 p-4">
+                <p className="text-sm font-medium text-foreground">Active session</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Badge variant="success" dot>
+                    Signed in
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    Your session refreshes in the background while you&apos;re active.
+                  </span>
                 </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Tab 5: Admin Tax Rules */}
+        {/* Admin tax rules */}
         {user?.isAdmin && (
           <TabsContent value="tax-rules">
             <TaxRulesTab />
