@@ -2,11 +2,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CsvService } from './csv.service';
 import { DRIZZLE } from '../../database/database.module';
 import { ExchangeRateService } from '../exchange-rate/exchange-rate.service';
-import { clients, income, expenses } from '../../database/schema';
+import { clients, income, expenses, invoices, invoiceItems } from '../../database/schema';
 import { createMockDb, mockExchangeRateService } from '../../common/testing/mock-db';
 
 async function buildService() {
-  const rows = new Map<any, any[]>([[clients, []], [income, []], [expenses, []]]);
+  const rows = new Map<any, any[]>([
+    [clients, []],
+    [income, []],
+    [expenses, []],
+    [invoices, []],
+    [invoiceItems, []],
+  ]);
   const db = createMockDb(rows);
 
   const module: TestingModule = await Test.createTestingModule({
@@ -173,5 +179,30 @@ not-a-date,"Some payment",100.00,income,USD
     expect(result.expenseCount).toBe(1);
     const inserted = db._inserted.find((i: any) => i.table === expenses);
     expect(inserted.values.amount).toBe('45.00');
+  });
+
+  it('creates an invoice and invoice item when invoiceNumber is present', async () => {
+    const { service, db } = await buildService();
+    const csv = `Date,Invoice Number,Client Name,Description,Amount,Type,Currency
+2026-08-02,INV-2026-001,Acme Corp,"Invoice INV-2026-001 for Acme Corp",1500.00,income,USD`;
+
+    const result = await service.parseAndImport('user1', Buffer.from(csv));
+    expect(result.totalParsed).toBe(1);
+    expect(result.incomeCount).toBe(1);
+    expect(result.invoicesCreated).toBe(1);
+
+    const insertedInvoices = db._inserted.filter((i: any) => i.table === invoices);
+    expect(insertedInvoices.length).toBe(1);
+    expect(insertedInvoices[0].values.invoiceNumber).toBe('INV-2026-001');
+    expect(insertedInvoices[0].values.total).toBe('1500.00');
+    expect(insertedInvoices[0].values.status).toBe('paid');
+
+    const insertedItems = db._inserted.filter((i: any) => i.table === invoiceItems);
+    expect(insertedItems.length).toBe(1);
+    expect(insertedItems[0].values.amount).toBe('1500.00');
+
+    const insertedIncome = db._inserted.filter((i: any) => i.table === income);
+    expect(insertedIncome.length).toBe(1);
+    expect(insertedIncome[0].values.invoiceId).toBeDefined();
   });
 });

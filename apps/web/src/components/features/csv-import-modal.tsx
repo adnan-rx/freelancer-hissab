@@ -86,6 +86,7 @@ export function CSVImportModal({ isOpen, onClose }: { isOpen: boolean; onClose: 
       // keys below — none of the report charts ever refreshed after an import.
       queryClient.invalidateQueries({ queryKey: ["income"] });
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
