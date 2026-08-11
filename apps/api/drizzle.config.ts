@@ -13,3 +13,4 @@ export default defineConfig({
   verbose: true,
   strict: true,
 });
+// DATABASE_URL=postgresql://neondb_owner:npg_mwxc9bFgLp4d@ep-frosty-cell-auy8i04i-pooler.c-10.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require

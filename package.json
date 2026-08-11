@@ -5,6 +5,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "seed": "npm --prefix apps/api run db:seed",
     "start": "npm --prefix apps/api run start:prod",
     "start:prod": "npm --prefix apps/api run start:prod",
     "lint": "turbo run lint",
