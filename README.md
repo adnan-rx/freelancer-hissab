@@ -2,7 +2,7 @@
 
 **FreelancerHisab** is a financial operating system tailored specifically for Pakistani freelancers, agencies, and software exporters. It automates income/expense tracking, Upwork/Fiverr statement parsing, client invoice generation, FBR Section 154A export tax calculations, and State Bank of Pakistan (SBP) Proceeds Realization Certificate (PRC) remittance tracking.
 
----
+--- 
 
 ## 🚀 Quick Start
 
