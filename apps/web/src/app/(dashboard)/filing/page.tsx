@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { apiClient } from "@/lib/api-client"
 import { apiErrorMessage } from "@/lib/utils"
 import { getCurrentTaxYear, taxYearOptions } from "@/lib/tax-year"
+import { Skeleton } from "@/components/ui/skeleton"
 
 type Step = {
   id: string

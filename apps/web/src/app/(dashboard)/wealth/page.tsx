@@ -66,6 +66,7 @@ export default function WealthPage() {
     try {
       setLoading(true)
 
+
       const [stmtRes, assetsRes, liabRes, reconRes] = await Promise.all([
         apiClient.get(`/wealth/statement?year=${taxYear}`),
         apiClient.get(`/wealth/assets?year=${taxYear}`),
