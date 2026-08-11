@@ -85,8 +85,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ showToast, showSuccess, showError, showWarning, showInfo }}>
       {children}
       {/* One viewport, one position: top-right on desktop, full-width top on
-          phones where a right-anchored card would clip. Newest sits on top. */}
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-[80] flex flex-col-reverse items-center gap-2 p-4 sm:inset-x-auto sm:right-0 sm:w-[26rem] sm:max-w-[calc(100vw-2rem)] sm:items-stretch sm:p-6">
+          phones where a right-anchored card would clip. Newest sits on top.
+          `sm:left-auto` rather than `sm:inset-x-auto`: inset-x and right belong
+          to the same Tailwind plugin, so which one wins depends on emit order
+          rather than on anything readable here. Setting left explicitly leaves
+          no ambiguity. z-index sits above the sidebar (50) and dialogs (50). */}
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-[80] flex flex-col-reverse items-center gap-2 p-4 sm:left-auto sm:right-0 sm:w-[26rem] sm:max-w-[calc(100vw-2rem)] sm:items-stretch sm:p-6">
         {toasts.map((t) => (
           <div key={t.id} className="pointer-events-auto w-full animate-slide-in-right">
             <Toast type={t.type} title={t.title} message={t.message} duration={t.duration} onClose={() => dismiss(t.id)} />

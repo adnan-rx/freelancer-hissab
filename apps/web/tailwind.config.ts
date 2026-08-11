@@ -12,11 +12,12 @@ import type { Config } from "tailwindcss";
  */
 const config: Config = {
   darkMode: ["class"],
-  content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+  // One glob over the whole of src/. The previous list named app/, components/
+  // and pages/ only, so classes used solely in providers/ (the toast viewport)
+  // were silently purged — the toast lost its z-index and its right anchor and
+  // rendered behind the sidebar. Scanning all of src/ means adding a directory
+  // can never quietly drop styles again.
+  content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
       screens: {
