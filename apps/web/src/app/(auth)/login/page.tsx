@@ -11,10 +11,12 @@ import { Field } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useAuthStore } from '@/stores/auth.store';
 import { apiClient } from '@/lib/api-client';
+import { useToast } from '@/providers/toast-provider';
 
 export default function LoginPage() {
   const router = useRouter();
   const loginStore = useAuthStore((state) => state.login);
+  const { showSuccess, showError } = useToast();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,13 +33,17 @@ export default function LoginPage() {
       const data = response.data?.data;
       if (data?.accessToken && data?.user) {
         loginStore(data.accessToken, data.user);
+        showSuccess(`Welcome back, ${data.user.name || 'User'}!`, 'Signed In');
         router.push('/dashboard');
       } else {
-        setError('Invalid response from server');
+        const msg = 'Invalid response from server';
+        setError(msg);
+        showError(msg);
       }
     } catch (err: any) {
       const errorMessage = err?.response?.data?.error?.message || err?.message || 'Invalid email or password';
       setError(errorMessage);
+      showError(errorMessage, 'Sign in Failed');
     } finally {
       setLoading(false);
     }

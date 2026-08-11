@@ -101,9 +101,10 @@ Populates the database with realistic Pakistani freelancing records (clients, in
 npm --prefix apps/api run db:seed
 ```
 
-**Default Test Account Credentials (created by seed):**
-- **Email:** `adnan@gmail.com`
-- **Password:** `password123`
+**Default Test Account Credentials (created by seed - Super Admin):**
+- **Email:** `admin@gmail.com`
+- **Password:** `Admin@123456`
+- **Role:** Super Admin (`isAdmin: true`)
 - **Bank Profile:** Meezan Bank Limited (`IBAN: PK36MEZN0001020304050607`)
 - **PSEB Status:** Active Filer (0.25% Export Tax Rate)
 

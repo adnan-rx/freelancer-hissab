@@ -11,10 +11,12 @@ import { Field } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useAuthStore } from '@/stores/auth.store';
 import { apiClient } from '@/lib/api-client';
+import { useToast } from '@/providers/toast-provider';
 
 export default function RegisterPage() {
   const router = useRouter();
   const loginStore = useAuthStore((state) => state.login);
+  const { showSuccess, showError } = useToast();
 
   const [name, setName] = useState('');
   const [businessName, setBusinessName] = useState('');
@@ -33,13 +35,17 @@ export default function RegisterPage() {
       const data = response.data?.data;
       if (data?.accessToken && data?.user) {
         loginStore(data.accessToken, data.user);
+        showSuccess('Your account has been created successfully!', 'Account Created');
         router.push('/dashboard');
       } else {
-        setError('Failed to process registration response');
+        const msg = 'Failed to process registration response';
+        setError(msg);
+        showError(msg);
       }
     } catch (err: any) {
       const errorMessage = err?.response?.data?.error?.message || err?.message || 'Failed to register account';
       setError(errorMessage);
+      showError(errorMessage, 'Registration Failed');
     } finally {
       setLoading(false);
     }

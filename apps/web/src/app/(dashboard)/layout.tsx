@@ -31,7 +31,7 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (hasHydrated && !isAuthenticated) {
-      router.push('/login');
+      router.replace('/login');
     }
   }, [hasHydrated, isAuthenticated, router]);
 
@@ -46,9 +46,9 @@ export default function DashboardLayout({
     };
   }, [isMobileMenuOpen]);
 
-  // Rendering nothing until hydration made the app flash blank on every load.
-  // A shell in the final layout's shape reads as "loading", not as broken.
-  if (!hasHydrated) {
+  // Rendering a placeholder shell when hydrating or unauthenticated prevents
+  // flashing protected dashboard views after logging out.
+  if (!hasHydrated || !isAuthenticated) {
     return (
       <div className="flex h-full overflow-hidden">
         <div className="hidden w-[16rem] shrink-0 border-r border-border bg-card md:block" />

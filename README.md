@@ -47,9 +47,10 @@ Populates PostgreSQL with test data (clients, invoices, inward remittances, and 
 npm --prefix apps/api run db:seed
 ```
 
-**Default Test Account Credentials:**
-- **Email:** `adnan@gmail.com`
-- **Password:** `password123`
+**Default Test Account Credentials (Super Admin):**
+- **Email:** `admin@gmail.com`
+- **Password:** `Admin@123456`
+- **Role:** Super Admin (`isAdmin: true`)
 - **Bank Profile:** Meezan Bank Limited (`IBAN: PK36MEZN0001020304050607`)
 - **PSEB Tax Filer:** Active (0.25% Export Tax Rate)
 

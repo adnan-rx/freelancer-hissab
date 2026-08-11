@@ -11,21 +11,17 @@ import * as bcrypt from 'bcrypt';
  * table), and stamp demo bank/PSEB details onto real accounts. It now touches
  * exactly one account and refuses to run outside development.
  */
-const DEMO_EMAIL = process.env.SEED_EMAIL || 'adnan@gmail.com';
+const DEMO_EMAIL = process.env.SEED_EMAIL || 'admin@gmail.com';
+const DEMO_PASSWORD = process.env.SEED_PASSWORD || 'Admin@123456';
 
 async function seed() {
   if (process.env.NODE_ENV === 'production') {
     throw new Error('Refusing to run the demo seed with NODE_ENV=production.');
   }
-  if (!process.env.SEED_PASSWORD) {
-    throw new Error(
-      'Set SEED_PASSWORD to the password the demo account should use, e.g. SEED_PASSWORD=... npm run db:seed',
-    );
-  }
 
-  console.log(`Seeding demo data for ${DEMO_EMAIL} (development only)...`);
+  console.log(`Seeding demo data for Super Admin ${DEMO_EMAIL} (development only)...`);
 
-  const defaultPasswordHash = await bcrypt.hash(process.env.SEED_PASSWORD, 10);
+  const defaultPasswordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
 
   // 1. Get or create ONLY the demo user — never every user in the database.
   let [demoUser] = await db.select().from(users).where(eq(users.email, DEMO_EMAIL)).limit(1);
@@ -34,19 +30,27 @@ async function seed() {
     [demoUser] = await db.insert(users).values({
       email: DEMO_EMAIL,
       passwordHash: defaultPasswordHash,
-      name: 'Adnan Niaz',
+      name: 'Super Admin',
       businessName: 'Apex Tech Solutions',
       phone: '+92 300 1234567',
       bankName: 'Meezan Bank Limited',
-      accountTitle: 'Adnan Niaz',
+      accountTitle: 'Super Admin',
       iban: 'PK36MEZN0001020304050607',
       psebId: 'PSEB-2026-98765',
       isFiler: true,
+      isAdmin: true,
       paymentTerms: 'Due on Receipt',
       invoiceNotes: 'Payment instructions: Wire foreign remittance directly to Meezan Bank IBAN under SBP Purpose Code 9100 for tax exemption.',
       defaultCurrency: 'PKR',
       timezone: 'Asia/Karachi',
     }).returning();
+  } else {
+    [demoUser] = await db.update(users).set({
+      passwordHash: defaultPasswordHash,
+      isAdmin: true,
+      name: demoUser.name || 'Super Admin',
+      accountTitle: demoUser.accountTitle || 'Super Admin',
+    }).where(eq(users.id, demoUser.id)).returning();
   }
 
   const targetUsers = [demoUser];
@@ -71,12 +75,13 @@ async function seed() {
     await db.delete(expenses).where(eq(expenses.userId, user.id));
     await db.delete(clients).where(eq(clients.userId, user.id));
 
-    // Fill in demo bank details only where the account has none.
+    // Fill in demo bank details only where the account has none, and ensure super admin flag is set.
     await db.update(users).set({
       bankName: user.bankName || 'Meezan Bank Limited',
-      accountTitle: user.accountTitle || user.name || 'Adnan Niaz',
+      accountTitle: user.accountTitle || user.name || 'Super Admin',
       iban: user.iban || 'PK36MEZN0001020304050607',
       psebId: user.psebId || 'PSEB-2026-98765',
+      isAdmin: true,
     }).where(eq(users.id, user.id));
 
     // 2. Create Clients

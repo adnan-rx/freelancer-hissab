@@ -23,6 +23,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useEffect, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { Logo } from '@/components/layout/logo';
+import { useToast } from '@/providers/toast-provider';
 
 /**
  * Twelve flat links was a wall. Grouping them by the question the user is
@@ -77,6 +78,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const { showInfo } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -91,7 +93,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       // own view of "am I logged in" must not depend on network conditions.
     } finally {
       logout();
-      router.push('/login');
+      showInfo('You have been signed out.', 'Signed Out');
+      router.replace('/login');
     }
   };
 
