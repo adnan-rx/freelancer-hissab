@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, decimal, date, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, decimal, date, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { expenseCategoryEnum } from './enums';
 import { users } from './users';
@@ -15,11 +15,14 @@ export const expenses = pgTable('expenses', {
   description: varchar('description', { length: 500 }).notNull(),
   vendor: varchar('vendor', { length: 255 }),
   receiptUrl: varchar('receipt_url', { length: 1000 }),
+  /** See `income.externalId` — same idempotency key, for imported platform fees. */
+  externalId: varchar('external_id', { length: 255 }),
   expenseDate: date('expense_date').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => {
   return {
     userIdIdx: index('expense_user_id_idx').on(table.userId),
+    externalIdIdx: uniqueIndex('expense_user_external_id_idx').on(table.userId, table.externalId),
   };
 });
 

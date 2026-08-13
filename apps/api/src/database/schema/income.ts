@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, decimal, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, decimal, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { clientPlatformEnum } from './enums';
 import { users } from './users';
@@ -19,6 +19,12 @@ export const income = pgTable('income', {
   category: varchar('category', { length: 100 }),
   sbpPurposeCode: varchar('sbp_purpose_code', { length: 50 }).default('9100'),
   prcReferenceNumber: varchar('prc_reference_number', { length: 100 }),
+  /**
+   * Stable `<platform>:<platform transaction id>` for records created by an import
+   * (API sync or CSV). NULL for hand-entered income, so the unique index below only
+   * constrains imported rows — Postgres treats NULLs as distinct.
+   */
+  externalId: varchar('external_id', { length: 255 }),
   receivedAt: timestamp('received_at').defaultNow().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => {
@@ -26,6 +32,7 @@ export const income = pgTable('income', {
     userIdIdx: index('income_user_id_idx').on(table.userId),
     clientIdIdx: index('income_client_id_idx').on(table.clientId),
     invoiceIdIdx: index('income_invoice_id_idx').on(table.invoiceId),
+    externalIdIdx: uniqueIndex('income_user_external_id_idx').on(table.userId, table.externalId),
   };
 });
 

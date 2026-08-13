@@ -19,7 +19,8 @@
     "db:migrate": "tsx src/database/migrate.ts",
     "db:seed": "tsx src/database/seed.ts",
     "db:studio": "drizzle-kit studio",
-    "test": "jest"
+    "test": "jest",
+    "test:e2e": "tsx test/integrations.e2e.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

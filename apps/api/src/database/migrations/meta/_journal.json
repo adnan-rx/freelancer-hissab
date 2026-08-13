@@ -64,6 +64,20 @@
       "when": 1786340896738,
       "tag": "0009_wet_madelyne_pryor",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786452364179,
+      "tag": "0010_perpetual_whiplash",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786599702628,
+      "tag": "0011_black_klaw",
+      "breakpoints": true
     }
   ]
 }

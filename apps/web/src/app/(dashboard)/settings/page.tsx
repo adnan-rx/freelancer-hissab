@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { FileText, Landmark, Loader2, Save, Shield, User } from "lucide-react";
+import { FileText, Landmark, Link2, Loader2, Save, Shield, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import { apiClient } from "@/lib/api-client";
 import { apiErrorMessage } from "@/lib/utils";
 import { useToast } from "@/providers/toast-provider";
 import { TaxRulesTab } from "@/components/features/tax-rules-tab";
+import { IntegrationsTab } from "@/components/features/integrations-tab";
 
 const IBAN_PATTERN = /^[A-Za-z]{2}[0-9]{2}[A-Za-z0-9]{11,30}$/;
 
@@ -177,6 +178,9 @@ export default function SettingsPage() {
           </TabsTrigger>
           <TabsTrigger value="invoicing">
             <FileText /> Invoicing
+          </TabsTrigger>
+          <TabsTrigger value="integrations">
+            <Link2 /> Connected platforms
           </TabsTrigger>
           <TabsTrigger value="security">
             <Shield /> Security
@@ -409,6 +413,11 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Connected platforms */}
+        <TabsContent value="integrations">
+          <IntegrationsTab />
         </TabsContent>
 
         {/* Admin tax rules */}

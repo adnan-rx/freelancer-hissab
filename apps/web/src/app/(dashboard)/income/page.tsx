@@ -106,7 +106,7 @@ export default function IncomePage() {
         actions={
           <>
             <Button variant="outline" onClick={() => setIsImportOpen(true)}>
-              <Upload /> Import CSV
+              <Upload /> Import from Platforms
             </Button>
             <Button
               onClick={() => {

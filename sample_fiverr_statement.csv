@@ -1,0 +1,6 @@
+Date,Order ID,Item Description,Buyer,Gross Amount,Service Fee,Net Amount,Currency,Status
+08/02/2026,FO18293741,"Fullstack Next.js SaaS MVP Development",design_studio,1200.00,-240.00,960.00,USD,Cleared
+08/04/2026,FO18293742,"Custom REST API Integration & Auth Module",pixel_craft,650.00,-130.00,520.00,USD,Cleared
+08/06/2026,FO18293743,"Mobile App UI/UX Figma Design System",nordic_apps,800.00,-160.00,640.00,USD,Cleared
+08/08/2026,FO18293744,"Database Optimization & SQL Performance Tuning",speed_tech,450.00,-90.00,360.00,USD,Cleared
+08/11/2026,FO18293745,"Logo & Brand Identity Package",marketing_pro,350.00,-70.00,280.00,USD,Cleared

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { Receipt } from "lucide-react";
+import { Receipt, Upload } from "lucide-react";
+import { CSVImportModal } from "@/components/features/csv-import-modal";
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,7 @@ export default function TransactionsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const { showSuccess, showError } = useToast();
 
   const deleteIncomeMutation = useDeleteIncome();
@@ -145,6 +147,11 @@ export default function TransactionsPage() {
       <PageHeader
         title="Ledger"
         description="Income and expenses in one chronological feed, across every platform and account."
+        actions={
+          <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+            <Upload /> Import from Platforms
+          </Button>
+        }
       />
 
       <Card className="overflow-hidden">
@@ -300,6 +307,8 @@ export default function TransactionsPage() {
         confirmText="Delete selected"
         isLoading={isBulkDeleting}
       />
+
+      <CSVImportModal isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} />
     </div>
   );
 }

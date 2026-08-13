@@ -56,14 +56,34 @@ export function createMockDb(rowsByTable: Map<any, any[]> = new Map()) {
     return result;
   };
 
+  /**
+   * `select({ occurredAt: income.receivedAt })` renames columns, so a projected
+   * result is keyed by the alias, not the table's own field. Drizzle columns carry
+   * the snake_case DB name; fixtures are written in camelCase, so map between them.
+   */
+  const camelCase = (dbName: string): string => dbName.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+
+  const project = (rows: any[], projection?: Record<string, any>): any[] => {
+    if (!projection || typeof projection !== 'object') return rows;
+
+    return rows.map((row) => {
+      const projected: Record<string, unknown> = {};
+      for (const [alias, column] of Object.entries(projection)) {
+        const field = typeof column?.name === 'string' ? camelCase(column.name) : alias;
+        projected[alias] = row[field] ?? row[alias] ?? null;
+      }
+      return projected;
+    });
+  };
+
   const db: any = {
-    select: () => ({
+    select: (projection?: Record<string, any>) => ({
       from: (table: any) => {
         const chain: any = {
-          where: (condition: any) => resultSet(applyCondition(rowsFor(table), condition)),
+          where: (condition: any) => resultSet(project(applyCondition(rowsFor(table), condition), projection)),
           leftJoin: () => chain,
-          orderBy: () => resultSet(rowsFor(table)),
-          limit: (n: number) => resultSet(rowsFor(table).slice(0, n)),
+          orderBy: () => resultSet(project(rowsFor(table), projection)),
+          limit: (n: number) => resultSet(project(rowsFor(table).slice(0, n), projection)),
         };
         return chain;
       },
@@ -72,7 +92,15 @@ export function createMockDb(rowsByTable: Map<any, any[]> = new Map()) {
       values: (values: any) => {
         inserted.push({ table, values });
         const rows = Array.isArray(values) ? values : [values];
-        const withIds = rows.map((row, i) => ({ id: `mock-id-${inserted.length}-${i}`, ...row }));
+        // Postgres fills `defaultRandom()` ids and `defaultNow()` timestamps, so a
+        // row read back after an insert always has them. Mirror that here.
+        const now = new Date();
+        const withIds = rows.map((row, i) => ({
+          id: `mock-id-${inserted.length}-${i}`,
+          createdAt: now,
+          updatedAt: now,
+          ...row,
+        }));
         rowsByTable.set(table, [...rowsFor(table), ...withIds]);
         return { returning: async () => withIds };
       },

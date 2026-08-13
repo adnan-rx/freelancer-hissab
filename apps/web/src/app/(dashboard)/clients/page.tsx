@@ -218,7 +218,7 @@ export default function ClientsPage() {
         actions={
           <>
             <Button variant="outline" onClick={() => setIsImportOpen(true)}>
-              <Upload /> Import CSV
+              <Upload /> Import from Platforms
             </Button>
             <Button onClick={handleOpenAdd}>
               <Plus /> Add client

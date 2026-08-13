@@ -10,3 +10,4 @@ export * from './refresh-tokens';
 export * from './tax-rules';
 export * from './evidence';
 export * from './wealth';
+export * from './platform-connections';

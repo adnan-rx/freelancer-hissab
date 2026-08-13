@@ -18,6 +18,7 @@ import { TransactionsModule } from './modules/transactions/transactions.module';
 import { FilingModule } from './modules/filing/filing.module';
 import { EvidenceModule } from './modules/evidence/evidence.module';
 import { WealthModule } from './modules/wealth/wealth.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { WealthModule } from './modules/wealth/wealth.module';
     FilingModule,
     EvidenceModule,
     WealthModule,
+    IntegrationsModule,
   ],
   providers: [
     {

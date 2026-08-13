@@ -8,4 +8,8 @@ export class ImportCsvDto {
   @IsString()
   @IsOptional()
   exchangeRate?: string;
+
+  @IsString()
+  @IsOptional()
+  platform?: string;
 }
